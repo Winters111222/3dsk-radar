@@ -36,15 +36,32 @@ export function validateBudgetProvenance(opportunity) {
     : { ok:false, reason:"UNKNOWN budget must not contain published or estimated values" };
 }
 
+
+function isHttpUrl(value) {
+  if (typeof value !== "string" || !value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function validateOpportunity(opportunity) {
   const missing = REQUIRED_OPPORTUNITY_FIELDS.filter((key) => !(key in opportunity));
   const errors = missing.map((key) => `missing:${key}`);
   if (!OPPORTUNITY_KINDS.includes(opportunity.opportunity_kind)) errors.push("invalid:opportunity_kind");
+  if (!Array.isArray(opportunity.categories) || opportunity.categories.length === 0) errors.push("invalid:categories");
+  if (!isHttpUrl(opportunity.canonical_url)) errors.push("invalid:canonical_url");
+  if (!isHttpUrl(opportunity.source_url)) errors.push("invalid:source_url");
+  if (!isHttpUrl(opportunity.apply_url)) errors.push("invalid:apply_url");
+  if (!Array.isArray(opportunity.source_evidence) || opportunity.source_evidence.length === 0 || opportunity.source_evidence.some((item) => !isHttpUrl(item?.url))) errors.push("invalid:source_evidence");
   if (!STATUS_VALUES.includes(opportunity.status)) errors.push("invalid:status");
-  if (bandForScore(opportunity.win_score) !== opportunity.win_band) errors.push("invalid:win_band");
-  if (opportunity.fit_score < 0 || opportunity.fit_score > 100) errors.push("invalid:fit_score");
+  if (!Number.isFinite(opportunity.win_score) || opportunity.win_score < 0 || opportunity.win_score > 100) errors.push("invalid:win_score");
+  else if (bandForScore(opportunity.win_score) !== opportunity.win_band) errors.push("invalid:win_band");
+  if (!Number.isFinite(opportunity.fit_score) || opportunity.fit_score < 0 || opportunity.fit_score > 100) errors.push("invalid:fit_score");
   const budget = validateBudgetProvenance(opportunity);
   if (!budget.ok) errors.push(`invalid:budget:${budget.reason}`);
-  if (opportunity.contact_email && !opportunity.contact_email_source) errors.push("invalid:contact_email_without_source");
+  if (opportunity.contact_email && !isHttpUrl(opportunity.contact_email_source)) errors.push("invalid:contact_email_without_source");
   return { ok: errors.length === 0, errors };
 }

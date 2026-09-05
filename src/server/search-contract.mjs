@@ -1,0 +1,176 @@
+export const SEARCH_INTENTS = [
+  "human photogrammetry outsourcing",
+  "R3DS Wrap contract",
+  "Wrap3D production outsourcing",
+  "digital human vendor game development",
+  "digital double outsourcing",
+  "realistic character outsourcing game studio",
+  "AAA character outsourcing vendor",
+  "character art external development",
+  "facial scan processing contract",
+  "FACS character outsourcing",
+  "human scan cleanup contract",
+  "basemesh conforming character",
+  "photogrammetry production partner",
+  "character production overflow",
+  "realistic NPC outsourcing",
+  "actor likeness character production",
+  "photogrammetry vendor game development",
+  "facial capture vendor games",
+  "character co-development partner"
+];
+
+export const OPPORTUNITY_CATEGORIES = [
+  "FULL_PIPELINE",
+  "CAPTURE",
+  "PHOTOGRAMMETRY_PROCESSING",
+  "SCAN_CLEANUP",
+  "WRAP_BASEMESH",
+  "FACIAL_FACS",
+  "CHARACTER_FINISHING",
+  "CHARACTER_OUTSOURCING",
+  "EXTERNAL_DEVELOPMENT",
+  "PRODUCTION_OVERFLOW",
+  "PIPELINE_CONSULTING",
+  "VISUAL_AI_MOTION",
+  "OTHER_RELEVANT"
+];
+
+export const REMOTE_SCOPES = [
+  "WORLDWIDE_VENDOR",
+  "GLOBAL_REMOTE",
+  "REMOTE_REGION",
+  "LOCATION_RESTRICTED",
+  "ONSITE",
+  "NOT_STATED"
+];
+
+const nullableString = { type: ["string", "null"] };
+const nullableNumber = { type: ["number", "null"] };
+
+function evidenceSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["type", "url", "note"],
+    properties: {
+      type: { enum: ["PRIMARY_SOURCE", "SECONDARY_SOURCE", "CONTACT_SOURCE", "SIGNAL_SOURCE"] },
+      url: { type: "string" },
+      note: { type: "string" }
+    }
+  };
+}
+
+function candidateSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "title", "company", "summary", "opportunity_kind", "categories", "location", "remote_scope",
+      "published_date", "source_url", "apply_url", "fit_score", "win_score", "budget_type",
+      "budget_published", "budget_estimated_min", "budget_estimated_max", "budget_currency",
+      "budget_confidence", "budget_reason", "contact_name", "contact_role", "contact_email",
+      "contact_email_source", "why_it_fits", "risks", "missing_requirements", "source_evidence"
+    ],
+    properties: {
+      title: { type: "string", minLength: 1 },
+      company: { type: "string", minLength: 1 },
+      summary: { type: "string", minLength: 1 },
+      opportunity_kind: { enum: ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"] },
+      categories: {
+        type: "array",
+        minItems: 1,
+        maxItems: 6,
+        items: { enum: OPPORTUNITY_CATEGORIES }
+      },
+      location: { type: "string" },
+      remote_scope: { enum: REMOTE_SCOPES },
+      published_date: nullableString,
+      source_url: { type: "string" },
+      apply_url: nullableString,
+      fit_score: { type: "integer", minimum: 0, maximum: 100 },
+      win_score: { type: "integer", minimum: 0, maximum: 100 },
+      budget_type: { enum: ["PUBLISHED", "ESTIMATED", "UNKNOWN"] },
+      budget_published: nullableString,
+      budget_estimated_min: nullableNumber,
+      budget_estimated_max: nullableNumber,
+      budget_currency: nullableString,
+      budget_confidence: { type: ["string", "null"], enum: ["high", "medium", "low", null] },
+      budget_reason: { type: "string" },
+      contact_name: nullableString,
+      contact_role: nullableString,
+      contact_email: nullableString,
+      contact_email_source: nullableString,
+      why_it_fits: { type: "array", maxItems: 8, items: { type: "string" } },
+      risks: { type: "array", maxItems: 8, items: { type: "string" } },
+      missing_requirements: { type: "array", maxItems: 8, items: { type: "string" } },
+      source_evidence: { type: "array", minItems: 1, maxItems: 8, items: evidenceSchema() }
+    }
+  };
+}
+
+export function buildSearchOutputSchema(maxResults = 12) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["opportunities"],
+    properties: {
+      opportunities: {
+        type: "array",
+        maxItems: Math.max(1, Math.min(20, maxResults)),
+        items: candidateSchema()
+      }
+    }
+  };
+}
+
+export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retry = false }) {
+  const publicCapabilities = profile.capabilities.filter((item) => item.status === "APPROVED" && item.outbound_safe);
+  const publicCredentials = profile.credentials.filter((item) => item.status === "PUBLIC_APPROVED" && item.outbound_safe);
+
+  return [
+    "You are the discovery and scoring engine for the internal 3D.SK Opportunity Radar.",
+    `Current server timestamp: ${nowIso}.`,
+    `Return at most ${maxResults} normalized opportunities.`,
+    "You MUST use web search. Prefer original primary sources over aggregators.",
+    "Prioritize explicit current B2B/vendor/outsourcing/contract/freelance opportunities worldwide, especially the last 24h, then 7 days, then 30 days.",
+    "Do not treat a normal employee job as a studio/vendor opportunity unless the source explicitly permits contract/vendor/external development. If relevant only as a business signal, classify it POTENTIAL_LEAD.",
+    "OPEN_OPPORTUNITY means an explicit public request, contract, vendor need, RFP, outsourcing request or external-development opportunity. POTENTIAL_LEAD means only a commercial signal with no explicit public request. Never blur them.",
+    "3D.sk is a studio/vendor, not one freelance artist. Match the requested work against the approved capability profile below.",
+    "Never invent a contact email. Only output contact_email when the exact address is publicly visible in a web source you actually consulted; contact_email_source must be that public URL. Otherwise both fields must be null.",
+    "Budget provenance is strict: PUBLISHED only for source-stated terms, ESTIMATED only when you can justify a conservative range from public scope context, UNKNOWN when evidence is insufficient. Prefer UNKNOWN over false precision.",
+    "Do not invent client names, project names, credentials, capacity, prices, deadlines, legal guarantees or proprietary systems.",
+    "WIN SCORE is a heuristic opportunity attractiveness/competitiveness score, never a probability of winning.",
+    "Use source_evidence to record the URLs that support the opportunity. source_url must be the best primary/original source you consulted.",
+    "If a source is older than 30 days, include it only if the source itself clearly indicates the opportunity is still active.",
+    retry ? "This is the single allowed structured retry. Be especially strict about the required JSON schema and source provenance." : "",
+    `Approved public-safe capabilities: ${JSON.stringify(publicCapabilities)}`,
+    `PUBLIC_APPROVED credentials only: ${JSON.stringify(publicCredentials)}`,
+    `Restricted claims: ${JSON.stringify(profile.restricted_claims)}`,
+    `Scoring weights: ${JSON.stringify(profile.scoring_weights)}`,
+    `Search intents to cover broadly, not as literal-only filters: ${JSON.stringify(SEARCH_INTENTS)}`
+  ].filter(Boolean).join("\n\n");
+}
+
+export function buildOpenAIRequest({ profile, nowIso, maxResults = 12, model = "gpt-5.6-luna", retry = false }) {
+  return {
+    model,
+    store: false,
+    reasoning: { effort: "low" },
+    tools: [{ type: "web_search", search_context_size: "medium" }],
+    tool_choice: "required",
+    include: ["web_search_call.action.sources"],
+    instructions: buildSearchInstructions({ profile, nowIso, maxResults, retry }),
+    input: "Search the current public web now and return only the structured Radar opportunity dataset. Do not add prose outside the schema.",
+    max_output_tokens: 12000,
+    text: {
+      verbosity: "low",
+      format: {
+        type: "json_schema",
+        name: "radar_search_results",
+        strict: true,
+        schema: buildSearchOutputSchema(maxResults)
+      }
+    }
+  };
+}
