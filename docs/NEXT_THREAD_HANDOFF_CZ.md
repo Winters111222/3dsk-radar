@@ -1,5 +1,56 @@
 # 3D.SK Opportunity Radar — NEXT THREAD HANDOFF CZ
 
+## Aktuální doplnění — Phase D0 locked deploy readiness, 5. 9. 2026
+
+Navazující práce je ve stacked Draft PR #20 přesně nad Draft PR #19:
+
+- Draft PR #20: https://github.com/Winters111222/3dsk-radar/pull/20,
+- branch: `feat/phase-d-zero-cost-acceptance-20260905`,
+- první remote implementation commit: `3bd5b49610c414c13e57b6c2fde18be26fc62d14`,
+- exact base / remote HEAD PR #19 při vytvoření: `3ef24c09ef3ac5bf057c9744ea745165d23012f0`,
+- PR #14–#20 nemergovat bez explicitního souhlasu vlastníka,
+- `main` neměnit.
+
+Phase D0 offline readiness je 100 %. Netlify build generuje ignorované exact-revision metadata a CI balí source artifact z exact PR headu místo implicitního merge refu. Nový `accept:deployed:locked` runner nejdřív ověří povolený Radar Netlify host, přesný commit a locked health. Teprve potom provede přesně tři autentizované POST probes, které musí skončit před OpenAI, source transportem a repository write.
+
+Runner je bez retry, vyžaduje jednorázovou confirmation hodnotu, bere access code pouze z environmentu a nikdy jej nevrací. Úspěšný run má přesně 5 HTTP requestů, 0 source requestů, 0 OpenAI requestů, 0 write a cenu `$0`. Identity mismatch nebo odemknutý health zastaví průchod před chráněnými POST.
+
+Ověření lokální branche:
+
+- `npm run build` → PASS,
+- `npm test` → 156/156 PASS,
+- `npm run accept:run` → PASS,
+- `npm run accept:collector` → PASS,
+- `npm run accept:fixture` → PASS,
+- `npm run accept:http` → PASS,
+- `npm run sources:check` → PASS,
+- exact source artifact obsahuje `build-metadata.json`, Phase D runner a runbook,
+- syntax check a `git diff --check` → PASS,
+- live network/source/OpenAI requests 0, writes 0, cost `$0`.
+
+Aktuální orientační roadmapa:
+
+- původní V0.1: přibližně 96 %,
+- výzkum a katalog: 100 %,
+- Phase A: 100 %,
+- Phase B: 100 %,
+- Phase C code scope: 100 %,
+- Phase D0 offline readiness: 100 %,
+- Phase D deployed acceptance: 0 %,
+- Phase D celkem: přibližně 25 %,
+- celý rozšířený Radar: přibližně 98 %.
+
+Další krok vyžaduje nový explicitní souhlas: přesně jeden Netlify preview deploy z finálního remote headu PR #20 a přesně jeden locked acceptance run. Bez změny environmentu, bez produkčního deploye, bez merge, bez live source requestu, bez OpenAI requestu a bez automatického retry. Po zeleném preview se zvlášť rozhodne o production locked deploy nebo samostatném zero-cost source testu; tyto akce nespojovat.
+
+Bez změny zůstává:
+
+```text
+RADAR_LIVE_AI_ENABLED=false
+RADAR_SOURCE_COLLECTION_ENABLED=false
+```
+
+V tomto kroku nebyl proveden deploy, merge, změna Netlify environment, live source request ani OpenAI request.
+
 ## Aktuální doplnění — Phase C enrichment a promotion dokončeny, 5. 9. 2026
 
 Navazující práce je ve stacked Draft PR #19 přesně nad Draft PR #18:
