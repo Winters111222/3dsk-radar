@@ -7,7 +7,7 @@ on:
       - "feature/**"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test:
@@ -20,29 +20,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Finalize lockfile and fixture outreach parity
-        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/prelive-zero-cost-acceptance-20260905'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('src/app.js')
-          s = p.read_text()
-          s = s.replace('subject:null,opportunity_id:item.id', 'subject:item.reply_subject||null,opportunity_id:item.id')
-          p.write_text(s)
-          PY
-          git add package-lock.json src/app.js
-          if git diff --cached --quiet; then
-            echo "No deterministic source changes to commit."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "Lock dependencies and align fixture outreach history"
-            git push origin HEAD:${GITHUB_REF_NAME}
-          fi
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Run tests
         run: npm test
       - name: Run zero-cost fixture acceptance
