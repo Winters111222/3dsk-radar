@@ -40,17 +40,28 @@ test("Netlify cannot replace sealed tested-source identity with its unrelated CO
   assert.equal(metadata.artifact_provenance, "CI_TESTED_SOURCE");
 });
 
-test("Phase E CI profile survives the later Netlify branch build", () => {
-  const packagedCommit = "d".repeat(40);
-  const packaged = createBuildMetadata({
-    environment:{ COMMIT_REF:packagedCommit, CONTEXT:"ci", RADAR_ARTIFACT_PROVENANCE:"CI_TESTED_SOURCE", RADAR_ACCEPTANCE_PROFILE:"PAID_FOCUSED" }
-  });
-  assert.equal(packaged.acceptance_profile, "PAID_FOCUSED");
+test("Phase E CI profile survives the later Netlify Deploy Preview build", () => {
+  const deployedCommit = "d".repeat(40);
   const deployed = createBuildMetadata({
-    environment:{ NETLIFY:"true", COMMIT_REF:"e".repeat(40), CONTEXT:"branch-deploy" },
-    existingMetadata:packaged
+    environment:{
+      NETLIFY:"true",
+      COMMIT_REF:deployedCommit,
+      CONTEXT:"deploy-preview",
+      PULL_REQUEST:"true",
+      REVIEW_ID:"21",
+      REPOSITORY_URL:"https://github.com/Winters111222/3dsk-radar",
+      RADAR_ACCEPTANCE_PROFILE:"PAID_FOCUSED"
+    }
   });
-  assert.equal(deployed.commit_ref, packagedCommit);
+  assert.equal(deployed.commit_ref, deployedCommit);
+  assert.equal(deployed.deploy_context, "deploy-preview");
   assert.equal(deployed.acceptance_profile, "PAID_FOCUSED");
-  assert.equal(deployed.artifact_provenance, "CI_TESTED_SOURCE");
+  assert.equal(deployed.artifact_provenance, "NETLIFY_GIT_DEPLOY");
+});
+
+test("a manual upload cannot claim Netlify Git Deploy provenance", () => {
+  const metadata = createBuildMetadata({
+    environment:{ NETLIFY:"true", COMMIT_REF:"e".repeat(40), CONTEXT:"deploy-preview", RADAR_ACCEPTANCE_PROFILE:"PAID_FOCUSED" }
+  });
+  assert.equal(metadata.artifact_provenance, "DIRECT_BUILD");
 });

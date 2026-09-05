@@ -1,4 +1,4 @@
-import { envValue, workspaceAllowed } from "../../src/server/runtime.mjs";
+import { envValue, paidAcceptanceContextAllowed, workspaceAllowed } from "../../src/server/runtime.mjs";
 import { authorizeRequest } from "../../src/server/auth.mjs";
 import { loadPublicCompanyProfile } from "../../src/server/profile.mjs";
 import { runOpportunitySearch } from "../../src/server/openai-search.mjs";
@@ -39,6 +39,7 @@ export default async function handler(request, context) {
   if (!workspaceAllowed(request)) return json({ ok:false, error:{ code:"PRELIVE_WORKSPACE_DISABLED", message:"Pre-live workspace is disabled." } }, 423);
   if (!paidAcceptance) return json({ ok:false, error:{ code:"PAID_ACCEPTANCE_LOCKED", message:"Paid acceptance is not armed." } }, 423);
   if (globalLiveAI) return json({ ok:false, error:{ code:"PAID_ACCEPTANCE_REQUIRES_GLOBAL_AI_LOCK", message:"The isolated paid acceptance requires global live AI to remain locked." } }, 423);
+  if (!paidAcceptanceContextAllowed(context)) return json({ ok:false, error:{ code:"PAID_ACCEPTANCE_PREVIEW_REQUIRED", message:"Paid acceptance is allowed only on a Netlify Deploy Preview." } }, 423);
   const apiKey = envValue("OPENAI_API_KEY");
   if (!apiKey) return json({ ok:false, error:{ code:"OPENAI_NOT_CONFIGURED", message:"OPENAI_API_KEY is not configured on the server." } }, 503);
 

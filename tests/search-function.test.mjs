@@ -4,6 +4,7 @@ import handler from "../netlify/functions/search.mjs";
 import { memoryPaidCoordinator } from "./helpers/memory-paid-coordinator.mjs";
 
 const SOURCE = "https://buyer.example/vendor-request";
+const PREVIEW_CONTEXT = { deploy:{ context:"deploy-preview" } };
 
 function candidate() {
   return {
@@ -113,7 +114,7 @@ test("authorized search function normalizes a mocked hosted-search response end 
     return new Response(JSON.stringify(mockOpenAIResponse()), {status:200,headers:{"content-type":"application/json"}});
   };
   try {
-    const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer team-secret","content-type":"application/json"},body:JSON.stringify({run_id:"paid-run-test-001",operation_id:"focused-search",max_cost_usd:0.50,no_retry:true})}));
+    const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer team-secret","content-type":"application/json"},body:JSON.stringify({run_id:"paid-run-test-001",operation_id:"focused-search",max_cost_usd:0.50,no_retry:true})}), PREVIEW_CONTEXT);
     assert.equal(response.status, 200);
     const payload = await response.json();
     assert.equal(payload.ok, true);
@@ -164,13 +165,46 @@ test("completed paid operation replays stored result without a second OpenAI req
     body:JSON.stringify({ run_id:"paid-run-replay-001", operation_id:"focused-search", max_cost_usd:0.50, no_retry:true })
   });
   try {
-    const first = await handler(request());
-    const second = await handler(request());
+    const first = await handler(request(), PREVIEW_CONTEXT);
+    const second = await handler(request(), PREVIEW_CONTEXT);
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
     assert.equal((await second.json()).replayed, true);
     assert.equal(openaiRequests, 1);
     assert.equal(writes, 1);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("armed paid search rejects production context before OpenAI or persistence", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  let fetches = 0;
+  let writes = 0;
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"false",
+    RADAR_PAID_ACCEPTANCE_ENABLED:"true",
+    RADAR_PAID_ACCEPTANCE_RUN_ID:"paid-run-context-001",
+    RADAR_PAID_ACCEPTANCE_MAX_USD:"0.50",
+    OPENAI_API_KEY:"fake-test-key"
+  });
+  globalThis.fetch = async () => { fetches += 1; throw new Error("must not fetch"); };
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator();
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResultsWithStats:async () => { writes += 1; }, saveSearchRun:async () => { writes += 1; } };
+  try {
+    const response = await handler(new Request("https://radar.test/api/search", {
+      method:"POST",
+      headers:{ authorization:"Bearer team-secret", "content-type":"application/json" },
+      body:JSON.stringify({ run_id:"paid-run-context-001", operation_id:"focused-search", max_cost_usd:0.50, no_retry:true })
+    }), { deploy:{ context:"production" } });
+    assert.equal(response.status, 423);
+    assert.equal((await response.json()).error.code, "PAID_ACCEPTANCE_PREVIEW_REQUIRED");
+    assert.equal(fetches, 0);
+    assert.equal(writes, 0);
   } finally {
     globalThis.fetch = oldFetch;
     restore();

@@ -53,6 +53,16 @@ test("an acceptance request cannot enter the paid path after live AI is enabled"
   assert.equal(network.mock.callCount(), 0);
 });
 
+test("health exposes an armed paid gate only in Deploy Preview context", async t => {
+  runtime(t, { RADAR_INTERNAL_ACCESS_SECRET:"fixture-secret", RADAR_LIVE_AI_ENABLED:"false", RADAR_PAID_ACCEPTANCE_ENABLED:"true" });
+  const production = await (await health(undefined, { deploy:{ context:"production" } })).json();
+  const preview = await (await health(undefined, { deploy:{ context:"deploy-preview" } })).json();
+  assert.equal(production.paid_acceptance, "CONTEXT_BLOCKED");
+  assert.equal(production.deploy_context, "production");
+  assert.equal(preview.paid_acceptance, "ARMED");
+  assert.equal(preview.deploy_context, "deploy-preview");
+});
+
 test("real Blobs SDK keeps production data across deploy IDs and isolates preview/acceptance", async t => {
   runtime(t, { RADAR_INTERNAL_ACCESS_SECRET: "fixture-secret", RADAR_LIVE_AI_ENABLED: "false", RADAR_PRELIVE_ACCEPTANCE_ENABLED: "true" });
   const oldContext = globalThis.netlifyBlobsContext;

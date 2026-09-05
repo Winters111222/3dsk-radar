@@ -4,6 +4,7 @@ import { writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 export const TESTED_SOURCE_PROVENANCE = "CI_TESTED_SOURCE";
+export const NETLIFY_GIT_PROVENANCE = "NETLIFY_GIT_DEPLOY";
 export const DIRECT_BUILD_PROVENANCE = "DIRECT_BUILD";
 export const ACCEPTANCE_PROFILES = Object.freeze(["LOCKED_ZERO_COST", "PAID_FOCUSED"]);
 
@@ -18,6 +19,14 @@ function sealedTestedSourceCommit(environment, existingMetadata) {
   return validCommit(existingMetadata.commit_ref);
 }
 
+function netlifyGitPreviewCommit(environment) {
+  if (String(environment.NETLIFY || "").trim().toLowerCase() !== "true") return null;
+  if (String(environment.CONTEXT || "").trim() !== "deploy-preview") return null;
+  if (String(environment.PULL_REQUEST || "").trim().toLowerCase() !== "true") return null;
+  if (!String(environment.REPOSITORY_URL || "").trim() || !String(environment.REVIEW_ID || "").trim()) return null;
+  return validCommit(environment.COMMIT_REF);
+}
+
 function acceptanceProfile(environment, existingMetadata) {
   if (sealedTestedSourceCommit(environment, existingMetadata)) return existingMetadata.acceptance_profile;
   const requested = String(environment.RADAR_ACCEPTANCE_PROFILE || "").trim().toUpperCase();
@@ -25,7 +34,7 @@ function acceptanceProfile(environment, existingMetadata) {
 }
 
 export function resolveBuildCommit(environment = process.env, gitFallback = null, existingMetadata = null) {
-  const candidates = [sealedTestedSourceCommit(environment, existingMetadata), environment.COMMIT_REF, environment.GITHUB_SHA, gitFallback];
+  const candidates = [sealedTestedSourceCommit(environment, existingMetadata), netlifyGitPreviewCommit(environment), environment.COMMIT_REF, environment.GITHUB_SHA, gitFallback];
   const commit = candidates.map((value) => String(value || "").trim().toLowerCase()).find((value) => /^[0-9a-f]{40}$/.test(value));
   if (!commit) throw new Error("BUILD_COMMIT_REF_REQUIRED");
   return commit;
@@ -33,8 +42,11 @@ export function resolveBuildCommit(environment = process.env, gitFallback = null
 
 export function createBuildMetadata({ environment = process.env, gitFallback = null, existingMetadata = null, nowIso = new Date().toISOString() } = {}) {
   const sealedCommit = sealedTestedSourceCommit(environment, existingMetadata);
+  const gitPreviewCommit = netlifyGitPreviewCommit(environment);
   const requestedProvenance = String(environment.RADAR_ARTIFACT_PROVENANCE || "").trim();
-  const provenance = sealedCommit || requestedProvenance === TESTED_SOURCE_PROVENANCE ? TESTED_SOURCE_PROVENANCE : DIRECT_BUILD_PROVENANCE;
+  const provenance = sealedCommit || requestedProvenance === TESTED_SOURCE_PROVENANCE
+    ? TESTED_SOURCE_PROVENANCE
+    : gitPreviewCommit ? NETLIFY_GIT_PROVENANCE : DIRECT_BUILD_PROVENANCE;
   return {
     schema_version:2,
     service:"3dsk-opportunity-radar",

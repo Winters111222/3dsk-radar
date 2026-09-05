@@ -58,14 +58,3 @@ jobs:
           path: radar-source.tar.gz
           if-no-files-found: error
           retention-days: 7
-      - name: Prepare isolated Netlify deploy helper
-        run: |
-          npm install --ignore-scripts --no-save --no-audit --no-fund @netlify/mcp@1.15.1
-          tar -czf netlify-mcp-runtime.tar.gz node_modules
-      - name: Upload Netlify deploy helper
-        uses: actions/upload-artifact@v4
-        with:
-          name: netlify-mcp-runtime
-          path: netlify-mcp-runtime.tar.gz
-          if-no-files-found: error
-          retention-days: 1

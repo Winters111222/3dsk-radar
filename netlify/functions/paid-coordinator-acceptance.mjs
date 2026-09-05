@@ -1,4 +1,4 @@
-import { envValue } from "../../src/server/runtime.mjs";
+import { envValue, paidAcceptanceContextAllowed } from "../../src/server/runtime.mjs";
 import { authorizeRequest } from "../../src/server/auth.mjs";
 import { paidCoordinatorReadiness } from "../../src/server/paid-run-coordinator-contract.mjs";
 import { getNetlifyPaidCoordinator } from "../../src/server/paid-run-coordinator-netlify-db.mjs";
@@ -15,12 +15,15 @@ function conflict(result) {
   return result.status === "rejected" && String(result.reason?.code || result.reason?.message || "").startsWith("PAID_COORDINATOR_");
 }
 
-export default async function handler(request) {
+export default async function handler(request, context) {
   if (request.method !== "POST") return json({ ok:false, error:{ code:"METHOD_NOT_ALLOWED", message:"Use POST." } }, 405);
   const auth = authorizeRequest(request, envValue("RADAR_INTERNAL_ACCESS_SECRET"));
   if (!auth.ok) return json({ ok:false, error:{ code:auth.code, message:"Unauthorized." } }, auth.status);
   if (envValue("RADAR_PAID_ACCEPTANCE_ENABLED").toLowerCase() !== "true") {
     return json({ ok:false, error:{ code:"PAID_ACCEPTANCE_LOCKED", message:"Paid acceptance is not armed." } }, 423);
+  }
+  if (!paidAcceptanceContextAllowed(context)) {
+    return json({ ok:false, error:{ code:"PAID_ACCEPTANCE_PREVIEW_REQUIRED", message:"Paid coordinator acceptance is allowed only on a Netlify Deploy Preview." } }, 423);
   }
   const body = await request.json().catch(() => ({}));
   if (!validTestId(body.test_id)) return json({ ok:false, error:{ code:"TEST_ID_INVALID", message:"test_id is invalid." } }, 400);

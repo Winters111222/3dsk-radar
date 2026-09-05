@@ -16,6 +16,12 @@ export function sourceCollectionEnabled() {
   return envValue("RADAR_SOURCE_COLLECTION_ENABLED").toLowerCase() === "true";
 }
 
+export const PAID_ACCEPTANCE_DEPLOY_CONTEXT = "deploy-preview";
+
+export function paidAcceptanceContextAllowed(runtimeContext) {
+  return runtimeContext?.deploy?.context === PAID_ACCEPTANCE_DEPLOY_CONTEXT;
+}
+
 export function workspaceAllowed(request) {
   return request?.headers.get("x-radar-workspace") !== "acceptance" || acceptanceEnabled();
 }

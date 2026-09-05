@@ -7,12 +7,12 @@ import { normalizedPaidAcceptanceBaseUrl, runPaidDeployedAcceptance } from "../s
 const BASE = "https://a1b2c3d4e5f60718293a4b5c--3dsk-opportunity-radar.netlify.app";
 const COMMIT = "a".repeat(40);
 
-function transport({ commit = COMMIT } = {}) {
+function transport({ commit = COMMIT, deployContext = "deploy-preview" } = {}) {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     const path = new URL(url).pathname;
-    if (path === "/build-metadata.json") return Response.json({ schema_version:2, service:"3dsk-opportunity-radar", commit_ref:commit, deploy_context:"branch-deploy", acceptance_profile:"PAID_FOCUSED", artifact_provenance:"CI_TESTED_SOURCE" });
+    if (path === "/build-metadata.json") return Response.json({ schema_version:2, service:"3dsk-opportunity-radar", commit_ref:commit, deploy_context:deployContext, acceptance_profile:"PAID_FOCUSED", artifact_provenance:"NETLIFY_GIT_DEPLOY" });
     if (path === "/api/health") return Response.json({ service:"3dsk-opportunity-radar", stage:"phase-e-paid-acceptance", live_ai_enabled:false, paid_ai_state:"LOCKED", paid_acceptance:"ARMED", paid_coordinator:"NETLIFY_DATABASE", source_collection:"LOCKED", access_configured:true });
     if (path === "/api/paid-coordinator-acceptance") return Response.json({ ok:true, concurrent_claim_winners:1, concurrent_budget_winners:1, idempotent_settlement:true, openai_requests:0, source_requests:0, cost_usd:0 });
     return Response.json({
@@ -59,6 +59,12 @@ test("paid deployed acceptance makes exactly four bounded requests and returns n
 
 test("paid deployed acceptance stops on identity mismatch before authenticated requests", async () => {
   const mock = transport({ commit:"b".repeat(40) });
+  await assert.rejects(() => runPaidDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", runId:"paid-run-001", testId:"atomic-test-001", fetchImpl:mock.fetchImpl }), /PAID_ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH/);
+  assert.equal(mock.calls.length, 1);
+});
+
+test("paid deployed acceptance rejects branch-deploy metadata before authenticated requests", async () => {
+  const mock = transport({ deployContext:"branch-deploy" });
   await assert.rejects(() => runPaidDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", runId:"paid-run-001", testId:"atomic-test-001", fetchImpl:mock.fetchImpl }), /PAID_ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH/);
   assert.equal(mock.calls.length, 1);
 });

@@ -71,7 +71,7 @@ export async function runPaidDeployedAcceptance({
   };
 
   const metadata = await request("/build-metadata.json");
-  if (metadata.status !== 200 || metadata.payload?.schema_version !== 2 || metadata.payload?.service !== "3dsk-opportunity-radar" || metadata.payload?.commit_ref?.toLowerCase() !== commit || metadata.payload?.deploy_context !== "branch-deploy" || metadata.payload?.acceptance_profile !== "PAID_FOCUSED" || metadata.payload?.artifact_provenance !== "CI_TESTED_SOURCE") {
+  if (metadata.status !== 200 || metadata.payload?.schema_version !== 2 || metadata.payload?.service !== "3dsk-opportunity-radar" || metadata.payload?.commit_ref?.toLowerCase() !== commit || metadata.payload?.deploy_context !== "deploy-preview" || metadata.payload?.acceptance_profile !== "PAID_FOCUSED" || metadata.payload?.artifact_provenance !== "NETLIFY_GIT_DEPLOY") {
     throw new Error("PAID_ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH");
   }
 

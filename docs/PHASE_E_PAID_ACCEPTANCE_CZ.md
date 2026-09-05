@@ -1,6 +1,6 @@
 # Phase E — jediný placený FOCUSED acceptance run
 
-Stav k 5. 9. 2026: **implementace a offline testy jsou připravené; žádný Phase E deploy, environment write ani placený request zatím neproběhl**.
+Stav k 5. 9. 2026: **placený request zatím neproběhl**. První živý deploy pokus `6a9c7c00b4f573e981ae6d7c` skončil před publikací a odhalil chybný předpoklad v deploy postupu; podrobnosti jsou níže. Dočasné environment proměnné byly po failu odstraněné.
 
 ## Výchozí evidence
 
@@ -23,7 +23,11 @@ Jakákoli chybějící nebo odlišná podmínka končí před OpenAI dispatch. P
 
 ## Atomický coordinator
 
-Provider používá PostgreSQL transakce `SERIALIZABLE`, durable primary keys pro operation a reservation, monotónní fencing token a transakční budget reservation. Preview deploy dostane izolovanou Netlify Database branch; výsledky Search se ukládají do deploy-scoped Netlify Blobs.
+Provider používá PostgreSQL transakce `SERIALIZABLE`, durable primary keys pro operation a reservation, monotónní fencing token a transakční budget reservation. Netlify **Deploy Preview** dostane izolovanou Netlify Database branch; výsledky Search se ukládají do deploy-scoped Netlify Blobs. Phase E proto nesmí běžet v `production` ani `branch-deploy` kontextu. Search i coordinator probe tuto podmínku kontrolují server-side ještě před přístupem k OpenAI nebo databázi.
+
+Netlify dokumentace garantuje automatické databázové branche a automatické migrace pro Deploy Previews. Naproti tomu CLI `deploy --alias` vytváří pouze draft URL alias a výslovně nevytváří branch deploy. Phase E proto používá Git-based continuous-deployment cestu existujícího Draft PR; manual upload, MCP ZIP upload a CLI alias jsou zakázané.
+
+Build přijme provenance `NETLIFY_GIT_DEPLOY` jen tehdy, když read-only Netlify metadata současně potvrzují `NETLIFY=true`, `CONTEXT=deploy-preview`, `PULL_REQUEST=true`, neprázdné `REPOSITORY_URL` a `REVIEW_ID` a validní čtyřicetiznakový `COMMIT_REF`. Manual upload tyto podmínky nesplní.
 
 Před placeným requestem musí deployed zero-cost probe proti reálné preview DB prokázat:
 
@@ -38,7 +42,7 @@ Po dispatch se operation dokončí jako `COMPLETED`, nebo fail-closed jako `UNCE
 
 Runner `npm run accept:deployed:paid` nemá retry a přijme jen 24znakový immutable deploy subdomain pro site `3dsk-opportunity-radar.netlify.app`. Udělá přesně čtyři operační HTTP requesty:
 
-1. `GET /build-metadata.json` — exact commit a `CI_TESTED_SOURCE`,
+1. `GET /build-metadata.json` — exact commit, `deploy-preview` context a `NETLIFY_GIT_DEPLOY`,
 2. `GET /api/health` — placený acceptance je armed, source collection zůstává locked,
 3. `POST /api/paid-coordinator-acceptance` — zero-cost souběžný DB test,
 4. `POST /api/search` — jediný placený FOCUSED run.
@@ -51,15 +55,36 @@ Rozpočtová rezervace je přesně `$0.50`. Pro model `gpt-5.6-luna` se použív
 
 Po odpovědi se skutečná usage z provider response přepočítá stejným snapshotem a atomicky settle-ne. Překročení rezervace nebo chybějící usage/cost evidence ukončí běh jako `UNCERTAIN`; automatický retry je zakázán.
 
+## Neúspěšný deploy cyklus a oprava kontraktu
+
+Jednorázový upload deploy `6a9c7c00b4f573e981ae6d7c` skončil chybou build stage, měl `published_at:null`, `database_branch_id:null` a `database_migrations:null`. Netlify jej navíc označilo jako `context:production`, přestože URL nesla branch alias. Původní produkční deploy `6a9c2e57a312878fd4261bc6` zůstal publikovaný a beze změny. Nebyl proveden coordinator probe, OpenAI request, Blobs write ani databázový write; čtyři dočasné Phase E proměnné byly odstraněné a readbackem ověřené.
+
+Příčina: použitý manual/MCP ZIP upload neměl parametr, který by mohl vytvořit Git-backed Deploy Preview. URL alias není důkaz deploy contextu. Opravený kontrakt:
+
+1. preview smí vzniknout pouze přes Netlify continuous deployment z Draft PR,
+2. build metadata musí uvést přesně `deploy-preview`,
+3. deploy musí mít neprázdný `database_branch_id` a úspěšnou migraci,
+4. runtime handler context musí být přesně `deploy-preview`, jinak health hlásí `CONTEXT_BLOCKED` a oba acceptance endpointy vrátí `PAID_ACCEPTANCE_PREVIEW_REQUIRED` před jakýmkoli write nebo placeným requestem,
+5. acceptance používá až immutable permalink konkrétního úspěšného deploye.
+
+Autoritativní Netlify dokumentace:
+
+- https://docs.netlify.com/deploy/deploy-overview/#branches-and-deploys
+- https://docs.netlify.com/api-and-cli-guides/cli-guides/get-started-with-cli/#draft-deploys
+- https://docs.netlify.com/build/configure-builds/environment-variables/#git-metadata
+- https://docs.netlify.com/build/data-and-storage/netlify-database/#database-branching
+- https://docs.netlify.com/build/data-and-storage/netlify-database/#automatic-migrations
+
 ## Co vyžaduje další explicitní souhlas
 
 Teprve zelené CI a exact commit mohou být podkladem pro jednu přesnou schvalovací větu zahrnující:
 
-- branch-deploy-only nastavení placených acceptance flags a jednorázového run ID,
-- právě jeden nový branch-preview deploy exact commitu,
+- deploy-preview-only nastavení `RADAR_ACCEPTANCE_PROFILE=PAID_FOCUSED`, placených acceptance flags a jednorázového run ID,
+- zachování existujícího `OPENAI_API_KEY` a `RADAR_INTERNAL_ACCESS_SECRET` bez čtení, kopírování nebo změny jejich hodnot,
+- právě jeden nový Git-backed Deploy Preview exact commitu z existujícího Draft PR,
 - automatickou izolovanou preview DB branch a migraci,
 - jeden zero-cost coordinator probe,
 - právě jeden placený FOCUSED run v uvedených limitech,
-- následné znovuzamčení branch-deploy acceptance flags.
+- následné znovuzamčení deploy-preview acceptance flags.
 
 Souhlas nesmí zahrnovat production deploy, merge, production data write, source collector dispatch, Generate Response ani odeslání e-mailu.

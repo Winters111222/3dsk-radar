@@ -9,4 +9,5 @@ test("CI checks out the exact PR head before testing and packaging", () => {
   assert.match(workflow, /RADAR_ARTIFACT_PROVENANCE: CI_TESTED_SOURCE/);
   assert.match(workflow, /git archive --format=tar -o radar-source\.tar HEAD/);
   assert.doesNotMatch(workflow, /git archive[^\n]*\$COMMIT_REF/);
+  assert.doesNotMatch(workflow, /@netlify\/mcp|netlify-mcp-runtime/, "Phase E must use Git-backed Deploy Preview, never a manual ZIP deploy helper");
 });
