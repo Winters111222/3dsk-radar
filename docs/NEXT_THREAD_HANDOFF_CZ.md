@@ -6,7 +6,7 @@ Níže uvedený původní handoff PR #6 je historický. Pro tento výzkumný kro
 
 Nejdřív načti [výzkum a plán](SEARCH_SOURCE_STRATEGY_CZ.md), `config/opportunity-sources.v1.json`, `config/search-query-packs.v1.json` a `config/source-evidence-cases.v1.json`. Nový požadavek vlastníka: široké procházení mnoha zdrojů s větším počtem relevantních výsledků.
 
-Hotovo: 49 zdrojových záznamů / 54 vstupních URL, 4 ATS šablony, 48 query šablon v 9 jazycích, 11 evidenčních příkladů a offline validační CI krok. V tomto kroku nebyl proveden aplikační OpenAI request, změna Netlify env ani merge. **Nový crawler není implementován ani nasazen.** Všechny nové zdroje mají `crawl_enabled: false`; plán širokého běhu není aktivní cenové nastavení ani paid autorizace.
+Hotovo: 49 zdrojových záznamů / 54 vstupních URL, 4 ATS šablony, 44 query šablon v 9 jazycích, 11 evidenčních příkladů a offline validační CI krok. `Visual / AI / Motion` bylo rozhodnutím vlastníka odstraněno z aktivního Search scope, runtime enumu, UI filtru a query katalogu; ostatní kategorie zůstávají. V tomto kroku nebyl proveden aplikační OpenAI request, změna Netlify env ani merge. **Nový crawler není implementován ani nasazen.** Všechny nové zdroje mají `crawl_enabled: false`; plán širokého běhu není aktivní cenové nastavení ani paid autorizace.
 
 Následuje implementace kroků A–D v analýze: buyer/status/eligibility a counters → první povolené konektory → ruční široký run s kurzory, budgetem a idempotencí → zero-cost acceptance před novým controlled live ověřením. Zachovat company memory a všechny provenance gates. MAIN ani starší PR automaticky nemergovat.
 

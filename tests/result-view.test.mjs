@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {visibleResults} from '../src/lib/result-view.mjs';
+import {CATEGORIES,visibleResults} from '../src/lib/result-view.mjs';
 const items=[
 {id:'a',company:'Zulu',fit_score:90,win_score:80,categories:['FULL_PIPELINE','WRAP_BASEMESH'],status:'NEW',company_bookmarked:true,published_date:'2026-09-01'},
 {id:'b',company:'Alpha',fit_score:70,win_score:95,categories:['PHOTOGRAMMETRY_PROCESSING'],status:'NEW',published_date:null},
 {id:'c',company:'Beta',fit_score:85,win_score:60,categories:['SCAN_CLEANUP'],status:'IGNORE',published_date:'2026-09-05'}
 ];
 test('category OR combines with status and score filters and includes secondary tags',()=>{
+assert.equal(Object.hasOwn(CATEGORIES,'VISUAL_AI_MOTION'),false);
 assert.deepEqual(visibleResults(items,{categories:['WRAP_BASEMESH','PHOTOGRAMMETRY_PROCESSING'],status:'NEW',minFit:60}).map(x=>x.id),['b','a']);
 assert.deepEqual(visibleResults(items,{categories:['WRAP_BASEMESH','PHOTOGRAMMETRY_PROCESSING'],minFit:80}).map(x=>x.id),['a']);
 assert.equal(visibleResults(items,{categories:['FACIAL_FACS']}).length,0);

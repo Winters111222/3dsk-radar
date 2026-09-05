@@ -16,7 +16,7 @@
     "company":{"type":"string","minLength":1},
     "summary":{"type":"string","minLength":1},
     "opportunity_kind":{"enum":["OPEN_OPPORTUNITY","POTENTIAL_LEAD"]},
-    "categories":{"type":"array","minItems":1,"maxItems":6,"uniqueItems":true,"items":{"enum":["FULL_PIPELINE","CAPTURE","PHOTOGRAMMETRY_PROCESSING","SCAN_CLEANUP","WRAP_BASEMESH","FACIAL_FACS","CHARACTER_FINISHING","CHARACTER_OUTSOURCING","EXTERNAL_DEVELOPMENT","PRODUCTION_OVERFLOW","PIPELINE_CONSULTING","VISUAL_AI_MOTION","OTHER_RELEVANT"]}},
+    "categories":{"type":"array","minItems":1,"maxItems":6,"uniqueItems":true,"items":{"enum":["FULL_PIPELINE","CAPTURE","PHOTOGRAMMETRY_PROCESSING","SCAN_CLEANUP","WRAP_BASEMESH","FACIAL_FACS","CHARACTER_FINISHING","CHARACTER_OUTSOURCING","EXTERNAL_DEVELOPMENT","PRODUCTION_OVERFLOW","PIPELINE_CONSULTING","OTHER_RELEVANT"]}},
     "location":{"type":"string"},
     "remote_scope":{"enum":["WORLDWIDE_VENDOR","GLOBAL_REMOTE","REMOTE_REGION","LOCATION_RESTRICTED","ONSITE","NOT_STATED"]},
     "published_date":{"type":["string","null"]},

@@ -123,32 +123,14 @@
         "3D scanning services",
         "digital human",
         "facial capture services",
-        "animation production",
+        "character animation production",
         "photogrammetry services"
       ],
       "queries": [
         "\"3D scanning services\" (tender OR RFP OR procurement)",
         "\"digital human\" (tender OR RFP OR procurement)",
-        "\"animation production\" (tender OR RFQ) character",
+        "\"character animation production\" (tender OR RFQ)",
         "\"photogrammetry\" (tender OR RFQ) (human OR artefact)"
-      ]
-    },
-    {
-      "id": "adjacent_visual",
-      "lane": "ADJACENT",
-      "language": "en",
-      "terms": [
-        "character animation",
-        "medical animation",
-        "immersive museum",
-        "motion design",
-        "AI visual production"
-      ],
-      "queries": [
-        "\"medical animation\" (RFP OR commission OR freelance)",
-        "\"character animation\" \"paid\" \"project\"",
-        "\"immersive\" \"museum\" \"animation\" tender",
-        "\"motion design\" \"production\" \"freelance\""
       ]
     }
   ],
@@ -162,7 +144,7 @@
     {
       "language": "cs",
       "pack_id": "service_tenders",
-      "query": "\"3D animace\" \"veřejná zakázka\"",
+      "query": "\"3D animace postav\" \"veřejná zakázka\"",
       "validation": "UNBENCHMARKED_QUERY_DRAFT"
     },
     {
@@ -198,7 +180,7 @@
     {
       "language": "es",
       "pack_id": "service_tenders",
-      "query": "\"animación 3D\" licitación",
+      "query": "\"animación de personajes 3D\" licitación",
       "validation": "UNBENCHMARKED_QUERY_DRAFT"
     },
     {
@@ -222,7 +204,7 @@
     {
       "language": "pl",
       "pack_id": "service_tenders",
-      "query": "\"animacja 3D\" przetarg",
+      "query": "\"animacja postaci 3D\" przetarg",
       "validation": "UNBENCHMARKED_QUERY_DRAFT"
     },
     {
@@ -234,7 +216,7 @@
     {
       "language": "pt",
       "pack_id": "service_tenders",
-      "query": "\"animação 3D\" licitação",
+      "query": "\"animação de personagem 3D\" licitação",
       "validation": "UNBENCHMARKED_QUERY_DRAFT"
     },
     {
