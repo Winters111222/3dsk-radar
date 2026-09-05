@@ -1,5 +1,15 @@
 import { authorizeRequest } from "../../src/server/auth.mjs";
 import { boundedCollectorInteger, CollectorError } from "../../src/server/collectors/collector-contract.mjs";
+import {
+  collectContractsFinderNotices,
+  CONTRACTS_FINDER_QUERY_PACKS,
+  CONTRACTS_FINDER_SOURCE_ID
+} from "../../src/server/collectors/contracts-finder.mjs";
+import {
+  collectFindTenderNotices,
+  FIND_TENDER_QUERY_PACKS,
+  FIND_TENDER_SOURCE_ID
+} from "../../src/server/collectors/find-tender.mjs";
 import { collectorRegistry } from "../../src/server/collectors/registry.mjs";
 import { collectTedNotices, TED_QUERY_PACKS, TED_SOURCE_ID } from "../../src/server/collectors/ted.mjs";
 import { envValue, sourceCollectionEnabled } from "../../src/server/runtime.mjs";
@@ -22,6 +32,42 @@ function maxResults() {
   return boundedCollectorInteger(envValue("RADAR_SOURCE_COLLECTION_MAX_RESULTS"), 25, 1, 50);
 }
 
+const implementedCollectors = Object.freeze({
+  [TED_SOURCE_ID]:{
+    queryPacks:TED_QUERY_PACKS,
+    unknownPackCode:"TED_QUERY_PACK_UNKNOWN",
+    collect:({ body, nowIso, limit }) => collectTedNotices({
+      queryPackId:body.query_pack_id,
+      nowIso,
+      page:boundedCollectorInteger(body.page, 1, 1, 20),
+      limit,
+      fetchImpl:globalThis.__RADAR_TEST_TED_FETCH__ || fetch
+    })
+  },
+  [FIND_TENDER_SOURCE_ID]:{
+    queryPacks:FIND_TENDER_QUERY_PACKS,
+    unknownPackCode:"FIND_TENDER_QUERY_PACK_UNKNOWN",
+    collect:({ body, nowIso, limit }) => collectFindTenderNotices({
+      queryPackId:body.query_pack_id,
+      nowIso,
+      cursor:body.cursor,
+      limit,
+      fetchImpl:globalThis.__RADAR_TEST_FIND_TENDER_FETCH__ || fetch
+    })
+  },
+  [CONTRACTS_FINDER_SOURCE_ID]:{
+    queryPacks:CONTRACTS_FINDER_QUERY_PACKS,
+    unknownPackCode:"CONTRACTS_FINDER_QUERY_PACK_UNKNOWN",
+    collect:({ body, nowIso, limit }) => collectContractsFinderNotices({
+      queryPackId:body.query_pack_id,
+      nowIso,
+      cursor:body.cursor,
+      limit,
+      fetchImpl:globalThis.__RADAR_TEST_CONTRACTS_FINDER_FETCH__ || fetch
+    })
+  }
+});
+
 export default async function handler(request) {
   if (!["GET", "POST"].includes(request.method)) {
     return json({ ok:false, error:{ code:"METHOD_NOT_ALLOWED", message:"Use GET or POST /api/source-collection." } }, 405, { allow:"GET, POST" });
@@ -36,15 +82,16 @@ export default async function handler(request) {
     return json({ ok:true, collection_enabled:enabled, openai_requests:0, estimated_cost_usd:0, collectors:collectorRegistry({ collectionEnabled:enabled }) });
   }
   if (!enabled) {
-    return json({ ok:false, error:{ code:"SOURCE_COLLECTION_LOCKED", message:"Read-only source collection is intentionally locked until its zero-cost canary is approved." } }, 423);
+    return json({ ok:false, error:{ code:"SOURCE_COLLECTION_LOCKED", message:"Read-only source collection is intentionally locked until deployed zero-cost acceptance explicitly enables it." } }, 423);
   }
 
   const body = await request.json().catch(() => ({}));
-  if (body.source_id !== TED_SOURCE_ID) {
-    return json({ ok:false, error:{ code:"COLLECTOR_NOT_AVAILABLE", message:"Only the TED public API collector is implemented in this checkpoint." } }, 400);
+  const collector = implementedCollectors[body.source_id];
+  if (!collector) {
+    return json({ ok:false, error:{ code:"COLLECTOR_NOT_AVAILABLE", message:"Choose an implemented read-only source collector." } }, 400);
   }
-  if (!Object.hasOwn(TED_QUERY_PACKS, body.query_pack_id)) {
-    return json({ ok:false, error:{ code:"TED_QUERY_PACK_UNKNOWN", message:"Choose one of the approved TED query packs." } }, 400);
+  if (!Object.hasOwn(collector.queryPacks, body.query_pack_id)) {
+    return json({ ok:false, error:{ code:collector.unknownPackCode, message:"Choose one of the approved source query packs." } }, 400);
   }
 
   const state = runtimeState();
@@ -57,13 +104,11 @@ export default async function handler(request) {
   state.lastStartedAt = now;
 
   try {
-    const nowIso = new Date().toISOString();
-    const result = await collectTedNotices({
-      queryPackId: body.query_pack_id,
+    const nowIso = globalThis.__RADAR_TEST_NOW_ISO__ || new Date().toISOString();
+    const result = await collector.collect({
+      body,
       nowIso,
-      page: boundedCollectorInteger(body.page, 1, 1, 20),
-      limit: boundedCollectorInteger(body.limit, maxResults(), 1, maxResults()),
-      fetchImpl: globalThis.__RADAR_TEST_TED_FETCH__ || fetch
+      limit:boundedCollectorInteger(body.limit, maxResults(), 1, maxResults())
     });
     return json({
       ok:true,
@@ -75,6 +120,7 @@ export default async function handler(request) {
         query_pack_id:result.query_pack_id,
         upstream_total:result.upstream_total,
         returned_count:result.records.length,
+        next_cursor:result.next_cursor || null,
         persistence:"NONE",
         estimated_cost_usd:0,
         counters:result.counters
@@ -85,7 +131,8 @@ export default async function handler(request) {
     const code = known ? error.code : "SOURCE_COLLECTION_FAILED";
     const status = known ? error.status : 502;
     console.error("[radar-collector]", code);
-    return json({ ok:false, error:{ code, message:String(error?.message || "Source collection failed.").slice(0, 500) } }, status);
+    const retryAfter = known && Number.isFinite(error.retryAfterSeconds) ? error.retryAfterSeconds : null;
+    return json({ ok:false, error:{ code, message:String(error?.message || "Source collection failed.").slice(0, 500), ...(retryAfter == null ? {} : { retry_after_seconds:retryAfter }) } }, status);
   } finally {
     state.inFlight = false;
   }

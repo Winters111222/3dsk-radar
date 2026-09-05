@@ -1,0 +1,73 @@
+{
+  "uri": "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages",
+  "version": "1.1",
+  "publishedDate": "2026-09-05T10:00:00Z",
+  "license": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+  "releases": [
+    {
+      "ocid": "ocds-h6vhtk-0a0001",
+      "id": "070001-2026",
+      "date": "2026-09-01T09:30:00Z",
+      "tag": ["tender"],
+      "tender": {
+        "id": "SYNTHETIC-FTS-001",
+        "title": "Human photogrammetry and digital double production services",
+        "description": "A synthetic public buyer seeks batch capture, scan cleanup and digital-double delivery.",
+        "status": "active",
+        "classification": {
+          "scheme": "CPV",
+          "id": "72200000",
+          "description": "Software programming and consultancy services"
+        },
+        "value": { "amount": 120000, "currency": "GBP" },
+        "tenderPeriod": { "endDate": "2026-09-25T12:00:00Z" }
+      },
+      "buyer": { "id": "GB-FTS-SYNTHETIC-1", "name": "Synthetic UK Museum Buyer" },
+      "parties": [
+        { "id": "GB-FTS-SYNTHETIC-1", "name": "Synthetic UK Museum Buyer", "roles": ["buyer"] }
+      ]
+    },
+    {
+      "ocid": "ocds-h6vhtk-0a0002",
+      "id": "070002-2026",
+      "date": "2026-09-02T08:00:00Z",
+      "tag": ["tender"],
+      "tender": {
+        "title": "Human photogrammetry framework already closed",
+        "description": "Synthetic closed notice.",
+        "status": "complete",
+        "tenderPeriod": { "endDate": "2026-09-03T12:00:00Z" }
+      },
+      "buyer": { "id": "GB-FTS-SYNTHETIC-2", "name": "Synthetic Closed Buyer" }
+    },
+    {
+      "ocid": "ocds-h6vhtk-0a0003",
+      "id": "070003-2026",
+      "date": "2026-09-03T11:00:00Z",
+      "tag": ["tender"],
+      "tender": {
+        "title": "Office stationery supply",
+        "description": "Pens and recycled paper for a public office.",
+        "status": "active",
+        "tenderPeriod": { "endDate": "2026-10-01T12:00:00Z" }
+      },
+      "buyer": { "id": "GB-FTS-SYNTHETIC-3", "name": "Synthetic Office Buyer" }
+    },
+    {
+      "ocid": "ocds-h6vhtk-0a0004",
+      "id": "070004-2026",
+      "date": "2026-08-05T11:00:00Z",
+      "tag": ["tender"],
+      "tender": {
+        "title": "Old digital double production services",
+        "description": "Synthetic stale notice.",
+        "status": "active",
+        "tenderPeriod": { "endDate": "2026-10-01T12:00:00Z" }
+      },
+      "buyer": { "id": "GB-FTS-SYNTHETIC-4", "name": "Synthetic Old Buyer" }
+    }
+  ],
+  "links": {
+    "next": "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?updatedFrom=2026-08-06T12%3A00%3A00&updatedTo=2026-09-05T12%3A00%3A00&stages=tender&limit=4&cursor=MTAwM%3D"
+  }
+}

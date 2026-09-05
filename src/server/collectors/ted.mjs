@@ -1,33 +1,12 @@
 import { createHash } from "node:crypto";
 import { CollectorError, assertCollectorResult, boundedCollectorInteger } from "./collector-contract.mjs";
+import { SOURCE_QUERY_PACKS } from "./query-packs.mjs";
 
 export const TED_SOURCE_ID = "ted_eu";
 export const TED_SEARCH_URL = "https://api.ted.europa.eu/v3/notices/search";
 export const TED_DOCUMENTATION_URL = "https://docs.ted.europa.eu/api/latest/search.html";
 
-// Product-facing groups approved for Search. Visual / AI / Motion is intentionally absent.
-export const TED_QUERY_PACKS = Object.freeze({
-  external_development: {
-    label: "External Development",
-    categories: ["EXTERNAL_DEVELOPMENT", "CHARACTER_OUTSOURCING"],
-    phrases: ["external development", "3D character production", "character outsourcing", "digital human"]
-  },
-  production_overflow: {
-    label: "Production Overflow",
-    categories: ["PRODUCTION_OVERFLOW", "CHARACTER_FINISHING"],
-    phrases: ["production overflow", "3D character services", "photogrammetry services", "scan processing"]
-  },
-  pipeline_consulting: {
-    label: "Pipeline Consulting",
-    categories: ["PIPELINE_CONSULTING", "FACIAL_FACS"],
-    phrases: ["pipeline consulting", "character pipeline", "facial rig", "FACS"]
-  },
-  other_relevant: {
-    label: "Other Relevant",
-    categories: ["OTHER_RELEVANT", "CAPTURE", "PHOTOGRAMMETRY_PROCESSING", "SCAN_CLEANUP"],
-    phrases: ["human photogrammetry", "3D scanning services", "digital double", "human scan cleanup"]
-  }
-});
+export const TED_QUERY_PACKS = SOURCE_QUERY_PACKS;
 
 // These fields are documented in TED examples or used by the EU's own open-data explorer.
 export const TED_RETURN_FIELDS = Object.freeze([
