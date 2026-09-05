@@ -15,3 +15,21 @@ test("a new repository instance retains old opportunities, reply and last search
  assert.equal(snap.opportunities.length,2);const saved=snap.opportunities.find(x=>x.id==="opp-1");
  assert.equal(saved.reply_body,"Saved body");assert.equal(saved.reply_subject,"Approved subject");assert.equal(saved.first_seen,"2026-09-05T09:00:00Z");assert.equal(saved.last_seen,"2026-09-12T09:00:00Z");assert.deepEqual(snap.last_search,run);
 });
+
+test("legacy seller price is hidden on list and reply reads without rewriting history",async()=>{
+ const store=memoryStore(),repo=createStateRepository(store);
+ const item=opportunity({budget_type:"PUBLISHED",budget_published:"$240,000 annual license",reply_body:"Saved response",status:"INTERESTING"});
+ await repo.saveOpportunity(item);
+ for(const result of [await repo.getOpportunity(item.id),...(await repo.snapshot()).opportunities]){
+  assert.equal(result.budget_type,"UNKNOWN");assert.equal(result.budget_published,null);
+  assert.equal(result.reply_body,"Saved response");assert.equal(result.status,"INTERESTING");
+ }
+ assert.equal((await store.get(`opportunities/${item.id}`)).budget_published,item.budget_published);
+});
+
+test("new buyer budget evidence survives a repository reload",async()=>{
+ const store=memoryStore(),repo=createStateRepository(store),url="https://example.com/buyer-brief";
+ await repo.saveOpportunity(opportunity({budget_type:"PUBLISHED",budget_basis:"BUYER_PROJECT",budget_source_url:url,budget_published:"EUR 12,000 per batch",source_evidence:[{url}]}));
+ const result=await createStateRepository(store).getOpportunity("opp-1");
+ assert.equal(result.budget_type,"PUBLISHED");assert.equal(result.budget_published,"EUR 12,000 per batch");
+});

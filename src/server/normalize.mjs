@@ -106,14 +106,21 @@ function normalizePublishedDate(value, nowIso) {
   return text;
 }
 
-function normalizeBudget(candidate) {
-  const type = ["PUBLISHED", "ESTIMATED", "UNKNOWN"].includes(candidate.budget_type) ? candidate.budget_type : "UNKNOWN";
-  const reason = safeString(candidate.budget_reason) || "Insufficient validated public commercial data.";
+export function normalizeBudget(candidate, verifiedSourceUrls = new Set()) {
+  const claimedType = ["PUBLISHED", "ESTIMATED", "UNKNOWN"].includes(candidate.budget_type) ? candidate.budget_type : "UNKNOWN";
+  const source = normalizeUrl(candidate.budget_source_url);
+  const buyerBudget = candidate.budget_basis === "BUYER_PROJECT" && source && verifiedSourceUrls.has(source);
+  const type = buyerBudget ? claimedType : "UNKNOWN";
+  const reason = !buyerBudget && claimedType !== "UNKNOWN"
+    ? "No verified buyer project budget. Seller prices, product licenses and employee compensation are not an outsourcing budget."
+    : safeString(candidate.budget_reason) || "Insufficient validated public commercial data.";
   if (type === "PUBLISHED") {
     const published = safeString(candidate.budget_published);
     if (published) {
       return {
         budget_type: "PUBLISHED",
+        budget_basis: "BUYER_PROJECT",
+        budget_source_url: source,
         budget_published: published,
         budget_estimated_min: null,
         budget_estimated_max: null,
@@ -124,11 +131,13 @@ function normalizeBudget(candidate) {
     }
   }
   if (type === "ESTIMATED") {
-    const min = Number(candidate.budget_estimated_min);
-    const max = Number(candidate.budget_estimated_max);
+    const min = candidate.budget_estimated_min;
+    const max = candidate.budget_estimated_max;
     if (Number.isFinite(min) && Number.isFinite(max) && min >= 0 && max >= min && safeString(candidate.budget_currency)) {
       return {
         budget_type: "ESTIMATED",
+        budget_basis: "BUYER_PROJECT",
+        budget_source_url: source,
         budget_published: null,
         budget_estimated_min: min,
         budget_estimated_max: max,
@@ -140,6 +149,8 @@ function normalizeBudget(candidate) {
   }
   return {
     budget_type: "UNKNOWN",
+    budget_basis: "UNKNOWN",
+    budget_source_url: null,
     budget_published: null,
     budget_estimated_min: null,
     budget_estimated_max: null,
@@ -180,7 +191,7 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
 
   const fitScore = safeScore(candidate.fit_score);
   const winScore = safeScore(candidate.win_score);
-  const budget = normalizeBudget(candidate);
+  const budget = normalizeBudget(candidate, verifiedSourceUrls);
 
   let contactEmail = isValidEmail(candidate.contact_email) ? candidate.contact_email.trim() : null;
   let contactEmailSource = normalizeUrl(candidate.contact_email_source);
@@ -210,6 +221,10 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
       url: sourceUrl,
       note: "Primary source URL verified against hosted web-search sources."
     });
+  }
+
+  if (budget.budget_source_url && !evidence.some(item => item.url === budget.budget_source_url)) {
+    evidence.unshift({ type: "SIGNAL_SOURCE", url: budget.budget_source_url, note: "Buyer project budget or scope source returned by hosted web search." });
   }
 
   const sourceDomain = new URL(sourceUrl).hostname.replace(/^www\./, "");

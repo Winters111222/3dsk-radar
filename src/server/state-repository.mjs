@@ -1,8 +1,17 @@
 import { companyKey, emptyCompanyState, setCompanyBookmark, markEmailSent, undoLastEmailSent } from "./company-memory.mjs";
 import { mergeOpportunityHistory } from "./history.mjs";
+import { normalizeBudget, normalizeUrl } from "./normalize.mjs";
 
 const OP_PREFIX = "opportunities/";
 const COMPANY_PREFIX = "companies/";
+
+// Apply the same guard to previously saved results and reply inputs. Old records
+// without buyer-budget evidence fail closed; reads do not rewrite stored history.
+function safeSavedOpportunity(item) {
+  if (!item) return item;
+  const sources = new Set((item.source_evidence || []).map(x => normalizeUrl(x.url)).filter(Boolean));
+  return { ...item, ...normalizeBudget(item, sources) };
+}
 
 async function listJSON(store, prefix) {
   const result = await store.list({ prefix });
@@ -12,7 +21,7 @@ async function listJSON(store, prefix) {
 export function createStateRepository(store) {
   return {
     async listOpportunities() {
-      return (await listJSON(store, OP_PREFIX)).filter(Boolean);
+      return (await listJSON(store, OP_PREFIX)).filter(Boolean).map(safeSavedOpportunity);
     },
 
     async listCompanies() {
@@ -48,7 +57,7 @@ export function createStateRepository(store) {
     },
 
     async getOpportunity(id) {
-      return store.get(`${OP_PREFIX}${id}`, { type: "json" });
+      return safeSavedOpportunity(await store.get(`${OP_PREFIX}${id}`, { type: "json" }));
     },
 
     async saveOpportunity(item) {

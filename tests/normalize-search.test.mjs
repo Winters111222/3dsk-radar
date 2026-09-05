@@ -105,3 +105,35 @@ test("same normalized opportunity is deduplicated within one search run", () => 
   assert.equal(normalized.opportunities.length, 1);
   assert.equal(normalized.opportunities[0].win_score, 89);
 });
+
+test("seller license and missing buyer provenance never become an opportunity budget", () => {
+  const sources = new Set([normalizeUrl(PRIMARY)]);
+  for (const basis of [undefined, "SELLER_PRICE", "EMPLOYEE_COMPENSATION", "UNKNOWN"]) {
+    const result = normalizeCandidate(candidate({budget_type:"PUBLISHED",budget_published:"$240,000 annual license",budget_basis:basis,budget_source_url:PRIMARY}), sources, NOW).opportunity;
+    assert.equal(result.budget_type, "UNKNOWN");
+    assert.equal(result.budget_published, null);
+    assert.equal(result.budget_source_url, null);
+  }
+});
+
+test("buyer budget requires a consulted source and survives with its provenance", () => {
+  const sources = new Set([normalizeUrl(PRIMARY), CONTACT]);
+  const input = candidate({budget_type:"PUBLISHED",budget_basis:"BUYER_PROJECT",budget_published:"USD 18,000 per batch",budget_source_url:CONTACT});
+  const valid = normalizeCandidate(input, sources, NOW).opportunity;
+  assert.equal(valid.budget_type, "PUBLISHED");
+  assert.equal(valid.budget_published, input.budget_published);
+  assert.ok(valid.source_evidence.some(x=>x.url===CONTACT));
+  const invalid = normalizeCandidate({...input,budget_source_url:"https://unvisited.example/price"}, sources, NOW).opportunity;
+  assert.equal(invalid.budget_type, "UNKNOWN");
+});
+
+test("estimated buyer budget needs numeric bounds and preserves ESTIMATED", () => {
+  const sources = new Set([normalizeUrl(PRIMARY)]);
+  const input = candidate({budget_type:"ESTIMATED",budget_basis:"BUYER_PROJECT",budget_source_url:PRIMARY,budget_estimated_min:1000,budget_estimated_max:3000,budget_currency:"EUR"});
+  assert.equal(normalizeCandidate(input,sources,NOW).opportunity.budget_type,"ESTIMATED");
+  for (const min of [null,undefined,"1000",-1,4000]) {
+    const invalid=normalizeCandidate({...input,budget_estimated_min:min},sources,NOW).opportunity;
+    assert.equal(invalid.budget_type,"UNKNOWN");
+    assert.equal(invalid.budget_estimated_min,null);
+  }
+});
