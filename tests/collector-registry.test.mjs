@@ -20,7 +20,9 @@ test("collector registry exposes verified official APIs and keeps community auto
     assert.ok(locked.find((item) => item.source_id === id).access_review_reason);
   }
   assert.doesNotMatch(JSON.stringify(locked), /visual.ai.motion/i);
-  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "ted_eu").status, "READY");
-  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "find_tender_uk").status, "READY");
-  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "contracts_finder_uk").status, "READY");
+  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "ted_eu").status, "BLOCKED_RELEVANCE_REVIEW");
+  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "find_tender_uk").status, "BLOCKED_RELEVANCE_REVIEW");
+  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "contracts_finder_uk").status, "BLOCKED_RELEVANCE_REVIEW");
+  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "ted_eu").historical_tier, "C");
+  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "ted_eu").runtime_eligible, false);
 });
