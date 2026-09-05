@@ -108,7 +108,7 @@ Core: human/body/face scan, cleanup, retopology, Wrap/basemesh, digital double, 
 
 ## 8. Pořadí implementace a acceptance
 
-**A — datová pravdivost a měření.** Doplnit role/status/eligibility a oddělené counters. Převést 11 evidenčních příkladů do sanitizovaných fixture/mock testů; zachovat budget/contact gates. Nepřenášet celé cizí stránky ani kontakty do testovacího veřejného repozitáře.
+**A — datová pravdivost a měření — IMPLEMENTOVÁNO NA NAVAZUJÍCÍ REVIEW BRANCHI.** Doplněny role/status/eligibility/scope/freshness a oddělené counters. Všech 11 evidenčních příkladů je pokryto sanitizovaným fixture/mock testem; budget/contact gates zůstávají. Implementace je fail-closed pro seller, inactive, studio-ineligible, out-of-scope a neověřeně staré položky. Dokud navazující PR není sloučený a nasazený, nejde o produkční funkci.
 
 **B — první funkční sběr.** Implementovat TED read adapter a první povolené komunitní konektory Polycount/Unreal/Blender. Pokud HTML podmínky některého zdroje nejsou vyřešené, označit jej blocked a pokračovat ostatními. Potom UK OCDS a vybrané contract boards. Zařazení Upwork neblokuje první použitelný release.
 

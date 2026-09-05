@@ -14,7 +14,9 @@ const requiredUi = [
   "MARK EMAIL SENT",
   "GENERATE RESPONSE",
   "COPY SUBJECT",
-  "COPY RESPONSE"
+  "COPY RESPONSE",
+  "Search truth counters",
+  "Studio eligibility"
 ];
 
 test("pre-live UI contains the complete V0.1 decision and response flow", () => {

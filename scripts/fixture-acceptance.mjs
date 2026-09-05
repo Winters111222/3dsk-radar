@@ -1,6 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { readFile } from "node:fs/promises";
 import { emptyCompanyState, setCompanyBookmark, markEmailSent, contactRecency } from "../src/server/company-memory.mjs";
+import { evaluateSourceTruth } from "../src/lib/source-truth.mjs";
 
 const FIXTURE_URL = new URL("../fixtures/opportunities.json", import.meta.url);
 
@@ -39,6 +40,17 @@ export async function runFixtureAcceptance() {
   });
   const contactedOpportunity = { ...withReply, status: "CONTACTED" };
   const recency = contactRecency(company.last_contacted_at, checkAt);
+  const truth = evaluateSourceTruth({
+    requestedKind:opportunity.opportunity_kind,
+    commercialRole:opportunity.commercial_role,
+    noticeStatus:opportunity.notice_status,
+    studioEligibility:opportunity.studio_eligibility,
+    scopeFit:opportunity.scope_fit,
+    publishedDate:opportunity.published_date,
+    sourceUpdatedDate:opportunity.source_updated_date,
+    acceptanceVerified:Boolean(opportunity.acceptance_verified_at),
+    nowIso:generatedAt
+  });
 
   const checks = {
     selected_opportunity: Boolean(opportunity.id),
@@ -47,7 +59,8 @@ export async function runFixtureAcceptance() {
     company_bookmarked: company.bookmarked === true,
     email_history_recorded: company.contact_count === 1 && company.contact_history[0]?.subject === withReply.reply_subject,
     opportunity_contacted: contactedOpportunity.status === "CONTACTED",
-    duplicate_warning_window: recency.band === "RECENT" && recency.days === 15
+    duplicate_warning_window: recency.band === "RECENT" && recency.days === 15,
+    source_truth_gate: truth.ok && truth.opportunityKind === "OPEN_OPPORTUNITY"
   };
 
   const failed = Object.entries(checks).filter(([, ok]) => !ok).map(([name]) => name);
