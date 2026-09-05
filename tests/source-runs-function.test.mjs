@@ -11,6 +11,9 @@ function installRuntime(t, values) {
   globalThis.Netlify = { env:{ get:(key) => values[key] || "" } };
   globalThis.__RADAR_TEST_STATE_REPOSITORY__ = createStateRepository(memoryStore());
   globalThis.__RADAR_TEST_NOW_ISO__ = "2026-09-05T12:00:00.000Z";
+  if (values.RADAR_SOURCE_COLLECTION_ENABLED === "true") {
+    globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__ = new Set(["ted_eu", "find_tender_uk", "contracts_finder_uk"]);
+  }
   t.after(() => {
     delete globalThis.__RADAR_TEST_STATE_REPOSITORY__;
     delete globalThis.__RADAR_TEST_NOW_ISO__;
@@ -21,6 +24,7 @@ function installRuntime(t, values) {
     delete globalThis.__RADAR_TEST_FIND_TENDER_DETAIL_FETCH__;
     delete globalThis.__RADAR_TEST_CONTRACTS_FINDER_DETAIL_FETCH__;
     delete globalThis.__3DSK_RADAR_SOURCE_RUN_STATE__;
+    delete globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__;
     if (previousNetlify === undefined) delete globalThis.Netlify;
     else globalThis.Netlify = previousNetlify;
   });
@@ -48,6 +52,20 @@ test("source run START and CONTINUE are locked before network by default", async
   assert.equal((await response.json()).error.code, "SOURCE_COLLECTION_LOCKED");
   response = await run(request("POST", { action:"CONTINUE", run_id:"run_locked_01", operation_id:"operation_lock1" }));
   assert.equal(response.status, 423);
+  assert.equal(calls, 0);
+});
+
+test("environment enable cannot start a run without a runtime-qualified source", async t => {
+  installRuntime(t, { RADAR_INTERNAL_ACCESS_SECRET:"team-secret", RADAR_SOURCE_COLLECTION_ENABLED:"true" });
+  delete globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__;
+  let calls = 0;
+  globalThis.__RADAR_TEST_TED_FETCH__ = async () => { calls += 1; throw new Error("relevance lock must not fetch"); };
+  const run = await handler();
+  const response = await run(request("POST", { action:"START", profile_id:"FOCUSED", request_id:"request_relevance_locked" }));
+  const payload = await response.json();
+  assert.equal(response.status, 423);
+  assert.equal(payload.error.code, "SOURCE_RELEVANCE_LOCKED");
+  assert.deepEqual(payload.qualification.eligible_source_ids, []);
   assert.equal(calls, 0);
 });
 
