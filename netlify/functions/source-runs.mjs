@@ -6,6 +6,7 @@ import { envValue, sourceCollectionEnabled } from "../../src/server/runtime.mjs"
 import { fetchSourceDetail } from "../../src/server/source-detail-adapters.mjs";
 import { cancelSourceRun, continueSourceRun, startSourceRun } from "../../src/server/source-run-service.mjs";
 import { SOURCE_RUN_PROFILES, validClientId } from "../../src/server/source-run-contract.mjs";
+import { anyRuntimeSourceEligible, runtimeQualificationSummary } from "../../src/server/source-qualification.mjs";
 
 function json(payload, status = 200, extraHeaders = {}) {
   return Response.json(payload, { status, headers:{ "cache-control":"no-store", ...extraHeaders } });
@@ -68,6 +69,9 @@ export default async function handler(request, context) {
   const action = request.method === "POST" ? String(body.action || "").toUpperCase() : null;
   if (request.method === "POST" && action !== "CANCEL" && !sourceCollectionEnabled()) {
     return json({ ok:false, error:{ code:"SOURCE_COLLECTION_LOCKED", message:"Source runs are intentionally locked until deployed zero-cost acceptance explicitly enables collection." } }, 423);
+  }
+  if (request.method === "POST" && action !== "CANCEL" && !anyRuntimeSourceEligible()) {
+    return json({ ok:false, qualification:runtimeQualificationSummary(), error:{ code:"SOURCE_RELEVANCE_LOCKED", message:"No source has passed historical relevance, access and source-specific yield gates." } }, 423);
   }
 
   try {
