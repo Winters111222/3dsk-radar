@@ -24,6 +24,8 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Run tests
         run: npm test
+      - name: Validate source research catalog (offline)
+        run: npm run sources:check
       - name: Run zero-cost fixture acceptance
         run: npm run accept:fixture
       - name: Run static HTTP smoke acceptance

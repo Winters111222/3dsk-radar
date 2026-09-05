@@ -1,5 +1,19 @@
 # 3D.SK Opportunity Radar — NEXT THREAD HANDOFF CZ
 
+## Aktuální doplnění — výzkum širokého Search, 5. 9. 2026
+
+Níže uvedený původní handoff PR #6 je historický. Pro tento výzkumný krok byl znovu ověřen aktuální PR #10 head `e57912f1c42544493912120228a15ea4b0d54112`; navazující review branch je `research/source-catalog-20260905`. Před další prací ověř aktuální head této větve a jejího draft PR. Produktový stav odvozuj od exact heads, nikoli od čísel uvedených v historickém předání.
+
+Nejdřív načti [výzkum a plán](SEARCH_SOURCE_STRATEGY_CZ.md), `config/opportunity-sources.v1.json`, `config/search-query-packs.v1.json` a `config/source-evidence-cases.v1.json`. Nový požadavek vlastníka: široké procházení mnoha zdrojů s větším počtem relevantních výsledků.
+
+Hotovo: 49 zdrojových záznamů / 54 vstupních URL, 4 ATS šablony, 48 query šablon v 9 jazycích, 11 evidenčních příkladů a offline validační CI krok. V tomto kroku nebyl proveden aplikační OpenAI request, změna Netlify env ani merge. **Nový crawler není implementován ani nasazen.** Všechny nové zdroje mají `crawl_enabled: false`; plán širokého běhu není aktivní cenové nastavení ani paid autorizace.
+
+Následuje implementace kroků A–D v analýze: buyer/status/eligibility a counters → první povolené konektory → ruční široký run s kurzory, budgetem a idempotencí → zero-cost acceptance před novým controlled live ověřením. Zachovat company memory a všechny provenance gates. MAIN ani starší PR automaticky nemergovat.
+
+---
+
+## Původní handoff PR #6 — historický záznam
+
 Repo:
 
 `Winters111222/3dsk-radar`
