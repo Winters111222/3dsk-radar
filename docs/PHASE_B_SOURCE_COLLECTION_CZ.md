@@ -1,6 +1,6 @@
 # Phase B — read-only sběr zdrojů
 
-Stav k 5. 9. 2026: **tři oficiální read-only collectory a access review první komunitní vlny hotové; endpoint aplikace zatím není nasazený**.
+Stav k 5. 9. 2026: **Phase B implementace a zero-cost acceptance jsou 100 %; endpoint aplikace zatím není nasazený**.
 
 ## Co je implementované
 
@@ -19,6 +19,9 @@ Stav k 5. 9. 2026: **tři oficiální read-only collectory a access review prvn�
 - produkční Find a Tender API canary: HTTP 200 / 1 OCDS release / `links.next`,
 - produkční Contracts Finder API canary: HTTP 200 / 1 OCDS release / first-party notice URL / `links.next`,
 - dokončený access review Polycount, Unreal a Blender Artists; všechny tři zdroje zůstávají v runtime registru `BLOCKED_ACCESS_REVIEW` s konkrétním reason code.
+- bounded live yield nástroj pro všechny čtyři packy: přesně 6 requestů, max 50 records, bez retry, OpenAI a persistence,
+- regresní oprava TED šumu: holé `FACS`, obecné `photogrammetry services` a `scan processing` byly nahrazeny jednoznačnými human/character frázemi,
+- zdokumentované rozhodnutí nepřidávat CanadaBuys bulk CSV do stránkovaného 50-record contractu.
 
 Oficiální dokumentace potvrzuje, že TED Search API zpřístupňuje publikované procurement notices pro analýzu a reuse, nevyžaduje autentizaci a používá `POST /v3/notices/search`: [TED Search API](https://docs.ted.europa.eu/api/latest/search.html). Request/response boundary byl navíc porovnán s klientem v oficiálním repozitáři EU Publications Office: [OP-TED open-data explorer](https://github.com/OP-TED/ted-open-data-explorer/blob/a562458e94b55f46e58bb483cbb11a75a9330298/src/js/services/tedAPI.js).
 
@@ -40,15 +43,16 @@ Výchozí hodnota je `false`. `RADAR_LIVE_AI_ENABLED` může a má zůstat `fals
 
 Výsledek collector endpointu je surový read-only dataset a `persistence: NONE`. Není automaticky uložen mezi opportunities, protože ještě neprošel Phase C klasifikací, detailovým ověřením, deduplikací a pravdivostními gates z Phase A.
 
-## Co ještě není hotové
+## Co následuje mimo Phase B
 
-1. měření výtěžnosti všech čtyř TED packs a lokálních Find a Tender filtrů,
-2. podle naměřené výtěžnosti případně doplnit CanadaBuys nebo jiný vhodný oficiální open-data collector,
-3. napojení collector records do kandidátního pipeline až v Phase C,
-4. kurzor/chunky, retry/idempotence, průběžné ukládání a tender revision dedupe v Phase C,
-5. nasazená zero-cost acceptance samotného `/api/source-collection` endpointu v Phase D.
+1. napojení collector records do kandidátního pipeline v Phase C,
+2. cursor/chunky, retry/idempotence, průběžné ukládání a tender revision dedupe v Phase C,
+3. případný CanadaBuys bulk adapter až se samostatným byte/row cap contractem,
+4. nasazená zero-cost acceptance samotného `/api/source-collection` endpointu v Phase D.
 
 Canary poslal 5. 9. 2026 do veřejného produkčního TED API dva malé anonymní read-only requesty s `limit: 1`. Přesný relevantní `other_relevant` dotaz byl syntakticky přijat a v daném okamžiku vrátil 0 notices; širší pouze validační dotaz vrátil 1 recent ACTIVE notice a potvrdil reálný field shape. Další jeden anonymní Find a Tender request a jeden Contracts Finder request s `limit=1` potvrdily OCDS `releases[]`, tender status/deadline, cursor a first-party provenance. Nebyl použit klíč, login, OpenAI ani placená služba. To ověřuje transport/kontrakt, ne relevanci nebo dostatečnou výtěžnost query packs.
+
+Navazující bounded měření odhalilo 18 false positives z nejednoznačného `FACS` a 7 převážně leteckých/GIS výsledků z obecné photogrammetry fráze. Po zpřesnění dotazů dokončil finální šestirequestový běh všechny zdroje a packy s 0 relevantními records v tomto malém vzorku. Přesné counters, request accounting a CanadaBuys rozhodnutí jsou v [Phase B yield measurement](PHASE_B_YIELD_MEASUREMENT_CZ.md).
 
 ## Offline ověření
 
@@ -56,6 +60,8 @@ Canary poslal 5. 9. 2026 do veřejného produkčního TED API dva malé anonymn�
 npm test
 npm run accept:collector
 npm run sources:check
+# explicitní live read-only měření, nespouští se v CI
+npm run measure:collector:live -- --confirm-live-read-only
 ```
 
 `accept:collector` používá sanitizovaný fixture transport. Jeho `network_requests: 0`, `openai_requests: 0` a `cost_usd: 0` jsou assertions, ne odhad.
@@ -67,9 +73,9 @@ npm run sources:check
 | Výzkum a katalog zdrojů | 100 % |
 | Odstranění Visual / AI / Motion | 100 % |
 | Phase A — pravdivost, freshness, counters | 100 % |
-| Phase B — první funkční sběr | přibližně 88 % |
+| Phase B — první funkční sběr | 100 % |
 | Phase C — široký řízený run | 0 % |
 | Phase D — deployed zero-cost acceptance + controlled live | 0 % |
-| Revidovaný celý Radar | přibližně 81 % |
+| Revidovaný celý Radar | přibližně 83 % |
 
 Původní V0.1 zůstává přibližně na 96 %, ale toto číslo nezahrnuje nově schválený široký crawler. První placený OpenAI Search je povolen až po dokončení B a C a po zelené **zero-cost** části D. Potom se spustí právě jeden Focused acceptance run s předem nastaveným stropem `$0.50`; Wide run dostane maximálně `$1.00` teprve po ruční kontrole kvality Focused výsledků.

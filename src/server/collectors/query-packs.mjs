@@ -9,12 +9,17 @@ export const SOURCE_QUERY_PACKS = Object.freeze({
   production_overflow: {
     label: "Production Overflow",
     categories: ["PRODUCTION_OVERFLOW", "CHARACTER_FINISHING"],
-    phrases: ["production overflow", "3D character services", "photogrammetry services", "scan processing"]
+    // Generic photogrammetry primarily returned aerial/GIS procurement. Keep
+    // this pack anchored to human/character production before Phase C.
+    phrases: ["production overflow", "3D character services", "human photogrammetry services", "human scan processing"]
   },
   pipeline_consulting: {
     label: "Pipeline Consulting",
     categories: ["PIPELINE_CONSULTING", "FACIAL_FACS"],
-    phrases: ["pipeline consulting", "character pipeline", "facial rig", "FACS"]
+    // TED's fuzzy FT~ operator matched the bare acronym FACS inside unrelated
+    // words such as "accessories". Keep the capability, but query its
+    // unambiguous expanded name at the source-collection boundary.
+    phrases: ["pipeline consulting", "character pipeline", "facial rig", "facial action coding system"]
   },
   other_relevant: {
     label: "Other Relevant",
@@ -22,4 +27,3 @@ export const SOURCE_QUERY_PACKS = Object.freeze({
     phrases: ["human photogrammetry", "3D scanning services", "digital double", "human scan cleanup"]
   }
 });
-

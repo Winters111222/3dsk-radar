@@ -8,6 +8,7 @@
     "preview": "node scripts/serve.mjs",
     "accept:fixture": "node scripts/fixture-acceptance.mjs",
     "accept:collector": "node scripts/collector-acceptance.mjs",
+    "measure:collector:live": "node scripts/collector-yield-measurement.mjs",
     "accept:http": "node scripts/http-smoke.mjs",
     "sources:check": "node scripts/check-source-catalog.mjs"
   },

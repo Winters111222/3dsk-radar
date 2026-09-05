@@ -47,6 +47,8 @@ Search Phase B — read-only source collection: [`docs/PHASE_B_SOURCE_COLLECTION
 
 Phase B access review — komunitní zdroje + UK OCDS: [`docs/PHASE_B_ACCESS_REVIEW_CZ.md`](docs/PHASE_B_ACCESS_REVIEW_CZ.md)
 
+Phase B zero-cost yield measurement a CanadaBuys decision: [`docs/PHASE_B_YIELD_MEASUREMENT_CZ.md`](docs/PHASE_B_YIELD_MEASUREMENT_CZ.md)
+
 Pre-live acceptance: [`docs/PRELIVE_ACCEPTANCE_CZ.md`](docs/PRELIVE_ACCEPTANCE_CZ.md)
 
 Instrukce pro další vývojové boty: [`AGENTS.md`](AGENTS.md)
