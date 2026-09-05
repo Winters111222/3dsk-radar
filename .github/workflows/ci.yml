@@ -1,0 +1,33 @@
+name: Radar CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "feature/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Run tests
+        run: npm test
+      - name: Syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in src/app.js src/lib/*.mjs src/server/*.mjs netlify/functions/*.mjs; do
+            node --check "$file"
+          done
