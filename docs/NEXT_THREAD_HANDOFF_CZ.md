@@ -2,10 +2,14 @@
 
 ## Aktuální doplnění — Phase C run engine, 5. 9. 2026
 
-Navazující práce je na stacked branchi `feat/phase-c-run-engine-20260905` nad Draft PR #16:
+Nejnovější navazující práce je ve stacked Draft PR #17 nad Draft PR #16:
 
+- PR: `https://github.com/Winters111222/3dsk-radar/pull/17`,
+- branch: `feat/phase-c-run-engine-20260905`,
+- base: Draft PR #16 / `feat/phase-b-yield-validation-20260905`,
 - exact base / remote HEAD PR #16: `68c0f6ed67f2d562716d59cfd54ffdd0686cbb7b`,
-- PR #14–#16 ani novou Phase C branch nemergovat bez explicitního souhlasu vlastníka,
+- první plně otestovaný remote implementation HEAD PR #17: `d0cb148884ddd83c86b72957135299b73cfdd498`,
+- PR #14–#17 nemergovat bez explicitního souhlasu vlastníka,
 - `main` neměnit.
 
 Phase C je přibližně 70 %. Implementovaný je autentizovaný `GET/POST /api/source-runs`, immutable FOCUSED/WIDE plán, 12 work items přes TED/Find a Tender/Contracts Finder a čtyři schválené query packs, chunky po nejvýše čtyřech requestech, cursory, průběžné ukládání raw kandidátů, request/operation idempotence, persisted cancel, retry boundary a `UNCERTAIN` stav po nejasném přerušení. Kandidáti zůstávají mimo hotové `opportunities/`.
@@ -16,7 +20,6 @@ Cost reservation ledger používá integer `microusd` a respektuje profily `$0.5
 
 Ověření lokální implementation branche:
 
-- implementation commit: `43fcf0cefa3286b3a1b2b04d22bf42466e6c8f71`,
 - `npm test` → 125/125 PASS,
 - `npm run accept:run` → PASS; 501 offered / 500 accepted pages, 215 / 180 candidates, network 0, OpenAI 0, `$0`,
 - `npm run accept:collector` → PASS,
