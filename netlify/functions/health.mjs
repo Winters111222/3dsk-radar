@@ -1,10 +1,20 @@
-export default async () => Response.json({
-  ok: true,
-  service: "3dsk-opportunity-radar",
-  stage: "stage2-search-backend",
-  search_configured: Boolean(Netlify.env.get("OPENAI_API_KEY") && Netlify.env.get("RADAR_INTERNAL_ACCESS_SECRET")),
-  persistence: "stage3-pending",
-  response_generation: "stage4-pending"
-}, { headers: { "cache-control": "no-store" } });
+function envValue(key) {
+  return globalThis.Netlify?.env?.get(key) || "";
+}
+
+export default async () => {
+  const liveAIEnabled = envValue("RADAR_LIVE_AI_ENABLED").toLowerCase() === "true";
+  return Response.json({
+    ok: true,
+    service: "3dsk-opportunity-radar",
+    stage: "prelive-zero-cost-acceptance",
+    access_configured: Boolean(envValue("RADAR_INTERNAL_ACCESS_SECRET")),
+    live_ai_enabled: liveAIEnabled,
+    paid_ai_state: liveAIEnabled ? "ENABLED" : "LOCKED",
+    search_backend: "IMPLEMENTED",
+    persistence: "NETLIFY_BLOBS",
+    response_generation: "IMPLEMENTED"
+  }, { headers: { "cache-control": "no-store" } });
+};
 
 export const config = { path: "/api/health" };

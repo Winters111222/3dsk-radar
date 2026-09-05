@@ -1,0 +1,57 @@
+name: Radar CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "feature/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run tests
+        run: npm test
+      - name: Run zero-cost fixture acceptance
+        run: npm run accept:fixture
+      - name: Run static HTTP smoke acceptance
+        run: npm run accept:http
+      - name: Syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in src/app.js src/lib/*.mjs src/server/*.mjs netlify/functions/*.mjs scripts/*.mjs; do
+            node --check "$file"
+          done
+      - name: Package tested source
+        run: git archive --format=tar.gz -o radar-source.tar.gz HEAD
+      - name: Upload tested source
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-prelive-source
+          path: radar-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+      - name: Prepare isolated Netlify deploy helper
+        run: |
+          npm install --ignore-scripts --no-save --no-audit --no-fund @netlify/mcp@1.15.1
+          tar -czf netlify-mcp-runtime.tar.gz node_modules
+      - name: Upload Netlify deploy helper
+        uses: actions/upload-artifact@v4
+        with:
+          name: netlify-mcp-runtime
+          path: netlify-mcp-runtime.tar.gz
+          if-no-files-found: error
+          retention-days: 1
