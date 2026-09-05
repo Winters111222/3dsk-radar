@@ -9,12 +9,16 @@ const contractsFinderFixture = JSON.parse(await readFile(new URL("../fixtures/co
 function installEnv(t, values) {
   const previous = globalThis.Netlify;
   globalThis.Netlify = { env:{ get:(key) => values[key] || "" } };
+  if (values.RADAR_SOURCE_COLLECTION_ENABLED === "true") {
+    globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__ = new Set(["ted_eu", "find_tender_uk", "contracts_finder_uk"]);
+  }
   t.after(() => {
     delete globalThis.__RADAR_TEST_TED_FETCH__;
     delete globalThis.__RADAR_TEST_FIND_TENDER_FETCH__;
     delete globalThis.__RADAR_TEST_CONTRACTS_FINDER_FETCH__;
     delete globalThis.__RADAR_TEST_NOW_ISO__;
     delete globalThis.__3DSK_RADAR_SOURCE_COLLECTION_STATE__;
+    delete globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__;
     if (previous === undefined) delete globalThis.Netlify;
     else globalThis.Netlify = previous;
   });
@@ -46,6 +50,22 @@ test("source collector registry is authenticated and reports the default-off gat
   const post = await run(request("POST", { source_id:"ted_eu", query_pack_id:"other_relevant" }));
   assert.equal(post.status, 423);
   assert.equal((await post.json()).error.code, "SOURCE_COLLECTION_LOCKED");
+});
+
+test("environment enable cannot bypass the historical relevance gate", async t => {
+  installEnv(t, { RADAR_INTERNAL_ACCESS_SECRET:"team-secret", RADAR_SOURCE_COLLECTION_ENABLED:"true" });
+  delete globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__;
+  let calls = 0;
+  globalThis.__RADAR_TEST_TED_FETCH__ = async () => { calls += 1; throw new Error("relevance lock must not fetch"); };
+  const run = await handler();
+  const get = await run(request("GET"));
+  const catalog = await get.json();
+  assert.deepEqual(catalog.qualification.eligible_source_ids, []);
+  assert.equal(catalog.collectors.find((item) => item.source_id === "ted_eu").status, "BLOCKED_RELEVANCE_REVIEW");
+  const post = await run(request("POST", { source_id:"ted_eu", query_pack_id:"other_relevant" }));
+  assert.equal(post.status, 423);
+  assert.equal((await post.json()).error.code, "SOURCE_RELEVANCE_LOCKED");
+  assert.equal(calls, 0);
 });
 
 test("enabled TED endpoint remains read-only, capped and zero-cost", async t => {
