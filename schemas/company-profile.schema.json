@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "3D.SK Public-Safe Company Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["company","profile_version","visibility","capabilities","credentials","restricted_claims","preferred_opportunities","excluded_opportunities","reply_rules","scoring_weights"],
+  "properties": {
+    "company": {"const":"3D.sk"},
+    "profile_version": {"type":"string"},
+    "visibility": {"const":"PUBLIC_SAFE"},
+    "capabilities": {"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","label","status","outbound_safe"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"status":{"const":"APPROVED"},"outbound_safe":{"type":"boolean"},"guardrail":{"type":"string"}}}},
+    "credentials": {"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","label","status","verification_url","outbound_safe"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"status":{"const":"PUBLIC_APPROVED"},"verification_url":{"type":"string"},"outbound_safe":{"const":true}}}},
+    "restricted_claims": {"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","rule"],"properties":{"id":{"type":"string"},"rule":{"type":"string"}}}},
+    "preferred_opportunities": {"type":"array","items":{"type":"string"}},
+    "excluded_opportunities": {"type":"array","items":{"type":"string"}},
+    "reply_rules": {"type":"object"},
+    "scoring_weights": {"type":"object"}
+  }
+}

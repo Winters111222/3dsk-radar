@@ -1,0 +1,62 @@
+[
+  {
+    "id":"fixture-open-001","is_fixture":true,
+    "canonical_url":"https://example.com/opportunities/realistic-character-vendor","source_url":"https://example.com/opportunities/realistic-character-vendor","source_domain":"example.com",
+    "title":"Realistic Human Character Vendor — External Development","company":"Synthetic Northstar Games",
+    "summary":"Synthetic fixture: a game studio requests an external vendor for realistic scanned human characters, cleanup, conforming to a supplied production basemesh, facial expression processing and delivery-ready character assets.",
+    "opportunity_kind":"OPEN_OPPORTUNITY","categories":["FULL_PIPELINE","WRAP_BASEMESH","FACIAL_FACS","CHARACTER_OUTSOURCING","EXTERNAL_DEVELOPMENT"],
+    "location":"Worldwide","remote_scope":"WORLDWIDE_VENDOR","published_date":"2026-09-05","first_seen":"2026-09-05T08:20:00Z","last_seen":"2026-09-05T08:20:00Z","is_new":true,"status":"NEW",
+    "fit_score":94,"win_score":87,"win_band":"HIGH",
+    "budget_type":"PUBLISHED","budget_published":"USD 18,000–28,000 per character batch","budget_estimated_min":null,"budget_estimated_max":null,"budget_currency":"USD","budget_confidence":"high","budget_reason":"Fixture source explicitly states a batch range.",
+    "contact_name":"Vendor Team","contact_role":"External Development","contact_email":"vendor-contact@example.com","contact_email_source":"https://example.com/contact","apply_url":"https://example.com/opportunities/realistic-character-vendor",
+    "why_it_fits":["Requests realistic scanned humans rather than stylized character work.","Client provides a production basemesh, matching the Wrap/conforming workflow.","Scope combines cleanup, facial processing and final character delivery.","Explicit vendor/external-development engagement and worldwide remote scope."],
+    "risks":["Hair and rigging are mentioned as adjacent deliverables and must be confirmed before quoting."],
+    "missing_requirements":["Exact asset count after the first batch is not stated.","Delivery engine and shader ownership are not stated."],
+    "source_evidence":[{"type":"PRIMARY_FIXTURE","url":"https://example.com/opportunities/realistic-character-vendor","note":"Synthetic source used only to exercise Stage 1 UI."}]
+  },
+  {
+    "id":"fixture-open-002","is_fixture":true,
+    "canonical_url":"https://example.com/opportunities/scan-wrap-overflow","source_url":"https://example.com/opportunities/scan-wrap-overflow","source_domain":"example.com",
+    "title":"Photogrammetry Scan Cleanup + Wrap Overflow","company":"Synthetic Atlas Interactive",
+    "summary":"Synthetic fixture: temporary overflow support for human scan cleanup and consistent R3DS Wrap transfer to an existing studio topology.",
+    "opportunity_kind":"OPEN_OPPORTUNITY","categories":["PHOTOGRAMMETRY_PROCESSING","SCAN_CLEANUP","WRAP_BASEMESH","PRODUCTION_OVERFLOW"],
+    "location":"Remote","remote_scope":"GLOBAL_REMOTE","published_date":"2026-09-03","first_seen":"2026-09-04T06:10:00Z","last_seen":"2026-09-05T07:15:00Z","is_new":true,"status":"NEW",
+    "fit_score":91,"win_score":74,"win_band":"MEDIUM",
+    "budget_type":"ESTIMATED","budget_published":null,"budget_estimated_min":7000,"budget_estimated_max":13000,"budget_currency":"EUR","budget_confidence":"medium","budget_reason":"Synthetic estimate based on a defined multi-asset cleanup/wrap batch; no published rate in fixture source.",
+    "contact_name":null,"contact_role":null,"contact_email":null,"contact_email_source":null,"apply_url":"https://example.com/opportunities/scan-wrap-overflow",
+    "why_it_fits":["Direct match for scan cleanup and R3DS Wrap.","Overflow/batch production is a preferred vendor engagement.","Existing studio topology reduces ambiguity in the handoff."],
+    "risks":["Budget is not published and must not be represented as a source fact."],
+    "missing_requirements":["No public contact email in the fixture.","Expression/FACS scope is not requested."],
+    "source_evidence":[{"type":"PRIMARY_FIXTURE","url":"https://example.com/opportunities/scan-wrap-overflow","note":"Synthetic source used only to exercise Stage 1 UI."}]
+  },
+  {
+    "id":"fixture-lead-003","is_fixture":true,
+    "canonical_url":"https://example.com/news/digital-human-production-expansion","source_url":"https://example.com/news/digital-human-production-expansion","source_domain":"example.com",
+    "title":"Digital Human Production Expansion Signal","company":"Synthetic Meridian Studios",
+    "summary":"Synthetic fixture: public company update indicates a larger realistic NPC and digital-human slate, but there is no explicit vendor request or open contract.",
+    "opportunity_kind":"POTENTIAL_LEAD","categories":["CHARACTER_OUTSOURCING","PRODUCTION_OVERFLOW"],
+    "location":"Europe / North America","remote_scope":"NOT_STATED","published_date":"2026-09-01","first_seen":"2026-09-05T08:45:00Z","last_seen":"2026-09-05T08:45:00Z","is_new":true,"status":"NEW",
+    "fit_score":78,"win_score":63,"win_band":"MEDIUM",
+    "budget_type":"UNKNOWN","budget_published":null,"budget_estimated_min":null,"budget_estimated_max":null,"budget_currency":null,"budget_confidence":null,"budget_reason":"No public scope or commercial terms; budget intentionally left unknown.",
+    "contact_name":null,"contact_role":null,"contact_email":null,"contact_email_source":null,"apply_url":"https://example.com/contact",
+    "why_it_fits":["Realistic digital-human expansion is aligned with 3D.sk core production capability.","A larger slate can create future overflow or external-development demand."],
+    "risks":["This is not an explicit public opportunity and must never be presented as an active job or RFP."],
+    "missing_requirements":["No stated procurement need.","No public budget.","No public procurement contact email."],
+    "source_evidence":[{"type":"SIGNAL_FIXTURE","url":"https://example.com/news/digital-human-production-expansion","note":"Synthetic lead signal; not an open opportunity."}]
+  },
+  {
+    "id":"fixture-open-004","is_fixture":true,
+    "canonical_url":"https://example.com/opportunities/character-artist-onsite","source_url":"https://example.com/opportunities/character-artist-onsite","source_domain":"example.com",
+    "title":"Realistic Character Production Contract — On-site Restricted","company":"Synthetic Harbor Lab",
+    "summary":"Synthetic fixture: a realistic character contract with partial scan cleanup relevance but mandatory full-time on-site presence in one country.",
+    "opportunity_kind":"OPEN_OPPORTUNITY","categories":["CHARACTER_FINISHING","OTHER_RELEVANT"],
+    "location":"Japan only","remote_scope":"LOCATION_RESTRICTED","published_date":"2026-08-29","first_seen":"2026-09-05T09:00:00Z","last_seen":"2026-09-05T09:00:00Z","is_new":true,"status":"NEW",
+    "fit_score":64,"win_score":41,"win_band":"LOW",
+    "budget_type":"UNKNOWN","budget_published":null,"budget_estimated_min":null,"budget_estimated_max":null,"budget_currency":null,"budget_confidence":null,"budget_reason":"Insufficient public commercial detail; no estimate generated.",
+    "contact_name":null,"contact_role":null,"contact_email":null,"contact_email_source":null,"apply_url":"https://example.com/opportunities/character-artist-onsite",
+    "why_it_fits":["Some realistic character finishing overlaps with approved capability."],
+    "risks":["Mandatory on-site requirement conflicts with worldwide vendor-first strategy.","Request appears closer to individual staffing than studio outsourcing."],
+    "missing_requirements":["No vendor-friendly remote path is stated."],
+    "source_evidence":[{"type":"PRIMARY_FIXTURE","url":"https://example.com/opportunities/character-artist-onsite","note":"Synthetic source used only to exercise low-score and location-restricted UI."}]
+  }
+]
