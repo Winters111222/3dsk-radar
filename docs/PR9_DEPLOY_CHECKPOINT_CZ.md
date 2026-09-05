@@ -22,3 +22,20 @@ Datum: 2026-09-05. Tento checkpoint navazuje na TEAM_AUTH_BLOCKER_20260905_CZ.md
 Správný produkční TEAM ACCESS CODE přes browserAuth. Po autentizaci dočasně povolit RADAR_PRELIVE_ACCEPTANCE_ENABLED při LIVE_AI=false, redeploy stejného headu, použít /?workspace=acceptance a ověřit skutečný oddělený Blobs store: seed, bookmark/BOOKMARKED, status, MARK EMAIL SENT/CONTACTED, historie, recent warning, refresh a přežití redeploye. Potvrdit oba autorizované POST -> 423 LIVE_AI_LOCKED. Potom acceptance gate opět vypnout a redeploy.
 
 Teprve po 100% deployed zero-cost PASS bezpečně server-side nakonfigurovat OpenAI key a splnit uživatelem povolený jeden Search + jednu Response. Main ani stacked PR zatím nemergovat. Odhad V0.1: 97 %; deployment je hotový, chráněná persistence a paid acceptance zůstávají neověřené.
+
+
+## Aktualizace po vyřešení týmového přístupu
+
+Uživatel výslovně schválil náhradu týmového kódu a jeho sdělení v tomto soukromém chatu. Nový kód je uložen jako production Netlify secret, zde ani v repozitáři není uveden. Nepokoušet se jej získat z maskovaného Netlify readbacku. V tomto chatu je k dispozici uživateli; další credential entry pouze přes browserAuth.
+
+Redeploy stejného PR #9 headu bac185ca2b316852024fafd832e6acca23128c08: 6a9c0d2a244eff921adf6677, Netlify UI Published/Completed, sedm functions.
+
+browserAuth submitted a živý Radar potvrdil Saved team results · 0 / Saved results loaded. Týmová autentizace a načtení produkčního Blobs stavu PASS.
+
+CHECK AI LOCKS přes skutečný frontend v autorizované session:
+- health ok true, access_configured true, live_ai_enabled false, paid_ai_state LOCKED;
+- POST /api/search -> 423 LIVE_AI_LOCKED;
+- POST /api/generate-response -> 423 LIVE_AI_LOCKED;
+- souhrn passed true; OpenAI key stále nenakonfigurován, žádný placený request.
+
+Pokus o vytvoření RADAR_PRELIVE_ACCEPTANCE_ENABLED přes Netlify connector vrátil upserted, ale authoritative env readback proměnnou neobsahuje a deployed health potvrzuje prelive_acceptance_enabled false. Nelze považovat toto nastavení ani izolované Blobs zápisové testy za PASS. Zbývá zprovoznit acceptance gate podporovanou cestou a dokončit původní izolované persistence testy před paid acceptance. Předchozí auth blocker je vyřešen.
