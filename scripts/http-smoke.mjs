@@ -35,13 +35,22 @@ async function check(path, expectedType, requiredText) {
 
 try {
   await waitForServer();
-  await check("/", "text/html", ["3D.SK Opportunity Radar", "FIND NEW OPPORTUNITIES", "BOOKMARKED"]);
+  await check("/", "text/html", [
+    "3D.SK Opportunity Radar",
+    "FIND NEW OPPORTUNITIES",
+    "BOOKMARKED",
+    "/src/styles.css",
+    "/src/stage3.css",
+    "/src/stage4.css"
+  ]);
   await check("/src/app.js", "text/javascript", ["GENERATE RESPONSE", "MARK EMAIL SENT", "company_bookmarked"]);
-  await check("/src/styles.css", "text/css", [".star-button", ".repeat-warning"]);
+  await check("/src/styles.css", "text/css", [".results-layout", ".detail-panel"]);
+  await check("/src/stage3.css", "text/css", [".star-button", ".repeat-warning", ".outreach.recent"]);
+  await check("/src/stage4.css", "text/css", [".reply-section", ".reply-body"]);
   const fixtureText = await check("/fixtures/opportunities.json", "application/json", ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"]);
   const fixtures = JSON.parse(fixtureText);
   if (!Array.isArray(fixtures) || fixtures.length < 2) throw new Error("fixture dataset is unexpectedly small");
-  console.log(JSON.stringify({ ok: true, cost_usd: 0, http_paths_checked: 4, fixture_records: fixtures.length }, null, 2));
+  console.log(JSON.stringify({ ok: true, cost_usd: 0, http_paths_checked: 6, fixture_records: fixtures.length }, null, 2));
 } finally {
   child.kill("SIGTERM");
 }
