@@ -1,5 +1,56 @@
 # 3D.SK Opportunity Radar — NEXT THREAD HANDOFF CZ
 
+## Aktuální doplnění — Phase B dokončena, 5. 9. 2026
+
+Nejnovější navazující práce je ve stacked Draft PR #16:
+
+- PR: `https://github.com/Winters111222/3dsk-radar/pull/16`
+- branch: `feat/phase-b-yield-validation-20260905`
+- base: Draft PR #15 / `feat/phase-b-uk-ocds-20260905`
+- exact base HEAD: `5a8baa3477be05494ce3fc879ace35f76e844002`
+- první plně otestovaný implementation HEAD PR #16: `77b757c5a9d324c4608ac3be94e6b7d87744d0a1`
+- PR #16, PR #15 ani PR #14 nemergovat bez explicitního souhlasu vlastníka; `main` neměnit.
+
+Phase B je nyní 100 %. Nový explicitní `measure:collector:live` příkaz bez přesného `--confirm-live-read-only` síť neotevře. Jeden potvrzený run používá pouze tři pevné first-party upstreamy, přesně 6 requestů, max 50 records na stránku, žádný retry, OpenAI ani persistence a vypisuje jen agregované counters.
+
+Měření našlo a odstranilo dvě TED false-positive cesty: holé `FACS` vracelo 18 nesouvisejících notices a obecné `photogrammetry services` / `scan processing` dalších 7 převážně leteckých, mapových a archeologických notices. Runtime fráze jsou nyní jednoznačně human/character-qualified a kryté regresními testy. Finální post-fix run dokončil 6/6 requestů a v malém vzorku vrátil 0 relevantních records. Tento výsledek není důkaz absence příležitostí; širokou výtěžnost změří až Phase C stránkováním a detailní truth klasifikací.
+
+CanadaBuys má potvrzené oficiální otevřené bulk CSV datasety a refresh schedule, ale ne dokumentovaný stránkovaný search API contract kompatibilní s tímto malým collector endpointem. Proto nebyl přidán improvizovaný adapter. Případný budoucí bulk adapter musí mít byte/row cap, deadline/status filtr a schema-drift test. Přesné rozhodnutí a měření: [PHASE_B_YIELD_MEASUREMENT_CZ.md](PHASE_B_YIELD_MEASUREMENT_CZ.md).
+
+Ověření implementation HEADu:
+
+- `npm test` → 112/112 PASS,
+- `npm run accept:collector` → PASS,
+- `npm run accept:fixture` → PASS,
+- `npm run accept:http` → PASS,
+- `npm run sources:check` → PASS,
+- `git diff --check` → PASS,
+- final live measurement: 6 requests, 0 retry, 0 OpenAI, `$0`, `persistence: NONE`.
+
+V celém yield-review kroku proběhlo 25 source requestů; kumulativně se staršími canary requesty 29. OpenAI requests zůstávají 0 a cena `$0`.
+
+Aktuální orientační roadmapa:
+
+- původní V0.1: přibližně 96 %,
+- výzkum a katalog: 100 %,
+- odstranění Visual / AI / Motion: 100 %,
+- Phase A: 100 %,
+- Phase B: 100 %,
+- Phase C: 0 %,
+- Phase D: 0 %,
+- celý rozšířený Radar: přibližně 83 %.
+
+Další práce je Phase C na nové stacked branchi: multi-source run state, cursor/chunky, průběžné ukládání, retry policy a idempotence, cancel, cross-source + tender revision dedupe, simulace více než 500 stran, přibližně 180 kandidátů a testy 403/429/timeout/přerušených běhů. Žádný placený OpenAI Search před dokončením C a zelenou deployed zero-cost částí D.
+
+Bez změny zůstává:
+
+```text
+RADAR_LIVE_AI_ENABLED=false
+RADAR_SOURCE_COLLECTION_ENABLED=false
+```
+
+V tomto kroku nebyl proveden deploy, merge, změna Netlify environment, zápis do team state ani placený OpenAI request.
+
 ## Aktuální doplnění — Phase B UK OCDS + community access review, 5. 9. 2026
 
 Nejnovější navazující práce je ve stacked Draft PR #15:
