@@ -2,11 +2,14 @@
 
 ## Aktuální doplnění — Phase C operator UI, 5. 9. 2026
 
-Navazující práce je na stacked branchi `feat/phase-c-operator-ui-20260905` nad Draft PR #17:
+Navazující práce je ve stacked Draft PR #18 nad Draft PR #17:
 
+- Draft PR #18: https://github.com/Winters111222/3dsk-radar/pull/18,
+- branch: `feat/phase-c-operator-ui-20260905`,
+- první remote implementation HEAD PR #18: `4ce0ab364126c6c1201d2e678faa86bf39da84d9`,
 - exact base / remote HEAD PR #17: `9a802b90f80033ca6200a0ff17e9a108cb9e7e4e`,
 - GitHub Radar CI PR #17 / run #71: SUCCESS,
-- PR #14–#17 ani novou operator-UI branch nemergovat bez explicitního souhlasu vlastníka,
+- PR #14–#18 nemergovat bez explicitního souhlasu vlastníka,
 - `main` neměnit.
 
 Phase C je nyní přibližně 80 %. Nový responzivní `Source candidate collection` panel umí z jednoho kliknutí START/RESUME přes persisted chunky, progress pro services/pages/raw candidates, cancel a načtení posledního běhu po refreshi. Browser loop má hard cap 25 chunků na jednu session; při cooldownu opakuje stejné operation ID, na `RETRY_WAIT`/`UNCERTAIN` zastaví a dlouhý běh lze bezpečně obnovit.
