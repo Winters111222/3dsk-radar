@@ -22,6 +22,11 @@ jobs:
           node-version: 22
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build exact-revision metadata
+        env:
+          COMMIT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          CONTEXT: ci
+        run: npm run build
       - name: Run tests
         run: npm test
       - name: Validate source research catalog (offline)
@@ -38,7 +43,12 @@ jobs:
             node --check "$file"
           done
       - name: Package tested source
-        run: git archive --format=tar.gz -o radar-source.tar.gz HEAD
+        env:
+          COMMIT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          git archive --format=tar -o radar-source.tar "$COMMIT_REF"
+          tar --append --file radar-source.tar build-metadata.json
+          gzip -9 radar-source.tar
       - name: Upload tested source
         uses: actions/upload-artifact@v4
         with:
