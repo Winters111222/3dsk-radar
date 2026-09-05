@@ -1,0 +1,485 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-09-05",
+  "status": "HISTORICAL_QUALIFICATION_COMPLETE_RUNTIME_LOCKED",
+  "purpose_cz": "Odděluje pouhý výzkumný seznam domén od zdrojů s doloženou historickou poptávkou odpovídající schopnostem 3D.SK.",
+  "runtime_policy": {
+    "default_runtime_eligible": false,
+    "minimum_positive_examples": 2,
+    "required_access_status": "AUTOMATION_APPROVED",
+    "required_yield_status": "SOURCE_SPECIFIC_PRECISION_PASSED",
+    "minimum_precision": 0.8,
+    "minimum_reviewed_accepted_hits": 30,
+    "note_cz": "Tier A dokládá obsahovou relevanci, nikoli oprávnění nebo připravenost crawleru. Aktivace vyžaduje samostatné schválení přístupu a měření výtěžnosti."
+  },
+  "tier_definitions": {
+    "A": "Konkrétní historická buyer nabídka v core nebo těsně přilehlém scope 3D.SK.",
+    "B": "Historický hiring, outsourcing, supplier nebo přilehlý procurement signál; nikoli přímá ověřená B2B objednávka pro studio.",
+    "C": "Kandidátní doména bez nalezeného zdrojově specifického pozitivního historického důkazu.",
+    "DISABLED": "Zdroj je nedostupný nebo již katalogem vyřazený."
+  },
+  "sources": [
+    {
+      "source_id": "polycount_paid",
+      "tier": "A",
+      "historical_status": "PROVEN_DIRECT_BUYER",
+      "action": "HOLD_ACCESS_BLOCKED",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://polycount.com/discussion/239037/paid-freelance-stylized-game-artist-s-characters-animation-environment-art"
+      ],
+      "rationale_cz": "Doložena placená poptávka po character art; konkrétní příklad je však USA-only a automatizovaný přístup není schválen."
+    },
+    {
+      "source_id": "unreal_job_offerings",
+      "tier": "A",
+      "historical_status": "PROVEN_DIRECT_BUYER",
+      "action": "HOLD_ACCESS_BLOCKED",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://forums.unrealengine.com/t/paid-metahuman-expert-needed-for-character-assembly-and-wardrobe-setup/2734270"
+      ],
+      "rationale_cz": "Doložena placená MetaHuman assembly a wardrobe oprava; automatizovaný přístup zůstává blokovaný access review."
+    },
+    {
+      "source_id": "blender_paid",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kategorie zní relevantně, ale audit nedoložil konkrétní historickou buyer nabídku v scope 3D.SK; přístup je navíc blokovaný."
+    },
+    {
+      "source_id": "upwork",
+      "tier": "A",
+      "historical_status": "PROVEN_DIRECT_BUYER",
+      "action": "HOLD_FOR_APPROVED_API",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://www.upwork.com/freelance-jobs/apply/Scan-Cleanup-Full-Body-Human-Photogrammetry-Ongoing_~022093482015133487827/"
+      ],
+      "rationale_cz": "Silný core důkaz: full-body human scan cleanup, opakované dávky a dotaz na týmovou kapacitu; automatizace jen přes schválený use case."
+    },
+    {
+      "source_id": "freelancer_3d",
+      "tier": "A",
+      "historical_status": "PROVEN_DIRECT_BUYER",
+      "action": "HOLD_FOR_APPROVED_API",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://www.freelancer.com/projects/3d-modelling/Character-Texture-Artist"
+      ],
+      "rationale_cz": "Doložena historická poptávka po photogrammetry heads a 3D athlete characters; nabídka je stará a uzavřená, slouží pouze jako důkaz relevance zdroje."
+    },
+    {
+      "source_id": "peopleperhour_3d",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Audit nenašel zdrojově specifický historický buyer příklad v core scope."
+    },
+    {
+      "source_id": "guru_3d",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Audit nenašel zdrojově specifický historický buyer příklad v core scope."
+    },
+    {
+      "source_id": "workwithindies",
+      "tier": "B",
+      "historical_status": "PROVEN_HIRING_SIGNAL",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://www.workwithindies.com/careers/kindred-spirit-games-3d-character-artist"
+      ],
+      "rationale_cz": "Doložena character role, ale jde o nábor jednotlivce a uzavřenou nabídku, nikoli B2B objednávku externího studia."
+    },
+    {
+      "source_id": "remote_game_jobs",
+      "tier": "B",
+      "historical_status": "PROVEN_HIRING_SIGNAL",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://remotegamejobs.com/jobs/unfold-games-3d-character-animator-humanoid-animation-remote-job"
+      ],
+      "rationale_cz": "Doložena relevantní contract role; přijímání nabídky od studia ani B2B forma nejsou potvrzené."
+    },
+    {
+      "source_id": "hitmarker",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Obecný hiring agregátor bez doložené B2B buyer nabídky pro 3D.SK."
+    },
+    {
+      "source_id": "gamesjobsdirect",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Obecný hiring agregátor; indexovaná role sama neprokazuje nákup externího studia."
+    },
+    {
+      "source_id": "artstation_jobs",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Job board bez doloženého zdrojově specifického B2B buyer příkladu."
+    },
+    {
+      "source_id": "gamejobs_co",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Agregované kariérní role nejsou samy o sobě obchodní poptávkou po externím týmu."
+    },
+    {
+      "source_id": "vfxengine",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "VFX hiring může být lead signal, ale audit nedoložil přímý buyer brief pro studio."
+    },
+    {
+      "source_id": "global_animation_sheet",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Discovery tabulka pracovních míst; reuse práva a B2B relevance nejsou doložené."
+    },
+    {
+      "source_id": "behance_jobs",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Smíšený job board bez doloženého konkrétního buyer příkladu v core scope."
+    },
+    {
+      "source_id": "reddit_gamedevclassifieds",
+      "tier": "A",
+      "historical_status": "PROVEN_DIRECT_BUYER",
+      "action": "HOLD_FOR_APPROVED_API",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://www.reddit.com/r/gameDevClassifieds/comments/1kktbal/hiring_3d_character_artist_webcomic_in_development/",
+        "https://www.reddit.com/r/gameDevClassifieds/comments/1fyhewr/paid_indie_developer_looking_for_3d_character/"
+      ],
+      "rationale_cz": "Doloženy dvě placené character poptávky, ale board míchá HIRING/FOR HIRE a automatizace vyžaduje schválenou datovou cestu."
+    },
+    {
+      "source_id": "contra_opportunities",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Veřejný živý feed ani konkrétní buyer příklad v core scope nebyly doloženy."
+    },
+    {
+      "source_id": "ted_eu",
+      "tier": "C",
+      "historical_status": "NO_RELEVANT_HIT_IN_SAMPLE",
+      "action": "HOLD_FOR_SOURCE_SPECIFIC_YIELD",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Datová cesta je kvalitní, ale dosavadní omezený live vzorek nepřinesl relevantní 3D.SK příležitost."
+    },
+    {
+      "source_id": "find_tender_uk",
+      "tier": "C",
+      "historical_status": "NO_RELEVANT_HIT_IN_SAMPLE",
+      "action": "HOLD_FOR_SOURCE_SPECIFIC_YIELD",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Collector je implementovaný, ale dosavadní omezený live vzorek nepřinesl relevantní 3D.SK příležitost."
+    },
+    {
+      "source_id": "contracts_finder_uk",
+      "tier": "C",
+      "historical_status": "NO_RELEVANT_HIT_IN_SAMPLE",
+      "action": "HOLD_FOR_SOURCE_SPECIFIC_YIELD",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Collector je implementovaný, ale dosavadní omezený live vzorek nepřinesl relevantní 3D.SK příležitost."
+    },
+    {
+      "source_id": "sam_us",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Široký procurement zdroj s očekávaným šumem; core historická poptávka zatím nedoložena."
+    },
+    {
+      "source_id": "canadabuys",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "HOLD_FOR_SOURCE_SPECIFIC_YIELD",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Oficiální data jsou dostupná, ale core historická výtěžnost ani bezpečný malý adapter nejsou doloženy."
+    },
+    {
+      "source_id": "austender",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Široký veřejný procurement bez doloženého core příkladu."
+    },
+    {
+      "source_id": "ungm",
+      "tier": "C",
+      "historical_status": "PROVEN_NONCORE_ONLY",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kontrolovaný příklad byl mimo core scope; obecný UN procurement není důkaz relevance pro character/human capture práci."
+    },
+    {
+      "source_id": "undp",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Široký procurement bez doloženého core historického příkladu."
+    },
+    {
+      "source_id": "nen_cz",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Určená strojová cesta sama neprokazuje obsahovou výtěžnost pro 3D.SK."
+    },
+    {
+      "source_id": "isvz_vvz_cz",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Open data sama neprokazují historickou výtěžnost v core scope."
+    },
+    {
+      "source_id": "een_requests",
+      "tier": "C",
+      "historical_status": "WRONG_DIRECTION_ONLY",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kontrolovaný příklad byl seller offer, nikoli buyer request; bez pozitivního buyer důkazu neprohledávat."
+    },
+    {
+      "source_id": "eu_funding_partner_search",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Partner search a grantová konsorcia nejsou automaticky placená objednávka služeb."
+    },
+    {
+      "source_id": "gets_nz",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Obecný procurement zdroj bez doloženého core příkladu."
+    },
+    {
+      "source_id": "gebiz_sg",
+      "tier": "B",
+      "historical_status": "PROVEN_ADJACENT_PROCUREMENT",
+      "action": "HOLD_ACCESS_BLOCKED",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://www.gebiz.gov.sg/ptn/opportunity/opportunityDetails.xhtml?OPPORTUNITY_ID=1000000000000523257&code=NHB000ETT26000003&origin=rss&status=RELEASED&type=TT"
+      ],
+      "rationale_cz": "Doložen přilehlý photogrammetry/media procurement, nikoli jistý character-production fit; reuse omezení blokuje automatizaci."
+    },
+    {
+      "source_id": "pcs_scotland",
+      "tier": "C",
+      "historical_status": "PROVEN_NONCORE_ONLY",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kontrolovaný výsledek byl scanner hardware nebo scan-to-BIM, tedy false positive vůči schopnostem 3D.SK."
+    },
+    {
+      "source_id": "etenders_ie",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Obecný procurement bez doloženého core historického příkladu."
+    },
+    {
+      "source_id": "worldbank_procurement",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Široký procurement s vysokým GIS/digitisation šumem; core důkaz chybí."
+    },
+    {
+      "source_id": "ebrd_ecepp",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISABLED_UNTIL_POSITIVE_EVIDENCE",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Obecný consultancy procurement bez doloženého core příkladu."
+    },
+    {
+      "source_id": "riot",
+      "tier": "B",
+      "historical_status": "PROVEN_OUTSOURCING_SIGNAL",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://www.riotgames.com/en/work-with-us/job/8003925/senior-art-outsourcing-manager-weapon-concept-valorant-skins-mercer-island-usa"
+      ],
+      "rationale_cz": "Outsourcing management je relevantní nákupní signál, ale konkrétní role není B2B objednávka character/human capture služby."
+    },
+    {
+      "source_id": "ubisoft",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kariérní stránka studia bez konkrétního historického buying signálu."
+    },
+    {
+      "source_id": "remedy",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kariérní stránka studia bez konkrétního historického buying signálu."
+    },
+    {
+      "source_id": "framestore",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "VFX nábor není prokázaná objednávka externího 3D.SK týmu."
+    },
+    {
+      "source_id": "dneg",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "VFX nábor není prokázaná objednávka externího 3D.SK týmu."
+    },
+    {
+      "source_id": "weta_fx",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kariérní role bez prokázané externí B2B eligibility."
+    },
+    {
+      "source_id": "naughty_dog",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kariérní role bez prokázané objednávky externího studia."
+    },
+    {
+      "source_id": "guerrilla",
+      "tier": "C",
+      "historical_status": "UNPROVEN",
+      "action": "DISCOVERY_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Kariérní role bez prokázané objednávky externího studia."
+    },
+    {
+      "source_id": "sony_pictures_supplier",
+      "tier": "B",
+      "historical_status": "PROVEN_SUPPLIER_ACCESS_PATH",
+      "action": "MANUAL_ONLY",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [
+        "https://supplier.sonypictures.com/"
+      ],
+      "rationale_cz": "Oficiální supplier vstup existuje, ale registrace dodavatele není zveřejněná objednávka a nesmí se automatizovat."
+    },
+    {
+      "source_id": "ea_careers",
+      "tier": "DISABLED",
+      "historical_status": "UNAVAILABLE",
+      "action": "DISABLED",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Zdroj byl v katalogu vyřazen kvůli neověřenému přístupu."
+    },
+    {
+      "source_id": "rockstar_careers",
+      "tier": "DISABLED",
+      "historical_status": "UNAVAILABLE",
+      "action": "DISABLED",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Zdroj byl v katalogu vyřazen kvůli neověřenému přístupu."
+    },
+    {
+      "source_id": "bungie_careers",
+      "tier": "DISABLED",
+      "historical_status": "UNAVAILABLE",
+      "action": "DISABLED",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Zdroj byl v katalogu vyřazen kvůli neověřenému přístupu."
+    },
+    {
+      "source_id": "creativeheads",
+      "tier": "DISABLED",
+      "historical_status": "UNAVAILABLE",
+      "action": "DISABLED",
+      "runtime_eligible": false,
+      "positive_evidence_urls": [],
+      "rationale_cz": "Board byl při auditu v rekonstrukci a nepočítá se jako aktivní zdroj."
+    }
+  ]
+}
