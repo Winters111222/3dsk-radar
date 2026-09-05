@@ -1,5 +1,52 @@
 # 3D.SK Opportunity Radar — NEXT THREAD HANDOFF CZ
 
+## Aktuální doplnění — Phase C run engine, 5. 9. 2026
+
+Navazující práce je na stacked branchi `feat/phase-c-run-engine-20260905` nad Draft PR #16:
+
+- exact base / remote HEAD PR #16: `68c0f6ed67f2d562716d59cfd54ffdd0686cbb7b`,
+- PR #14–#16 ani novou Phase C branch nemergovat bez explicitního souhlasu vlastníka,
+- `main` neměnit.
+
+Phase C je přibližně 70 %. Implementovaný je autentizovaný `GET/POST /api/source-runs`, immutable FOCUSED/WIDE plán, 12 work items přes TED/Find a Tender/Contracts Finder a čtyři schválené query packs, chunky po nejvýše čtyřech requestech, cursory, průběžné ukládání raw kandidátů, request/operation idempotence, persisted cancel, retry boundary a `UNCERTAIN` stav po nejasném přerušení. Kandidáti zůstávají mimo hotové `opportunities/`.
+
+Dedupe spojuje native tender identity, canonical URL a buyer/title shodu napříč zdroji. Nové release stejného tenderu je revision; exact replay už síť neotevře. Offline acceptance nabízí 501 stran a hard-stopne na 500 (140 list + 360 detail), nabízí 215 kandidátů a přijme 180. Testy kryjí Contracts Finder 403, 429, timeout, přerušení, cancel a replay.
+
+Cost reservation ledger používá integer `microusd` a respektuje profily `$0.50` / `$1.00`, ale `paid_execution` zůstává `LOCKED`. Netlify Blobs contract nemá compare-and-swap/conditional write, takže per-instance lock a persisted leases nejsou distribuovaná exactly-once záruka. Před jakýmkoli placeným dispatch je nutný atomický coordinator nebo jiná prokazatelná serializace. Nic placeného nebylo spuštěno.
+
+Ověření lokální implementation branche:
+
+- implementation commit: `43fcf0cefa3286b3a1b2b04d22bf42466e6c8f71`,
+- `npm test` → 125/125 PASS,
+- `npm run accept:run` → PASS; 501 offered / 500 accepted pages, 215 / 180 candidates, network 0, OpenAI 0, `$0`,
+- `npm run accept:collector` → PASS,
+- `npm run accept:fixture` → PASS,
+- `npm run accept:http` → PASS,
+- `npm run sources:check` → PASS,
+- `git diff --check` → PASS.
+
+Aktuální orientační roadmapa:
+
+- původní V0.1: přibližně 96 %,
+- výzkum a katalog: 100 %,
+- odstranění Visual / AI / Motion: 100 %,
+- Phase A: 100 %,
+- Phase B: 100 %,
+- Phase C: přibližně 70 %,
+- Phase D: 0 %,
+- celý rozšířený Radar: přibližně 91 %.
+
+Do Phase C zbývá detailní enrichment, napojení raw kandidátů na Phase A truth gates, skutečný detail-page adapter, distribuovaně atomická koordinace budoucích cost reservations a UI progress/cancel přes více chunků. Phase D potom musí nejdřív nasadit a ověřit pouze zero-cost cestu. První placený Focused run je stále zakázaný bez explicitního souhlasu a zelené zero-cost Phase D.
+
+Bez změny zůstává:
+
+```text
+RADAR_LIVE_AI_ENABLED=false
+RADAR_SOURCE_COLLECTION_ENABLED=false
+```
+
+V tomto kroku nebyl proveden deploy, merge, změna Netlify environment, live source request ani OpenAI request.
+
 ## Aktuální doplnění — Phase B dokončena, 5. 9. 2026
 
 Nejnovější navazující práce je ve stacked Draft PR #16:

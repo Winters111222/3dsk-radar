@@ -1,17 +1,7 @@
 import { authorizeRequest } from "../../src/server/auth.mjs";
 import { boundedCollectorInteger, CollectorError } from "../../src/server/collectors/collector-contract.mjs";
-import {
-  collectContractsFinderNotices,
-  CONTRACTS_FINDER_QUERY_PACKS,
-  CONTRACTS_FINDER_SOURCE_ID
-} from "../../src/server/collectors/contracts-finder.mjs";
-import {
-  collectFindTenderNotices,
-  FIND_TENDER_QUERY_PACKS,
-  FIND_TENDER_SOURCE_ID
-} from "../../src/server/collectors/find-tender.mjs";
+import { collectSourcePage, collectorDefinition } from "../../src/server/collectors/dispatch.mjs";
 import { collectorRegistry } from "../../src/server/collectors/registry.mjs";
-import { collectTedNotices, TED_QUERY_PACKS, TED_SOURCE_ID } from "../../src/server/collectors/ted.mjs";
 import { envValue, sourceCollectionEnabled } from "../../src/server/runtime.mjs";
 
 function json(payload, status = 200, extraHeaders = {}) {
@@ -32,41 +22,13 @@ function maxResults() {
   return boundedCollectorInteger(envValue("RADAR_SOURCE_COLLECTION_MAX_RESULTS"), 25, 1, 50);
 }
 
-const implementedCollectors = Object.freeze({
-  [TED_SOURCE_ID]:{
-    queryPacks:TED_QUERY_PACKS,
-    unknownPackCode:"TED_QUERY_PACK_UNKNOWN",
-    collect:({ body, nowIso, limit }) => collectTedNotices({
-      queryPackId:body.query_pack_id,
-      nowIso,
-      page:boundedCollectorInteger(body.page, 1, 1, 20),
-      limit,
-      fetchImpl:globalThis.__RADAR_TEST_TED_FETCH__ || fetch
-    })
-  },
-  [FIND_TENDER_SOURCE_ID]:{
-    queryPacks:FIND_TENDER_QUERY_PACKS,
-    unknownPackCode:"FIND_TENDER_QUERY_PACK_UNKNOWN",
-    collect:({ body, nowIso, limit }) => collectFindTenderNotices({
-      queryPackId:body.query_pack_id,
-      nowIso,
-      cursor:body.cursor,
-      limit,
-      fetchImpl:globalThis.__RADAR_TEST_FIND_TENDER_FETCH__ || fetch
-    })
-  },
-  [CONTRACTS_FINDER_SOURCE_ID]:{
-    queryPacks:CONTRACTS_FINDER_QUERY_PACKS,
-    unknownPackCode:"CONTRACTS_FINDER_QUERY_PACK_UNKNOWN",
-    collect:({ body, nowIso, limit }) => collectContractsFinderNotices({
-      queryPackId:body.query_pack_id,
-      nowIso,
-      cursor:body.cursor,
-      limit,
-      fetchImpl:globalThis.__RADAR_TEST_CONTRACTS_FINDER_FETCH__ || fetch
-    })
-  }
-});
+function sourceFetch(sourceId) {
+  return {
+    ted_eu:globalThis.__RADAR_TEST_TED_FETCH__,
+    find_tender_uk:globalThis.__RADAR_TEST_FIND_TENDER_FETCH__,
+    contracts_finder_uk:globalThis.__RADAR_TEST_CONTRACTS_FINDER_FETCH__
+  }[sourceId] || fetch;
+}
 
 export default async function handler(request) {
   if (!["GET", "POST"].includes(request.method)) {
@@ -86,7 +48,7 @@ export default async function handler(request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const collector = implementedCollectors[body.source_id];
+  const collector = collectorDefinition(body.source_id);
   if (!collector) {
     return json({ ok:false, error:{ code:"COLLECTOR_NOT_AVAILABLE", message:"Choose an implemented read-only source collector." } }, 400);
   }
@@ -105,10 +67,13 @@ export default async function handler(request) {
 
   try {
     const nowIso = globalThis.__RADAR_TEST_NOW_ISO__ || new Date().toISOString();
-    const result = await collector.collect({
-      body,
+    const result = await collectSourcePage({
+      sourceId:body.source_id,
+      queryPackId:body.query_pack_id,
+      position:{ page:body.page, cursor:body.cursor },
       nowIso,
-      limit:boundedCollectorInteger(body.limit, maxResults(), 1, maxResults())
+      limit:boundedCollectorInteger(body.limit, maxResults(), 1, maxResults()),
+      fetchImpl:sourceFetch(body.source_id)
     });
     return json({
       ok:true,
