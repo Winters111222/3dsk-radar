@@ -13,12 +13,14 @@ Navazující práce je ve stacked Draft PR #20 přesně nad Draft PR #19:
 
 Phase D0 offline readiness je 100 %. Netlify build generuje ignorované exact-revision metadata a CI balí source artifact z exact PR headu místo implicitního merge refu. Nový `accept:deployed:locked` runner nejdřív ověří povolený Radar Netlify host, přesný commit a locked health. Teprve potom provede přesně tři autentizované POST probes, které musí skončit před OpenAI, source transportem a repository write.
 
+První CI průchod odhalil, že samotná metadata s head SHA nestačí: výchozí PR checkout nemusel tento git objekt obsahovat a `git archive` selhal. Workflow proto nyní checkoutuje exact PR head ještě před testy a balí ověřený `HEAD`; statický contract test toto chování hlídá.
+
 Runner je bez retry, vyžaduje jednorázovou confirmation hodnotu, bere access code pouze z environmentu a nikdy jej nevrací. Úspěšný run má přesně 5 HTTP requestů, 0 source requestů, 0 OpenAI requestů, 0 write a cenu `$0`. Identity mismatch nebo odemknutý health zastaví průchod před chráněnými POST.
 
 Ověření lokální branche:
 
 - `npm run build` → PASS,
-- `npm test` → 156/156 PASS,
+- `npm test` → 157/157 PASS,
 - `npm run accept:run` → PASS,
 - `npm run accept:collector` → PASS,
 - `npm run accept:fixture` → PASS,

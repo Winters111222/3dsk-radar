@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
@@ -43,10 +45,8 @@ jobs:
             node --check "$file"
           done
       - name: Package tested source
-        env:
-          COMMIT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          git archive --format=tar -o radar-source.tar "$COMMIT_REF"
+          git archive --format=tar -o radar-source.tar HEAD
           tar --append --file radar-source.tar build-metadata.json
           gzip -9 radar-source.tar
       - name: Upload tested source
