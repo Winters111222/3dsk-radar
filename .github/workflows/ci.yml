@@ -26,6 +26,8 @@ jobs:
         run: npm test
       - name: Run zero-cost fixture acceptance
         run: npm run accept:fixture
+      - name: Run static HTTP smoke acceptance
+        run: npm run accept:http
       - name: Syntax check
         shell: bash
         run: |
