@@ -82,3 +82,15 @@ test("loop pauses instead of spinning while source retries wait", async () => {
   assert.equal(result.chunks, 0);
   assert.equal(calls, 0);
 });
+
+test("loop resumes a persisted detail retry after next_retry_at", async () => {
+  let calls = 0;
+  const result = await continueSourceRunLoop({
+    initialRun:run({ completion_reason:"RETRY_WAIT", next_retry_at:"2026-09-05T12:01:00.000Z", work_items:[] }),
+    now:() => Date.parse("2026-09-05T12:02:00.000Z"),
+    makeOperationId:() => "operation_detail_retry",
+    continueChunk:async () => { calls += 1; return { run:run({ status:"COMPLETED", completion_reason:"ENRICHMENT_COMPLETE" }) }; }
+  });
+  assert.equal(result.reason, "COMPLETED");
+  assert.equal(calls, 1);
+});

@@ -1,5 +1,60 @@
 # 3D.SK Opportunity Radar — NEXT THREAD HANDOFF CZ
 
+## Aktuální doplnění — Phase C enrichment a promotion dokončeny, 5. 9. 2026
+
+Navazující práce je ve stacked Draft PR #19 přesně nad Draft PR #18:
+
+- Draft PR #19: https://github.com/Winters111222/3dsk-radar/pull/19,
+- branch: `feat/phase-c-enrichment-promotion-20260905`,
+- první remote implementation commit: `2d4cd46ca4492443c8b6988395d6c2162a23f7dc`,
+- exact base / remote HEAD PR #18 při vytvoření: `3ba89fdde0d8c82e2f73692d41f007743bfd2573`,
+- PR #14–#19 nemergovat bez explicitního souhlasu vlastníka,
+- `main` neměnit.
+
+Phase C code scope je nyní 100 %. Run po bounded list collection přechází do persisted enrichment fáze. Každý raw kandidát používá pouze fixní first-party detail adapter pro TED, Find a Tender nebo Contracts Finder; adapter validuje source identity, schéma, timeout a 2 MB response cap. Query-pack fráze sama nestačí jako promotion evidence.
+
+Detail je deterministicky klasifikován přes existující Phase A gates. Do `opportunities/` projde jen prokázaný buyer record se stavem, studio eligibility, scope, freshness a provenance; seller/inactive/individual-only/equipment/out-of-scope/Visual-AI-Motion-only a neprokázané výsledky failnou closed s explicitním rejection reason. Public contact a published budget přežijí jen s first-party provenancí; nejednoznačný budget je `UNKNOWN`.
+
+Detail retry je nejvýše jednou v nové operaci a má persisted `next_retry_at`; exact operation replay znovu nedispatchuje. Neznámé přerušení končí `UNCERTAIN`. Cancel po detail fetch uloží enrichment evidence, ale zabrání promotion. UI zobrazuje services/pages/raw candidates/truth review a stavy raw, fetching, retry, promoted, rejected, blocked a enriched-before-cancel.
+
+Atomický paid coordinator má executable readiness contract a přesnou specifikaci CAS, unique keys, budget transakce a fencing v `docs/PHASE_C_ATOMIC_COORDINATOR_CZ.md`. Skutečný provider není implementovaný ani nasazený, proto `paid_execution` zůstává `LOCKED` a samotný environment flag nesmí unlock obejít.
+
+Ověření lokální branche:
+
+- `npm ci` → PASS,
+- `npm test` → 151/151 PASS,
+- `npm run accept:run` → PASS včetně detail → Phase A → promotion,
+- `npm run accept:collector` → PASS,
+- `npm run accept:fixture` → PASS,
+- `npm run accept:http` → PASS,
+- `npm run sources:check` → PASS,
+- simulated 501 / accepted 500 pages,
+- offered 215 / accepted 180 candidates,
+- network requests 0, OpenAI requests 0, cost `$0`,
+- syntax check a `git diff --check` → PASS.
+
+Aktuální orientační roadmapa:
+
+- původní V0.1: přibližně 96 %,
+- výzkum a katalog: 100 %,
+- odstranění Visual / AI / Motion: 100 %,
+- Phase A: 100 %,
+- Phase B: 100 %,
+- Phase C code scope: 100 %,
+- Phase D: 0 %,
+- celý rozšířený Radar: přibližně 97 %.
+
+Další práce je Phase D: po explicitním souhlasu nasadit pouze zero-cost cestu a ověřit ji v reálném prostředí. Paid cesta vyžaduje implementovaný atomický provider, zelenou Phase D a samostatný explicitní souhlas s jediným FOCUSED testem s capem `$0.50`.
+
+Bez změny zůstává:
+
+```text
+RADAR_LIVE_AI_ENABLED=false
+RADAR_SOURCE_COLLECTION_ENABLED=false
+```
+
+V tomto kroku nebyl proveden deploy, merge, změna Netlify environment, live source request ani OpenAI request.
+
 ## Aktuální doplnění — Phase C operator UI, 5. 9. 2026
 
 Navazující práce je ve stacked Draft PR #18 nad Draft PR #17:

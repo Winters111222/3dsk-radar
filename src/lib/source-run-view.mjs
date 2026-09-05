@@ -16,7 +16,8 @@ export function sourceRunProgress(run) {
   if (!run) return {
     services:{ value:0, maximum:0, ratio:0 },
     pages:{ value:0, maximum:0, ratio:0 },
-    candidates:{ value:0, maximum:0, ratio:0 }
+    candidates:{ value:0, maximum:0, ratio:0 },
+    reviews:{ value:0, maximum:0, ratio:0 }
   };
   const counters = run.counters || {};
   const plan = run.plan_snapshot || {};
@@ -26,10 +27,12 @@ export function sourceRunProgress(run) {
   const pageMaximum = finite(plan.max_total_pages);
   const candidates = finite(counters.candidates_accepted);
   const candidateMaximum = finite(plan.max_candidates);
+  const reviews = finite(counters.candidates_promoted) + finite(counters.candidates_rejected_truth) + finite(counters.candidates_blocked_detail);
   return {
     services:{ value:services, maximum:serviceMaximum, ratio:ratio(services, serviceMaximum) },
     pages:{ value:pages, maximum:pageMaximum, ratio:ratio(pages, pageMaximum) },
-    candidates:{ value:candidates, maximum:candidateMaximum, ratio:ratio(candidates, candidateMaximum) }
+    candidates:{ value:candidates, maximum:candidateMaximum, ratio:ratio(candidates, candidateMaximum) },
+    reviews:{ value:reviews, maximum:candidates, ratio:ratio(reviews, candidates) }
   };
 }
 
@@ -44,7 +47,9 @@ export function sourceCandidateView(candidate) {
     observed_date:record.source_updated_date || record.publication_date || record.published_date || null,
     suggested_categories:Array.isArray(record.suggested_categories) ? record.suggested_categories.filter(Boolean).slice(0, 6) : [],
     reference_count:Array.isArray(candidate?.source_references) ? candidate.source_references.length : 0,
-    review_state:"RAW_CANDIDATE"
+    review_state:candidate?.review_state || "RAW_CANDIDATE",
+    rejection_reason:candidate?.rejection_reason || null,
+    promoted_opportunity_id:candidate?.promoted_opportunity_id || null
   };
 }
 
@@ -66,7 +71,8 @@ export async function continueSourceRunLoop({
   let chunks = 0;
   while (!isTerminalSourceRun(run) && chunks < maxChunks && !shouldStop()) {
     if (run.completion_reason === "RETRY_WAIT") {
-      const retryReady = (run.work_items || []).some((item) => item.status === "PENDING" || (item.status === "RETRYABLE" && Date.parse(item.not_before || 0) <= now()));
+      const detailRetryReady = run.next_retry_at && Date.parse(run.next_retry_at) <= now();
+      const retryReady = detailRetryReady || (run.work_items || []).some((item) => item.status === "PENDING" || (item.status === "RETRYABLE" && Date.parse(item.not_before || 0) <= now()));
       if (!retryReady) return { run, chunks, reason:"RETRY_WAIT" };
     }
     const operationId = makeOperationId();

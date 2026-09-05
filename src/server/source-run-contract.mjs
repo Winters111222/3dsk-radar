@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { IMPLEMENTED_COLLECTORS } from "./collectors/dispatch.mjs";
 
-export const SOURCE_RUN_SCHEMA_VERSION = 1;
+export const SOURCE_RUN_SCHEMA_VERSION = 2;
 export const SOURCE_RUN_STATUSES = Object.freeze(["READY", "RUNNING", "PAUSED", "COMPLETED", "CANCELLED", "UNCERTAIN"]);
 export const SOURCE_RUN_TERMINAL_STATUSES = Object.freeze(["COMPLETED", "CANCELLED", "UNCERTAIN"]);
 
@@ -15,7 +15,8 @@ export const SOURCE_RUN_PROFILES = Object.freeze({
     max_candidates:45,
     max_web_search_calls:12,
     budget_cap_usd:0.50,
-    chunk_list_pages:4
+    chunk_list_pages:4,
+    chunk_detail_pages:4
   }),
   WIDE:Object.freeze({
     profile_id:"WIDE",
@@ -26,7 +27,8 @@ export const SOURCE_RUN_PROFILES = Object.freeze({
     max_candidates:180,
     max_web_search_calls:40,
     budget_cap_usd:1.00,
-    chunk_list_pages:4
+    chunk_list_pages:4,
+    chunk_detail_pages:4
   })
 });
 
@@ -94,6 +96,14 @@ function emptyCounters(planned) {
     candidates_seen:0,
     candidates_accepted:0,
     candidates_rejected_cap:0,
+    candidates_detail_verified:0,
+    candidates_promoted:0,
+    candidates_rejected_truth:0,
+    candidates_blocked_detail:0,
+    candidate_rejection_reasons:{},
+    opportunities_new:0,
+    opportunities_updated:0,
+    detail_requests_attempted:0,
     duplicate_records:0,
     cross_source_duplicates:0,
     tender_revisions_updated:0,
@@ -114,12 +124,14 @@ export function createSourceRun({ profileId, requestId, nowIso, runId = randomUU
     request_id:requestId,
     profile_id:profileId,
     status:"READY",
+    phase:"COLLECTION",
     completion_reason:null,
     created_at:nowIso,
     updated_at:nowIso,
     started_at:null,
     completed_at:null,
     cancel_requested_at:null,
+    next_retry_at:null,
     active_operation_id:null,
     paid_execution:"LOCKED",
     persistence:"NETLIFY_BLOBS",
@@ -221,7 +233,15 @@ export function mergeSourceCandidate(existing, record, nowIso) {
         last_seen_at:nowIso,
         dedupe_keys:dedupeKeys,
         primary_record:record,
-        source_references:[reference]
+        source_references:[reference],
+        review_state:"RAW_CANDIDATE",
+        detail_attempts:0,
+        detail_not_before:null,
+        detail_last_error:null,
+        enrichment:null,
+        rejection_reason:null,
+        promoted_opportunity_id:null,
+        reviewed_at:null
       },
       outcome:"NEW"
     };
@@ -233,13 +253,24 @@ export function mergeSourceCandidate(existing, record, nowIso) {
   const sameNativeTender = existing.source_references.some((item) => item.source_id === reference.source_id && item.tender_identity && item.tender_identity === reference.tender_identity);
   const crossSource = existing.source_references.some((item) => item.source_id !== reference.source_id);
   const newer = recordDate(record) > recordDate(existing.primary_record);
+  const resetReview = newer && existing.primary_record !== record;
   return {
     candidate:{
       ...existing,
       last_seen_at:nowIso,
       dedupe_keys:[...new Set([...existing.dedupe_keys, ...dedupeKeys])],
       primary_record:newer ? record : existing.primary_record,
-      source_references:[...existing.source_references, reference]
+      source_references:[...existing.source_references, reference],
+      ...(resetReview ? {
+        review_state:"RAW_CANDIDATE",
+        detail_attempts:0,
+        detail_not_before:null,
+        detail_last_error:null,
+        enrichment:null,
+        rejection_reason:null,
+        promoted_opportunity_id:null,
+        reviewed_at:null
+      } : {})
     },
     outcome:sameNativeTender ? "REVISION" : (crossSource ? "CROSS_SOURCE_DUPLICATE" : "DUPLICATE")
   };
@@ -253,7 +284,17 @@ export function applyCandidateOutcome(run, outcome) {
     cross_source_duplicates:outcome === "CROSS_SOURCE_DUPLICATE" ? 1 : 0,
     tender_revisions_updated:outcome === "REVISION" ? 1 : 0
   };
-  return { ...run, counters:Object.fromEntries(Object.entries(run.counters).map(([key, value]) => [key, value + (delta[key] || 0)])) };
+  return {
+    ...run,
+    counters:{
+      ...run.counters,
+      candidates_seen:run.counters.candidates_seen + delta.candidates_seen,
+      candidates_accepted:run.counters.candidates_accepted + delta.candidates_accepted,
+      duplicate_records:run.counters.duplicate_records + delta.duplicate_records,
+      cross_source_duplicates:run.counters.cross_source_duplicates + delta.cross_source_duplicates,
+      tender_revisions_updated:run.counters.tender_revisions_updated + delta.tender_revisions_updated
+    }
+  };
 }
 
 export function rejectCandidateAtCap(run) {
