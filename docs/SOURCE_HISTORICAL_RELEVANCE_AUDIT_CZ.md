@@ -56,6 +56,8 @@ Zdroj lze navrhnout k runtime aktivaci pouze tehdy, když současně:
 
 Dokud všechny podmínky neplatí, `runtime_eligible` musí zůstat `false`. `npm run sources:check` kontroluje úplnost auditu, povolené hodnoty a tento fail-closed kontrakt bez sítě a bez OpenAI.
 
+Runtime endpointy navíc načítají stejný kvalifikační artefakt a vracejí `SOURCE_RELEVANCE_LOCKED`, pokud zdroj není způsobilý. Samotné nastavení `RADAR_SOURCE_COLLECTION_ENABLED=true` tedy pojistku relevance neobejde.
+
 ## Praktický další krok
 
 Nejrozumnější další fáze není WIDE crawl. Je to levný source-specific benchmark Tier A cest, které lze používat legálně a technicky bezpečně. Každý zdroj se změří zvlášť, aby široký šum z procurementu nebo job boardů nemohl zakrýt nulovou výtěžnost.
