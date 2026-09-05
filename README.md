@@ -55,6 +55,8 @@ Phase C — atomický coordinator contract pro budoucí paid run: [`docs/PHASE_C
 
 Phase D — deployed zero-cost acceptance: [`docs/PHASE_D_ZERO_COST_ACCEPTANCE_CZ.md`](docs/PHASE_D_ZERO_COST_ACCEPTANCE_CZ.md)
 
+Phase E — single paid FOCUSED acceptance: [`docs/PHASE_E_PAID_ACCEPTANCE_CZ.md`](docs/PHASE_E_PAID_ACCEPTANCE_CZ.md)
+
 Pre-live acceptance: [`docs/PRELIVE_ACCEPTANCE_CZ.md`](docs/PRELIVE_ACCEPTANCE_CZ.md)
 
 Instrukce pro další vývojové boty: [`AGENTS.md`](AGENTS.md)

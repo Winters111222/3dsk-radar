@@ -11,12 +11,14 @@
     "accept:collector": "node scripts/collector-acceptance.mjs",
     "accept:run": "node scripts/source-run-acceptance.mjs",
     "accept:deployed:locked": "node scripts/deployed-zero-cost-acceptance.mjs",
+    "accept:deployed:paid": "node scripts/deployed-paid-acceptance.mjs",
     "measure:collector:live": "node scripts/collector-yield-measurement.mjs",
     "accept:http": "node scripts/http-smoke.mjs",
     "sources:check": "node scripts/check-source-catalog.mjs"
   },
   "dependencies": {
-    "@netlify/blobs": "11.0.3"
+    "@netlify/blobs": "11.0.3",
+    "@netlify/database": "2.0.1"
   },
   "engines": {
     "node": ">=22.12.0"

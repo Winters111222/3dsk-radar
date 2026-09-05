@@ -178,17 +178,26 @@ export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retr
   ].filter(Boolean).join("\n\n");
 }
 
-export function buildOpenAIRequest({ profile, nowIso, maxResults = 12, model = "gpt-5.6-luna", retry = false }) {
+export function buildOpenAIRequest({
+  profile,
+  nowIso,
+  maxResults = 12,
+  model = "gpt-5.6-luna",
+  retry = false,
+  maxToolCalls = 3,
+  maxOutputTokens = 8000
+}) {
   return {
     model,
     store: false,
     reasoning: { effort: "low" },
     tools: [{ type: "web_search", search_context_size: "medium" }],
     tool_choice: "required",
+    max_tool_calls: Math.max(1, Math.min(3, Number(maxToolCalls) || 3)),
     include: ["web_search_call.action.sources"],
     instructions: buildSearchInstructions({ profile, nowIso, maxResults, retry }),
     input: "Search the current public web now and return only the structured Radar opportunity dataset. Do not add prose outside the schema.",
-    max_output_tokens: 12000,
+    max_output_tokens: Math.max(2000, Math.min(8000, Number(maxOutputTokens) || 8000)),
     text: {
       verbosity: "low",
       format: {

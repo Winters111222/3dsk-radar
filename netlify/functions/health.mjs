@@ -2,13 +2,16 @@ import { envValue, sourceCollectionEnabled } from "../../src/server/runtime.mjs"
 
 export default async () => {
   const liveAIEnabled = envValue("RADAR_LIVE_AI_ENABLED").toLowerCase() === "true";
+  const paidAcceptanceEnabled = envValue("RADAR_PAID_ACCEPTANCE_ENABLED").toLowerCase() === "true";
   return Response.json({
     ok: true,
     service: "3dsk-opportunity-radar",
-    stage: "prelive-zero-cost-acceptance",
+    stage: paidAcceptanceEnabled ? "phase-e-paid-acceptance" : "prelive-zero-cost-acceptance",
     access_configured: Boolean(envValue("RADAR_INTERNAL_ACCESS_SECRET")),
     live_ai_enabled: liveAIEnabled,
     paid_ai_state: liveAIEnabled ? "ENABLED" : "LOCKED",
+    paid_acceptance: paidAcceptanceEnabled ? "ARMED" : "LOCKED",
+    paid_coordinator: "NETLIFY_DATABASE",
     prelive_acceptance_enabled: envValue("RADAR_PRELIVE_ACCEPTANCE_ENABLED") === "true" && !liveAIEnabled,
     search_backend: "IMPLEMENTED",
     source_collection: sourceCollectionEnabled() ? "ENABLED" : "LOCKED",

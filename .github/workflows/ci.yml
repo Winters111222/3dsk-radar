@@ -29,6 +29,7 @@ jobs:
           COMMIT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
           CONTEXT: ci
           RADAR_ARTIFACT_PROVENANCE: CI_TESTED_SOURCE
+          RADAR_ACCEPTANCE_PROFILE: PAID_FOCUSED
         run: npm run build
       - name: Run tests
         run: npm test

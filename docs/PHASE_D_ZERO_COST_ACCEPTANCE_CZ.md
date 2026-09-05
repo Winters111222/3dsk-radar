@@ -1,6 +1,8 @@
 # Phase D — deployed zero-cost acceptance
 
-Stav k 5. 9. 2026: **pre-deploy code a offline contract jsou připravené; žádný nový deploy nebyl proveden**.
+Stav k 5. 9. 2026: **PASS / 100 %** na immutable preview `6a9c6ac2f058893e7b937e9e` z exact commitu `6c1516d44d835080d44e8282a233ce26d0cc5f36`.
+
+Deployed runner provedl přesně pět HTTP requestů se statusy `200, 200, 423, 423, 423`: nula source requestů, nula OpenAI requestů, nula write a nula retry. Production deploy ani merge neproběhly.
 
 ## Cíl a hranice
 

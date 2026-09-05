@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 
 export const TESTED_SOURCE_PROVENANCE = "CI_TESTED_SOURCE";
 export const DIRECT_BUILD_PROVENANCE = "DIRECT_BUILD";
+export const ACCEPTANCE_PROFILES = Object.freeze(["LOCKED_ZERO_COST", "PAID_FOCUSED"]);
 
 function validCommit(value) {
   const commit = String(value || "").trim().toLowerCase();
@@ -13,8 +14,14 @@ function validCommit(value) {
 
 function sealedTestedSourceCommit(environment, existingMetadata) {
   if (String(environment.NETLIFY || "").trim().toLowerCase() !== "true") return null;
-  if (existingMetadata?.schema_version !== 2 || existingMetadata?.service !== "3dsk-opportunity-radar" || existingMetadata?.acceptance_profile !== "LOCKED_ZERO_COST" || existingMetadata?.artifact_provenance !== TESTED_SOURCE_PROVENANCE) return null;
+  if (existingMetadata?.schema_version !== 2 || existingMetadata?.service !== "3dsk-opportunity-radar" || !ACCEPTANCE_PROFILES.includes(existingMetadata?.acceptance_profile) || existingMetadata?.artifact_provenance !== TESTED_SOURCE_PROVENANCE) return null;
   return validCommit(existingMetadata.commit_ref);
+}
+
+function acceptanceProfile(environment, existingMetadata) {
+  if (sealedTestedSourceCommit(environment, existingMetadata)) return existingMetadata.acceptance_profile;
+  const requested = String(environment.RADAR_ACCEPTANCE_PROFILE || "").trim().toUpperCase();
+  return ACCEPTANCE_PROFILES.includes(requested) ? requested : "LOCKED_ZERO_COST";
 }
 
 export function resolveBuildCommit(environment = process.env, gitFallback = null, existingMetadata = null) {
@@ -34,7 +41,7 @@ export function createBuildMetadata({ environment = process.env, gitFallback = n
     commit_ref:resolveBuildCommit(environment, gitFallback, existingMetadata),
     deploy_context:String(environment.CONTEXT || "local"),
     generated_at:nowIso,
-    acceptance_profile:"LOCKED_ZERO_COST",
+    acceptance_profile:acceptanceProfile(environment, existingMetadata),
     artifact_provenance:provenance
   };
 }

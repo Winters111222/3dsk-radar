@@ -22,6 +22,18 @@ test("Luna search cost includes web-search fee plus uncached, cached and output 
   assert.equal(cost.token_usd, 0.00284);
   assert.equal(cost.total_tokens, 11000);
   assert.equal(cost.is_estimate, true);
+  assert.equal(cost.pricing_tier, "SHORT_CONTEXT");
+});
+
+test("Luna worst-case accepted context remains below the $0.50 paid acceptance reservation", () => {
+  const cost = estimateSearchCost({
+    model:"gpt-5.6-luna",
+    webSearchCalls:3,
+    usage:{ input_tokens:1_042_000, output_tokens:8_000 }
+  });
+  assert.equal(cost.pricing_tier, "LONG_CONTEXT");
+  assert.equal(cost.total_usd, 0.4612);
+  assert.ok(cost.total_usd < 0.50);
 });
 
 test("retry usage and tool calls can be accumulated without hiding first-attempt cost", () => {

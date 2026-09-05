@@ -41,7 +41,9 @@ export async function runOpportunitySearch({
   nowIso,
   maxResults = 12,
   fetchImpl = fetch,
-  allowStructuredRetry = true
+  allowStructuredRetry = true,
+  maxToolCalls = 3,
+  maxOutputTokens = 8000
 }) {
   let lastError;
   let aggregateUsage = null;
@@ -54,7 +56,9 @@ export async function runOpportunitySearch({
       nowIso,
       maxResults,
       model,
-      retry: attempt === 1
+      retry: attempt === 1,
+      maxToolCalls,
+      maxOutputTokens
     });
     const raw = await callOpenAIResponses({ apiKey, body: requestBody, fetchImpl });
     aggregateUsage = addUsage(aggregateUsage, raw?.usage);

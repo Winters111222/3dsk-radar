@@ -1,6 +1,6 @@
 # Phase C — atomický coordinator pro budoucí paid run
 
-Stav k 5. 9. 2026: **přesný kontrakt je navržen; implementace poskytovatele ani paid dispatch nejsou zapnuté**. `paid_execution` proto zůstává `LOCKED`.
+Stav k 5. 9. 2026: **kontrakt i Netlify Database provider jsou implementované na Phase E větvi; deployed test reálného provideru ani paid dispatch zatím neproběhly**. `paid_execution` proto zůstává `LOCKED` až do samostatně schváleného immutable preview acceptance.
 
 ## Proč nestačí Netlify Blobs
 
@@ -25,7 +25,7 @@ Provider dále musí garantovat:
 
 ## Unlock gate
 
-Paid cestu lze integrovat teprve když:
+Paid cestu lze jednorázově odemknout teprve když:
 
 - `paidCoordinatorReadiness(provider).ready === true`,
 - contract test proběhne proti reálnému provideru se dvěma souběžnými writery,

@@ -39,3 +39,18 @@ test("Netlify cannot replace sealed tested-source identity with its unrelated CO
   assert.equal(metadata.deploy_context, "branch-deploy");
   assert.equal(metadata.artifact_provenance, "CI_TESTED_SOURCE");
 });
+
+test("Phase E CI profile survives the later Netlify branch build", () => {
+  const packagedCommit = "d".repeat(40);
+  const packaged = createBuildMetadata({
+    environment:{ COMMIT_REF:packagedCommit, CONTEXT:"ci", RADAR_ARTIFACT_PROVENANCE:"CI_TESTED_SOURCE", RADAR_ACCEPTANCE_PROFILE:"PAID_FOCUSED" }
+  });
+  assert.equal(packaged.acceptance_profile, "PAID_FOCUSED");
+  const deployed = createBuildMetadata({
+    environment:{ NETLIFY:"true", COMMIT_REF:"e".repeat(40), CONTEXT:"branch-deploy" },
+    existingMetadata:packaged
+  });
+  assert.equal(deployed.commit_ref, packagedCommit);
+  assert.equal(deployed.acceptance_profile, "PAID_FOCUSED");
+  assert.equal(deployed.artifact_provenance, "CI_TESTED_SOURCE");
+});

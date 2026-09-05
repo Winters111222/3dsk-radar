@@ -9,6 +9,8 @@ test("search contract uses current Responses web search + strict schema and cost
   const body = buildOpenAIRequest({ profile, nowIso:"2026-09-05T10:00:00.000Z", maxResults:12 });
   assert.equal(body.model, "gpt-5.6-luna");
   assert.deepEqual(body.tools, [{ type:"web_search", search_context_size:"medium" }]);
+  assert.equal(body.max_tool_calls, 3);
+  assert.equal(body.max_output_tokens, 8000);
   assert.equal(body.tool_choice, "required");
   assert.equal(body.store, false);
   assert.equal(body.reasoning.effort, "low");
