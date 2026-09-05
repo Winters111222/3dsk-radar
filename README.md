@@ -39,6 +39,8 @@ Detailní zadání: [`docs/PROJECT_BRIEF_CZ.md`](docs/PROJECT_BRIEF_CZ.md)
 
 Závazné company-memory rozhodnutí: [`docs/PRODUCT_DECISION_COMPANY_MEMORY_CZ.md`](docs/PRODUCT_DECISION_COMPANY_MEMORY_CZ.md)
 
+Závazný Search scope: [`docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md`](docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md)
+
 Pre-live acceptance: [`docs/PRELIVE_ACCEPTANCE_CZ.md`](docs/PRELIVE_ACCEPTANCE_CZ.md)
 
 Instrukce pro další vývojové boty: [`AGENTS.md`](AGENTS.md)

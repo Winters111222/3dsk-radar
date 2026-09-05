@@ -29,6 +29,7 @@ unique(catalog.adapter_templates.map(x => x.id), "adapter ID");
 unique(queries.packs.map(x => x.id), "query pack ID");
 unique(evidence.cases.map(x => x.id), "evidence case ID");
 const packIds = new Set(queries.packs.map(x => x.id));
+assert.equal(packIds.has("adjacent_visual"), false, "Visual / AI / Motion query pack is excluded by product decision");
 for (const source of catalog.sources) {
   assert.match(source.id, /^[a-z0-9_]+$/);
   assert.ok(lanes.has(source.lane), `Unknown lane: ${source.id}`);

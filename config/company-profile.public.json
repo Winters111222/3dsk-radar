@@ -25,7 +25,7 @@
   "preferred_opportunities": [
     "FULL_PIPELINE","CAPTURE","PHOTOGRAMMETRY_PROCESSING","SCAN_CLEANUP","WRAP_BASEMESH","FACIAL_FACS","CHARACTER_FINISHING","CHARACTER_OUTSOURCING","EXTERNAL_DEVELOPMENT","PRODUCTION_OVERFLOW","PIPELINE_CONSULTING"
   ],
-  "excluded_opportunities": ["AUTO_SEND_EMAIL","LOGIN_BYPASS_SCRAPING"],
+  "excluded_opportunities": ["VISUAL_AI_MOTION_SEARCH","AUTO_SEND_EMAIL","LOGIN_BYPASS_SCRAPING"],
   "reply_rules": {
     "default_language":"en",
     "target_words_min":120,

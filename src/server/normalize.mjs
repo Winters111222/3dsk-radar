@@ -185,8 +185,12 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
     : candidate.opportunity_kind === "POTENTIAL_LEAD" ? "POTENTIAL_LEAD" : null;
   if (!opportunityKind) return { opportunity: null, rejection: "invalid_opportunity_kind" };
 
-  const categories = [...new Set((Array.isArray(candidate.categories) ? candidate.categories : [])
+  const rawCategories = Array.isArray(candidate.categories) ? candidate.categories : [];
+  const categories = [...new Set(rawCategories
     .filter((item) => OPPORTUNITY_CATEGORIES.includes(item)))].slice(0, 6);
+  if (!categories.length && rawCategories.includes("VISUAL_AI_MOTION")) {
+    return { opportunity: null, rejection: "excluded_search_category" };
+  }
   if (!categories.length) categories.push("OTHER_RELEVANT");
 
   const fitScore = safeScore(candidate.fit_score);

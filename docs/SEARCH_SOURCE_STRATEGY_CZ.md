@@ -6,7 +6,7 @@ Pro vlastníka 3D.SK a implementaci Search backendu. Worldwide B2B zakázky v ch
 
 > **Doporučení:** přejít od jednoho obecného AI vyhledání k ručně spuštěnému, omezenému sběru z konkrétních zdrojů. Nejdřív získat kandidátní odkazy, ověřit originály a směr obchodní poptávky, potom pomocí AI extrahovat a hodnotit. Počet načtených stránek musí být viditelný odděleně od počtu skutečných zakázek.
 
-Tento výstup obsahuje **49 zdrojových záznamů, 54 vstupních URL, 4 návrhy ATS adapterů, 48 vyhledávacích šablon v 9 jazycích a 11 evidenčních příkladů**. Nejde o 49 nasazených crawlerů. Všechny nové konektory mají `NOT_IMPLEMENTED` a `crawl_enabled: false`; žádný nový placený aplikační Search ani Generate Response nebyl během této analýzy spuštěn.
+Tento výstup obsahuje **49 zdrojových záznamů, 54 vstupních URL, 4 návrhy ATS adapterů, 44 vyhledávacích šablon v 9 jazycích a 11 evidenčních příkladů**. Nejde o 49 nasazených crawlerů. Všechny nové konektory mají `NOT_IMPLEMENTED` a `crawl_enabled: false`; žádný nový placený aplikační Search ani Generate Response nebyl během této analýzy spuštěn. Původní balíček `adjacent_visual` byl podle rozhodnutí vlastníka odstraněn.
 
 ## 1. Proč dnes uživatel vidí málo — nebo nic
 
@@ -100,9 +100,9 @@ Pro empty state doporučuji rozlišit **nepřipojeno**, **historie skutečně pr
 
 ## 7. Jazyky, stáří a rotace
 
-Query soubor obsahuje 32 anglických šablon a 16 doplňkových v češtině, němčině, francouzštině, španělštině, italštině, polštině, portugalštině a japonštině. Jsou to **návrhy neotestované na plošné výtěžnosti**, nikoli záruka devítijazyčného pokrytí. Vybrat kombinace podle zdroje, ne spustit kartézský součin všech slov, webů a jazyků.
+Query soubor obsahuje 28 anglických šablon a 16 doplňkových v češtině, němčině, francouzštině, španělštině, italštině, polštině, portugalštině a japonštině. Jsou to **návrhy neotestované na plošné výtěžnosti**, nikoli záruka devítijazyčného pokrytí. Vybrat kombinace podle zdroje, ne spustit kartézský součin všech slov, webů a jazyků.
 
-Core: human/body/face scan, cleanup, retopology, Wrap/basemesh, digital double, realistic character, facial/FACS. Druhá vlna: rigging, character animation, external art/overflow. Adjacent visual/motion/museum/medical držet odděleně; nesmí vytlačit core. Procurement vyžaduje službu, ne nákup scanneru ani GIS mapování.
+Core: human/body/face scan, cleanup, retopology, Wrap/basemesh, digital double, realistic character, facial/FACS. Druhá vlna: rigging, character animation v rámci character production a external art/overflow. Samostatné Photoshop / generative-AI visual / motion-design / After Effects / medical-animation / immersive-museum příležitosti jsou ze Search vyloučené. Procurement vyžaduje službu, ne nákup scanneru ani GIS mapování.
 
 Časová okna 24 hodin → 7 dnů → 30 dnů; starší jen s novým důkazem dostupnosti. `refresh_after_hours` v katalogu je návrh stáří cache pro další **ruční** run, ne zapnutý scheduler. Rotovat méně výnosné P2/P3 zdroje, preferovat nové/změněné položky podle kurzoru a obsahu. Rozšiřování nesmí opakovaně vykazovat stejné staré nabídky jako nové.
 
@@ -210,7 +210,7 @@ Výzkum skončil po cíleném ověření komunit, procurement, employer zdrojů 
 ## 11. Strojově čitelné podklady
 
 - [Katalog zdrojů](../config/opportunity-sources.v1.json): stabilní ID, vstupní URL, typ, region, jazyk, priorita, metoda, přístup, omezení a evidence. Obsahuje také 4 ATS šablony; ty se nepočítají jako další zdroje.
-- [Query packs a návrh limitů](../config/search-query-packs.v1.json): 8 tematických balíčků, jazykové varianty, Focused/Wide.
+- [Query packs a návrh limitů](../config/search-query-packs.v1.json): 7 tematických balíčků, jazykové varianty, Focused/Wide.
 - [Evidenční příklady](../config/source-evidence-cases.v1.json): 11 veřejných příkladů pro budoucí acceptance. Specifikace očekávaného chování, nikoli hotový klasifikátor.
 - `npm run sources:check`: offline kontrola integrity katalogu. Nevolá internet ani OpenAI.
 

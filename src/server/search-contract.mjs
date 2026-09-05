@@ -36,7 +36,6 @@ export const OPPORTUNITY_CATEGORIES = [
   "EXTERNAL_DEVELOPMENT",
   "PRODUCTION_OVERFLOW",
   "PIPELINE_CONSULTING",
-  "VISUAL_AI_MOTION",
   "OTHER_RELEVANT"
 ];
 
@@ -48,6 +47,8 @@ export const REMOTE_SCOPES = [
   "ONSITE",
   "NOT_STATED"
 ];
+
+const EXCLUDED_SEARCH_CAPABILITY_IDS = new Set(["visual_ai_motion"]);
 
 const nullableString = { type: ["string", "null"] };
 const nullableNumber = { type: ["number", "null"] };
@@ -131,7 +132,8 @@ export function buildSearchOutputSchema(maxResults = 12) {
 }
 
 export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retry = false }) {
-  const publicCapabilities = profile.capabilities.filter((item) => item.status === "APPROVED" && item.outbound_safe);
+  const publicCapabilities = profile.capabilities.filter((item) =>
+    item.status === "APPROVED" && item.outbound_safe && !EXCLUDED_SEARCH_CAPABILITY_IDS.has(item.id));
   const publicCredentials = profile.credentials.filter((item) => item.status === "PUBLIC_APPROVED" && item.outbound_safe);
 
   return [
@@ -144,6 +146,7 @@ export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retr
     "Do not treat a normal employee job as a studio/vendor opportunity unless the source explicitly permits contract/vendor/external development. If relevant only as a business signal, classify it POTENTIAL_LEAD.",
     "OPEN_OPPORTUNITY means an explicit public request, contract, vendor need, RFP, outsourcing request or external-development opportunity. POTENTIAL_LEAD means only a commercial signal with no explicit public request. Never blur them.",
     "3D.sk is a studio/vendor, not one freelance artist. Match the requested work against the approved capability profile below.",
+    "Do not search for or return Photoshop-only work, generative-AI visual production, motion-design/After Effects work, medical animation or immersive-museum production. Character rigging or animation may remain only when it is part of a relevant human/character production scope.",
     "Never invent a contact email. Only output contact_email when the exact address is publicly visible in a web source you actually consulted; contact_email_source must be that public URL. Otherwise both fields must be null.",
     "Budget provenance is strict: PUBLISHED only for source-stated terms, ESTIMATED only when you can justify a conservative range from public scope context, UNKNOWN when evidence is insufficient. Prefer UNKNOWN over false precision.",
     "Budget means money the prospective buyer can spend on the relevant outsourced production scope. Set budget_basis BUYER_PROJECT only for that scope and budget_source_url to the consulted source establishing it. A seller's product price, marketplace annual license, subscription, rate card, revenue, funding, or individual employee salary is NOT the buyer's outsourcing budget: classify SELLER_PRICE, EMPLOYEE_COMPENSATION or UNKNOWN and set budget_type UNKNOWN with all amount fields null. For estimates the source must establish a concrete buyer project scope; capability overlap is not enough.",

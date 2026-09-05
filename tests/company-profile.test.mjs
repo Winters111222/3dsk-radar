@@ -28,3 +28,8 @@ test("win scoring weights add to 100", () => {
 test("profile has explicit restricted claims", () => {
   assert.ok(profile.restricted_claims.length >= 3);
 });
+
+test("profile explicitly excludes Visual AI Motion from Search", () => {
+  assert.ok(profile.excluded_opportunities.includes("VISUAL_AI_MOTION_SEARCH"));
+  assert.equal(profile.preferred_opportunities.includes("VISUAL_AI_MOTION"), false);
+});

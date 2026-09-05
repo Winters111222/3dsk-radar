@@ -106,6 +106,13 @@ test("same normalized opportunity is deduplicated within one search run", () => 
   assert.equal(normalized.opportunities[0].win_score, 89);
 });
 
+test("visual AI motion-only results are rejected instead of falling back to Other Relevant", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  const result = normalizeCandidate(candidate({categories:["VISUAL_AI_MOTION"]}), verified, NOW);
+  assert.equal(result.opportunity, null);
+  assert.equal(result.rejection, "excluded_search_category");
+});
+
 test("seller license and missing buyer provenance never become an opportunity budget", () => {
   const sources = new Set([normalizeUrl(PRIMARY)]);
   for (const basis of [undefined, "SELLER_PRICE", "EMPLOYEE_COMPENSATION", "UNKNOWN"]) {

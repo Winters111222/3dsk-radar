@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { buildOpenAIRequest, buildSearchOutputSchema, SEARCH_INTENTS } from "../src/server/search-contract.mjs";
+import { buildOpenAIRequest, buildSearchOutputSchema, OPPORTUNITY_CATEGORIES, SEARCH_INTENTS } from "../src/server/search-contract.mjs";
 
 const profile = JSON.parse(await readFile(new URL("../config/company-profile.public.json", import.meta.url), "utf8"));
 
@@ -18,6 +18,10 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.ok(body.instructions.includes("OPEN_OPPORTUNITY"));
   assert.ok(body.instructions.includes("POTENTIAL_LEAD"));
   assert.ok(body.instructions.includes("Never invent a contact email"));
+  assert.ok(body.instructions.includes("Do not search for or return Photoshop-only work"));
+  assert.equal(body.instructions.includes("High-end Photoshop and generative-AI visual workflows; motion/After Effects as a secondary lane"), false);
+  assert.equal(OPPORTUNITY_CATEGORIES.includes("VISUAL_AI_MOTION"), false);
+  assert.equal(body.text.format.schema.properties.opportunities.items.properties.categories.items.enum.includes("VISUAL_AI_MOTION"), false);
 });
 
 test("search schema clamps result count and covers required opportunity kinds", () => {
