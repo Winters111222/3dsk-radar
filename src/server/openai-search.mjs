@@ -1,5 +1,6 @@
 import { buildOpenAIRequest } from "./search-contract.mjs";
 import { normalizeSearchResponse } from "./normalize.mjs";
+import { addUsage, countWebSearchCalls } from "./search-cost.mjs";
 
 export const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 
@@ -43,6 +44,8 @@ export async function runOpportunitySearch({
   allowStructuredRetry = true
 }) {
   let lastError;
+  let aggregateUsage = null;
+  let webSearchCallCount = 0;
   const attempts = allowStructuredRetry ? 2 : 1;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -54,13 +57,16 @@ export async function runOpportunitySearch({
       retry: attempt === 1
     });
     const raw = await callOpenAIResponses({ apiKey, body: requestBody, fetchImpl });
+    aggregateUsage = addUsage(aggregateUsage, raw?.usage);
+    webSearchCallCount += countWebSearchCalls(raw);
     try {
       const normalized = normalizeSearchResponse(raw, { nowIso, maxResults });
       return {
         ...normalized,
         model: raw?.model || model,
         response_id: raw?.id || null,
-        usage: raw?.usage || null,
+        usage: aggregateUsage,
+        web_search_call_count: webSearchCallCount,
         attempts: attempt + 1
       };
     } catch (error) {
