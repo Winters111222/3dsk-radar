@@ -8,6 +8,8 @@ Pro vlastníka 3D.SK a implementaci Search backendu. Worldwide B2B zakázky v ch
 
 Tento výstup obsahuje **49 zdrojových záznamů, 54 vstupních URL, 4 návrhy ATS adapterů, 44 vyhledávacích šablon v 9 jazycích a 11 evidenčních příkladů**. Nejde o 49 nasazených crawlerů. Výzkumný katalog zůstává záměrně celý `crawl_enabled: false`; runtime collector registry je oddělený a nyní obsahuje TED + Find a Tender + Contracts Finder za společným default-off gate. Žádný nový placený aplikační Search ani Generate Response nebyl během této analýzy spuštěn. Původní balíček `adjacent_visual` byl podle rozhodnutí vlastníka odstraněn.
 
+> **Pozdější kvalifikační audit zpřísňuje tento katalog:** pouze 5 z 49 zdrojů má doloženou konkrétní historickou buyer nabídku v relevantním scope, 5 dalších je pouze nepřímý signál a žádný zdroj zatím nesplňuje podmínky runtime aktivace. P1/P2 je výzkumné pořadí, nikoli důkaz relevance. Před jakýmkoli WIDE během platí fail-closed pravidla v [auditu historické relevance](SOURCE_HISTORICAL_RELEVANCE_AUDIT_CZ.md).
+
 ## 1. Proč dnes uživatel vidí málo — nebo nic
 
 Na dodaném screenshotu je prázdný TEAM ACCESS CODE, stav disconnected a požadavek na připojení. Takový pohled neprokazuje prázdnou serverovou databázi. Vyplnění týmového kódu a **LOAD TEAM STATE** načte uložené výsledky bez placeného vyhledávání. Cloud Browser a osobní prohlížeč mají oddělené session; načtení stránky nemá samo spustit Search.
@@ -212,6 +214,7 @@ Výzkum skončil po cíleném ověření komunit, procurement, employer zdrojů 
 - [Katalog zdrojů](../config/opportunity-sources.v1.json): stabilní ID, vstupní URL, typ, region, jazyk, priorita, metoda, přístup, omezení a evidence. Obsahuje také 4 ATS šablony; ty se nepočítají jako další zdroje.
 - [Query packs a návrh limitů](../config/search-query-packs.v1.json): 7 tematických balíčků, jazykové varianty, Focused/Wide.
 - [Evidenční příklady](../config/source-evidence-cases.v1.json): 11 veřejných příkladů pro budoucí acceptance. Specifikace očekávaného chování, nikoli hotový klasifikátor.
+- [Historická kvalifikace zdrojů](../config/source-historical-qualification.v1.json): všech 49 zdrojů přesně jednou, Tier A/B/C/DISABLED, pozitivní důkazy a fail-closed runtime rozhodnutí.
 - `npm run sources:check`: offline kontrola integrity katalogu. Nevolá internet ani OpenAI.
 
 Tento PR přidává výzkum, data a jejich offline validační CI krok. **Nemění runtime Search, neaktivuje nové zdroje, nemění produkční Netlify env, nic nemerguje a neposílá email.** Následující implementace má být menší navazující PR podle kroků A–D, ne neověřená přestavba v jednom deployi.
