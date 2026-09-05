@@ -13,13 +13,13 @@
       <div class="brand-block">
         <div class="brand-mark">3D.SK</div>
         <div>
-          <p class="eyebrow">INTERNAL SALES TOOL · STAGE 1 FIXTURE MODE</p>
+          <p class="eyebrow">INTERNAL SALES TOOL · STAGE 2 SEARCH BACKEND</p>
           <h1>Opportunity Radar</h1>
         </div>
       </div>
       <div class="topbar-meta">
-        <span class="security-pill">Preview access · no paid API calls</span>
-        <span id="dataset-pill" class="dataset-pill">Synthetic fixtures</span>
+        <span class="security-pill">Paid search requires server-side access gate</span>
+        <span id="dataset-pill" class="dataset-pill">Synthetic fixtures · no live run yet</span>
       </div>
     </header>
 
@@ -28,11 +28,15 @@
         <div class="hero-copy">
           <p class="eyebrow">WORLDWIDE · B2B · OUTSOURCING · CONTRACT</p>
           <h2>Find the next character-production opportunity worth answering.</h2>
-          <p>Stage 1 exercises the full decision UI against synthetic fixtures. Search, response generation and shared persistence remain intentionally disconnected.</p>
+          <p>Stage 2 connects the explicit search click to a server-side OpenAI Responses web-search path. Results are normalized and source-gated before they can replace the fixture dataset. Response generation and shared persistence remain intentionally disconnected.</p>
         </div>
         <div class="hero-actions">
+          <label class="access-control" for="access-code">
+            <span>TEAM ACCESS CODE</span>
+            <input id="access-code" type="password" autocomplete="current-password" placeholder="Required for paid search">
+          </label>
           <button id="find-button" class="primary-button" type="button">FIND NEW OPPORTUNITIES</button>
-          <p id="scan-note" class="microcopy">Fixture-only scan · $0 external API cost</p>
+          <p id="scan-note" class="microcopy">No paid API call runs until this button is clicked.</p>
         </div>
       </section>
 
@@ -96,7 +100,7 @@
           <p class="eyebrow">SAFETY CONTRACT</p>
           <h3>Truth beats completion.</h3>
         </div>
-        <p>No guessed email addresses. Published, estimated and unknown budgets remain visibly distinct. Potential leads are never presented as open opportunities. Win Score is a heuristic opportunity score, not a probability of winning.</p>
+        <p>Live source URLs must match URLs actually returned by hosted web search before a record reaches the UI. No guessed email addresses. Published, estimated and unknown budgets remain visibly distinct. Potential leads are never presented as open opportunities. Win Score is a heuristic opportunity score, not a probability of winning.</p>
       </section>
     </main>
   </div>

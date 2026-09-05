@@ -2,5 +2,8 @@
   publish = "."
   functions = "netlify/functions"
 
+[functions]
+  included_files = ["config/company-profile.public.json"]
+
 [dev]
   publish = "."
