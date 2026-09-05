@@ -1,6 +1,4 @@
-function envValue(key) {
-  return globalThis.Netlify?.env?.get(key) || "";
-}
+import { envValue } from "../../src/server/runtime.mjs";
 
 export default async () => {
   const liveAIEnabled = envValue("RADAR_LIVE_AI_ENABLED").toLowerCase() === "true";

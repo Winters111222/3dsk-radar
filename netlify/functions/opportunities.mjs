@@ -1,5 +1,6 @@
+import { envValue } from "../../src/server/runtime.mjs";
 import { authorizeRequest } from "../../src/server/auth.mjs";
 import { getStateRepository } from "../../src/server/netlify-state.mjs";
-const json=(payload,status=200)=>Response.json(payload,{status,headers:{"cache-control":"no-store"}});const envValue=(key)=>globalThis.Netlify?.env?.get(key)||"";
+const json=(payload,status=200)=>Response.json(payload,{status,headers:{"cache-control":"no-store"}});
 export default async function handler(request, context){if(request.method!=="GET")return json({ok:false,error:{code:"METHOD_NOT_ALLOWED",message:"Use GET /api/opportunities."}},405);const auth=authorizeRequest(request,envValue("RADAR_INTERNAL_ACCESS_SECRET"));if(!auth.ok)return json({ok:false,error:{code:auth.code,message:auth.status===503?"Internal access is not configured on the server.":"Invalid internal access code."}},auth.status);try{const repo=await getStateRepository(request, context);const snapshot=await repo.snapshot();snapshot.opportunities.sort((a,b)=>String(b.last_seen||"").localeCompare(String(a.last_seen||"")));return json({ok:true,...snapshot});}catch(error){console.error("[radar-state] STATE_READ_FAILED");return json({ok:false,error:{code:"STATE_READ_FAILED",message:String(error?.message||"Could not read shared team state.").slice(0,300)}},500);}}
 export const config={path:"/api/opportunities"};
