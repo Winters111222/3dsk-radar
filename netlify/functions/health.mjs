@@ -1,4 +1,4 @@
-import { envValue } from "../../src/server/runtime.mjs";
+import { envValue, sourceCollectionEnabled } from "../../src/server/runtime.mjs";
 
 export default async () => {
   const liveAIEnabled = envValue("RADAR_LIVE_AI_ENABLED").toLowerCase() === "true";
@@ -11,6 +11,8 @@ export default async () => {
     paid_ai_state: liveAIEnabled ? "ENABLED" : "LOCKED",
     prelive_acceptance_enabled: envValue("RADAR_PRELIVE_ACCEPTANCE_ENABLED") === "true" && !liveAIEnabled,
     search_backend: "IMPLEMENTED",
+    source_collection: sourceCollectionEnabled() ? "ENABLED" : "LOCKED",
+    source_collectors: { ted:"IMPLEMENTED_API_VERIFIED", community:"BLOCKED_ACCESS_REVIEW" },
     persistence: "NETLIFY_BLOBS",
     response_generation: "IMPLEMENTED"
   }, { headers: { "cache-control": "no-store" } });
