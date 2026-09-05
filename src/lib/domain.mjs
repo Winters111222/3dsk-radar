@@ -1,9 +1,11 @@
+import { COMMERCIAL_ROLES, FRESHNESS_BASES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES } from "./source-truth.mjs";
+
 export const STATUS_VALUES = ["NEW", "INTERESTING", "CONTACTED", "IGNORE"];
 export const OPPORTUNITY_KINDS = ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"];
 export const BUDGET_TYPES = ["PUBLISHED", "ESTIMATED", "UNKNOWN"];
 
 export const REQUIRED_OPPORTUNITY_FIELDS = [
-  "id","canonical_url","source_url","source_domain","title","company","summary","opportunity_kind","categories","location","remote_scope","published_date","first_seen","last_seen","is_new","status","fit_score","win_score","win_band","budget_type","budget_published","budget_estimated_min","budget_estimated_max","budget_currency","budget_confidence","budget_reason","contact_name","contact_role","contact_email","contact_email_source","apply_url","why_it_fits","risks","missing_requirements","source_evidence"
+  "id","canonical_url","source_url","source_domain","title","company","summary","opportunity_kind","commercial_role","notice_status","studio_eligibility","eligibility_reason","scope_fit","categories","location","remote_scope","published_date","source_updated_date","freshness_basis","acceptance_source_url","acceptance_verified_at","first_seen","last_seen","is_new","status","fit_score","win_score","win_band","budget_type","budget_published","budget_estimated_min","budget_estimated_max","budget_currency","budget_confidence","budget_reason","contact_name","contact_role","contact_email","contact_email_source","apply_url","why_it_fits","risks","missing_requirements","source_evidence"
 ];
 
 export function bandForScore(score) {
@@ -51,6 +53,12 @@ export function validateOpportunity(opportunity) {
   const missing = REQUIRED_OPPORTUNITY_FIELDS.filter((key) => !(key in opportunity));
   const errors = missing.map((key) => `missing:${key}`);
   if (!OPPORTUNITY_KINDS.includes(opportunity.opportunity_kind)) errors.push("invalid:opportunity_kind");
+  if (!COMMERCIAL_ROLES.includes(opportunity.commercial_role)) errors.push("invalid:commercial_role");
+  if (!NOTICE_STATUSES.includes(opportunity.notice_status)) errors.push("invalid:notice_status");
+  if (!STUDIO_ELIGIBILITY_VALUES.includes(opportunity.studio_eligibility)) errors.push("invalid:studio_eligibility");
+  if (!SCOPE_FITS.includes(opportunity.scope_fit)) errors.push("invalid:scope_fit");
+  if (!FRESHNESS_BASES.includes(opportunity.freshness_basis)) errors.push("invalid:freshness_basis");
+  if (opportunity.acceptance_verified_at && !isHttpUrl(opportunity.acceptance_source_url)) errors.push("invalid:acceptance_without_source");
   if (!Array.isArray(opportunity.categories) || opportunity.categories.length === 0) errors.push("invalid:categories");
   if (!isHttpUrl(opportunity.canonical_url)) errors.push("invalid:canonical_url");
   if (!isHttpUrl(opportunity.source_url)) errors.push("invalid:source_url");

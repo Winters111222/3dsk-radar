@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { bandForScore, validateOpportunity } from "../lib/domain.mjs";
+import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES, evaluateSourceTruth, normalizeSourceDate } from "../lib/source-truth.mjs";
 import { OPPORTUNITY_CATEGORIES, REMOTE_SCOPES } from "./search-contract.mjs";
 
 const TRACKING_PARAMS = new Set([
@@ -96,16 +97,6 @@ function safeScore(value) {
   return Math.max(0, Math.min(100, Math.round(number)));
 }
 
-function normalizePublishedDate(value, nowIso) {
-  const text = safeString(value);
-  if (!text || !/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
-  const timestamp = Date.parse(`${text}T00:00:00Z`);
-  if (!Number.isFinite(timestamp)) return null;
-  const now = Date.parse(nowIso);
-  if (timestamp > now + 86400000) return null;
-  return text;
-}
-
 export function normalizeBudget(candidate, verifiedSourceUrls = new Set()) {
   const claimedType = ["PUBLISHED", "ESTIMATED", "UNKNOWN"].includes(candidate.budget_type) ? candidate.budget_type : "UNKNOWN";
   const source = normalizeUrl(candidate.budget_source_url);
@@ -181,9 +172,33 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
   const summary = safeString(candidate.summary);
   if (!title || !company || !summary) return { opportunity: null, rejection: "missing_core_identity" };
 
-  const opportunityKind = candidate.opportunity_kind === "OPEN_OPPORTUNITY" ? "OPEN_OPPORTUNITY"
+  const requestedKind = candidate.opportunity_kind === "OPEN_OPPORTUNITY" ? "OPEN_OPPORTUNITY"
     : candidate.opportunity_kind === "POTENTIAL_LEAD" ? "POTENTIAL_LEAD" : null;
-  if (!opportunityKind) return { opportunity: null, rejection: "invalid_opportunity_kind" };
+  if (!requestedKind) return { opportunity: null, rejection: "invalid_opportunity_kind" };
+
+  const commercialRole = COMMERCIAL_ROLES.includes(candidate.commercial_role) ? candidate.commercial_role : "UNKNOWN";
+  const noticeStatus = NOTICE_STATUSES.includes(candidate.notice_status) ? candidate.notice_status : "UNKNOWN";
+  const studioEligibility = STUDIO_ELIGIBILITY_VALUES.includes(candidate.studio_eligibility) ? candidate.studio_eligibility : "UNKNOWN";
+  const scopeFit = SCOPE_FITS.includes(candidate.scope_fit) ? candidate.scope_fit : "OUT_OF_SCOPE";
+  const publishedDate = normalizeSourceDate(candidate.published_date, nowIso);
+  const sourceUpdatedDate = normalizeSourceDate(candidate.source_updated_date, nowIso);
+  const acceptanceSourceUrl = normalizeUrl(candidate.acceptance_source_url);
+  const acceptanceEvidenceRecorded = (Array.isArray(candidate.source_evidence) ? candidate.source_evidence : []).some((item) =>
+    normalizeUrl(item?.url) === acceptanceSourceUrl && Boolean(safeString(item?.note)));
+  const acceptanceVerified = noticeStatus === "OPEN" && Boolean(acceptanceSourceUrl && verifiedSourceUrls.has(acceptanceSourceUrl) && acceptanceEvidenceRecorded);
+  const truth = evaluateSourceTruth({
+    requestedKind,
+    commercialRole,
+    noticeStatus,
+    studioEligibility,
+    scopeFit,
+    publishedDate,
+    sourceUpdatedDate,
+    acceptanceVerified,
+    nowIso
+  });
+  if (!truth.ok) return { opportunity:null, rejection:truth.rejection };
+  const opportunityKind = truth.opportunityKind;
 
   const rawCategories = Array.isArray(candidate.categories) ? candidate.categories : [];
   const categories = [...new Set(rawCategories
@@ -242,10 +257,19 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
     company,
     summary,
     opportunity_kind: opportunityKind,
+    commercial_role: commercialRole,
+    notice_status: noticeStatus,
+    studio_eligibility: studioEligibility,
+    eligibility_reason: safeString(candidate.eligibility_reason) || "Studio eligibility was not established by the source.",
+    scope_fit: scopeFit,
     categories,
     location: safeString(candidate.location) || "Not stated",
     remote_scope: REMOTE_SCOPES.includes(candidate.remote_scope) ? candidate.remote_scope : "NOT_STATED",
-    published_date: normalizePublishedDate(candidate.published_date, nowIso),
+    published_date: publishedDate,
+    source_updated_date: sourceUpdatedDate,
+    freshness_basis: truth.freshnessBasis,
+    acceptance_source_url: acceptanceVerified ? acceptanceSourceUrl : null,
+    acceptance_verified_at: acceptanceVerified ? nowIso : null,
     first_seen: nowIso,
     last_seen: nowIso,
     is_new: true,
@@ -295,15 +319,25 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12 } = 
   const parsed = parseStructuredSearchResponse(response);
   const opportunities = [];
   const rejections = [];
-  for (const candidate of parsed.opportunities.slice(0, Math.max(1, Math.min(20, maxResults)))) {
+  const candidates = parsed.opportunities.slice(0, Math.max(1, Math.min(20, maxResults)));
+  for (const candidate of candidates) {
     const normalized = normalizeCandidate(candidate, verifiedSourceUrls, nowIso);
     if (normalized.opportunity) opportunities.push(normalized.opportunity);
     else rejections.push(normalized.rejection);
   }
 
+  const deduped = dedupeOpportunities(opportunities);
+  const rejection_reasons = Object.fromEntries([...new Set(rejections)].sort().map((reason) => [reason, rejections.filter((item) => item === reason).length]));
   return {
-    opportunities: dedupeOpportunities(opportunities),
+    opportunities: deduped,
     rejections,
-    verified_source_count: verifiedSourceUrls.size
+    verified_source_count: verifiedSourceUrls.size,
+    counters: {
+      candidates_seen: candidates.length,
+      candidates_verified: deduped.length,
+      candidates_rejected: rejections.length,
+      duplicates_removed: opportunities.length - deduped.length,
+      rejection_reasons
+    }
   };
 }

@@ -10,6 +10,8 @@ Hotovo: 49 zdrojových záznamů / 54 vstupních URL, 4 ATS šablony, 44 query �
 
 Následuje implementace kroků A–D v analýze: buyer/status/eligibility a counters → první povolené konektory → ruční široký run s kurzory, budgetem a idempotencí → zero-cost acceptance před novým controlled live ověřením. Zachovat company memory a všechny provenance gates. MAIN ani starší PR automaticky nemergovat.
 
+Aktuální navazující implementace: branch `feat/search-truth-measurement-20260905` stojí na exact PR #12 headu `d5d1a501d875f9a86939d74444756a06c446cfad`. Phase A doplňuje hard 30-day freshness, aktivní acceptance evidence pro starší položky, `commercial_role`, `notice_status`, `studio_eligibility`, `scope_fit`, rejection reasons a last-run counters. Všech 11 výzkumných evidence cases má sanitizovaný executable fixture. Další krok po zeleném review je Phase B: první povolené konektory TED + Polycount/Unreal/Blender; žádný placený Search před Phase D.
+
 ---
 
 ## Původní handoff PR #6 — historický záznam

@@ -1,3 +1,5 @@
+import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES } from "../lib/source-truth.mjs";
+
 export const SEARCH_INTENTS = [
   "game studio seeking external character art vendor RFP",
   "looking for human scan cleanup outsourcing partner",
@@ -72,7 +74,8 @@ function candidateSchema() {
     additionalProperties: false,
     required: [
       "title", "company", "summary", "opportunity_kind", "categories", "location", "remote_scope",
-      "published_date", "source_url", "apply_url", "fit_score", "win_score", "budget_type",
+      "commercial_role", "notice_status", "studio_eligibility", "eligibility_reason", "scope_fit",
+      "published_date", "source_updated_date", "acceptance_source_url", "source_url", "apply_url", "fit_score", "win_score", "budget_type",
       "budget_published", "budget_estimated_min", "budget_estimated_max", "budget_currency",
       "budget_confidence", "budget_reason", "budget_basis", "budget_source_url", "contact_name", "contact_role", "contact_email",
       "contact_email_source", "why_it_fits", "risks", "missing_requirements", "source_evidence"
@@ -82,6 +85,11 @@ function candidateSchema() {
       company: { type: "string", minLength: 1 },
       summary: { type: "string", minLength: 1 },
       opportunity_kind: { enum: ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"] },
+      commercial_role: { enum: COMMERCIAL_ROLES },
+      notice_status: { enum: NOTICE_STATUSES },
+      studio_eligibility: { enum: STUDIO_ELIGIBILITY_VALUES },
+      eligibility_reason: { type: "string" },
+      scope_fit: { enum: SCOPE_FITS },
       categories: {
         type: "array",
         minItems: 1,
@@ -91,6 +99,8 @@ function candidateSchema() {
       location: { type: "string" },
       remote_scope: { enum: REMOTE_SCOPES },
       published_date: nullableString,
+      source_updated_date: nullableString,
+      acceptance_source_url: nullableString,
       source_url: { type: "string" },
       apply_url: nullableString,
       fit_score: { type: "integer", minimum: 0, maximum: 100 },
@@ -145,6 +155,10 @@ export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retr
     "Search buyer-side demand first: studios seeking vendors, RFPs, supplier applications and production overflow requests. Generic supplier catalogs and service pages are not buyer demand. Include a supplier as POTENTIAL_LEAD only with a concrete public partnership or subcontracting signal; capability overlap alone is insufficient. Return fewer results or an empty list when evidence is weak.",
     "Do not treat a normal employee job as a studio/vendor opportunity unless the source explicitly permits contract/vendor/external development. If relevant only as a business signal, classify it POTENTIAL_LEAD.",
     "OPEN_OPPORTUNITY means an explicit public request, contract, vendor need, RFP, outsourcing request or external-development opportunity. POTENTIAL_LEAD means only a commercial signal with no explicit public request. Never blur them.",
+    "Classify commercial_role as BUYER, EMPLOYER, SELLER, PARTNER or UNKNOWN from the direction of the public evidence. SELLER offers must not be returned as opportunities.",
+    "Classify notice_status as OPEN, UPCOMING, CLOSED, AWARDED, CANCELLED or UNKNOWN from the current original source. URL parameters and search-engine crawl dates never override the visible current status.",
+    "studio_eligibility is YES only when the brief supports a Czech/European external studio or vendor. A country-only, onsite-only or individual-employment restriction is NO or UNKNOWN, never assumed YES.",
+    "scope_fit is CORE or CHARACTER_ADJACENT only for relevant human/character production. Equipment purchases, GIS/BIM/site scanning and unrelated visual production are OUT_OF_SCOPE or EQUIPMENT.",
     "3D.sk is a studio/vendor, not one freelance artist. Match the requested work against the approved capability profile below.",
     "Do not search for or return Photoshop-only work, generative-AI visual production, motion-design/After Effects work, medical animation or immersive-museum production. Character rigging or animation may remain only when it is part of a relevant human/character production scope.",
     "Never invent a contact email. Only output contact_email when the exact address is publicly visible in a web source you actually consulted; contact_email_source must be that public URL. Otherwise both fields must be null.",
@@ -154,7 +168,7 @@ export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retr
     "WIN SCORE is a heuristic opportunity attractiveness/competitiveness score, never a probability of winning.",
     "Use source_evidence to record the URLs that support the opportunity. source_url must be the best primary/original source you consulted.",
     "Open and inspect each original source before including a result. Do not rely only on snippets or a returned URL. If the page is unavailable, unrelated or no longer supports the claim, omit the result. Label aggregators SECONDARY_SOURCE; they are not the original employer's procurement page.",
-    "If a source is older than 30 days, include it only if the source itself clearly indicates the opportunity is still active.",
+    "Freshness is mandatory: provide a real published_date or source_updated_date. If both are missing or older than 30 days, set acceptance_source_url only when an original source you opened currently and explicitly proves the opportunity is still accepting. Otherwise omit it.",
     retry ? "This is the single allowed structured retry. Be especially strict about the required JSON schema and source provenance." : "",
     `Approved public-safe capabilities: ${JSON.stringify(publicCapabilities)}`,
     `PUBLIC_APPROVED credentials only: ${JSON.stringify(publicCredentials)}`,

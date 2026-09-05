@@ -5,6 +5,8 @@ test("bookmark applies to every opportunity from same company",async()=>{const r
 test("mark email sent also marks the opportunity CONTACTED",async()=>{const repo=createStateRepository(memoryStore());await repo.saveOpportunity(opportunity());await repo.markEmailSent("Example Games",{opportunityId:"opp-1",recipient:"sales@example.com",sentAt:"2026-09-05T10:00:00Z"});assert.equal((await repo.getOpportunity("opp-1")).status,"CONTACTED");});
 test("search merge preserves first_seen and status and makes repeat result not new",async()=>{const repo=createStateRepository(memoryStore());await repo.saveOpportunity(opportunity({status:"INTERESTING"}));const [merged]=await repo.mergeSearchResults([opportunity({id:"new-model-id",first_seen:"2026-09-06T09:00:00Z"})],"2026-09-06T09:00:00Z");assert.equal(merged.id,"opp-1");assert.equal(merged.first_seen,"2026-09-05T09:00:00Z");assert.equal(merged.status,"INTERESTING");assert.equal(merged.is_new,false);});
 
+test("detailed search merge separates new, updated and workspace totals",async()=>{const repo=createStateRepository(memoryStore());await repo.saveOpportunity(opportunity());const result=await repo.mergeSearchResultsWithStats([opportunity({id:"repeat"}),opportunity({id:"opp-2",canonical_url:"https://example.com/b",title:"New Request"})],"2026-09-06T09:00:00Z");assert.equal(result.new_count,1);assert.equal(result.updated_count,1);assert.equal(result.workspace_total,2);});
+
 test("a new repository instance retains old opportunities, reply and last search a week later",async()=>{
  const store=memoryStore(),repo=createStateRepository(store);
  await repo.saveOpportunity(opportunity({reply_subject:"Approved subject",reply_body:"Saved body",reply_to:"public@example.com"}));

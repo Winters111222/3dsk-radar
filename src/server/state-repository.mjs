@@ -1,5 +1,5 @@
 import { companyKey, emptyCompanyState, setCompanyBookmark, markEmailSent, undoLastEmailSent } from "./company-memory.mjs";
-import { mergeOpportunityHistory } from "./history.mjs";
+import { mergeOpportunityHistory, opportunityFingerprint } from "./history.mjs";
 import { normalizeBudget, normalizeUrl } from "./normalize.mjs";
 
 const OP_PREFIX = "opportunities/";
@@ -82,12 +82,22 @@ export function createStateRepository(store) {
     },
 
     async mergeSearchResults(incoming, nowIso) {
+      return (await this.mergeSearchResultsWithStats(incoming, nowIso)).opportunities;
+    },
+
+    async mergeSearchResultsWithStats(incoming, nowIso) {
       const existing = await this.listOpportunities();
       const companies = await this.listCompanies();
       const byKey = Object.fromEntries(companies.map((item) => [item.company_key, item]));
       const merged = mergeOpportunityHistory(existing, incoming, byKey, nowIso);
       for (const item of merged) await this.saveOpportunity(item);
-      return merged;
+      const workspaceFingerprints = new Set([...existing, ...merged].map(opportunityFingerprint));
+      return {
+        opportunities: merged,
+        new_count: merged.filter((item) => item.is_new).length,
+        updated_count: merged.filter((item) => !item.is_new).length,
+        workspace_total: workspaceFingerprints.size
+      };
     },
 
     async saveSearchRun(run) {

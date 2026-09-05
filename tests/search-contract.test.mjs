@@ -22,6 +22,11 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.equal(body.instructions.includes("High-end Photoshop and generative-AI visual workflows; motion/After Effects as a secondary lane"), false);
   assert.equal(OPPORTUNITY_CATEGORIES.includes("VISUAL_AI_MOTION"), false);
   assert.equal(body.text.format.schema.properties.opportunities.items.properties.categories.items.enum.includes("VISUAL_AI_MOTION"), false);
+  const candidate = body.text.format.schema.properties.opportunities.items;
+  for (const field of ["commercial_role","notice_status","studio_eligibility","eligibility_reason","scope_fit","source_updated_date","acceptance_source_url"]) {
+    assert.ok(candidate.required.includes(field), field);
+  }
+  assert.ok(body.instructions.includes("Freshness is mandatory"));
 });
 
 test("search schema clamps result count and covers required opportunity kinds", () => {

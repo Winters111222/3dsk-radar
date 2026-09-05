@@ -10,10 +10,17 @@ function candidate() {
     company:"Buyer Studio",
     summary:"Public external vendor request for scan cleanup and basemesh conforming.",
     opportunity_kind:"OPEN_OPPORTUNITY",
+    commercial_role:"BUYER",
+    notice_status:"OPEN",
+    studio_eligibility:"YES",
+    eligibility_reason:"Worldwide external vendor request.",
+    scope_fit:"CORE",
     categories:["SCAN_CLEANUP","WRAP_BASEMESH"],
     location:"Worldwide",
     remote_scope:"WORLDWIDE_VENDOR",
     published_date:"2026-09-05",
+    source_updated_date:null,
+    acceptance_source_url:null,
     source_url:SOURCE,
     apply_url:SOURCE,
     fit_score:93,
@@ -92,7 +99,7 @@ test("authorized search function normalizes a mocked hosted-search response end 
     OPENAI_API_KEY:"fake-test-key",
     RADAR_SEARCH_COOLDOWN_SECONDS:"0"
   });
-  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResults: async (items) => items, saveSearchRun: async (run) => { assert.equal(run.mode,"LIVE_SEARCH"); } };
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResultsWithStats: async (items) => ({opportunities:items,new_count:1,updated_count:0,workspace_total:1}), saveSearchRun: async (run) => { assert.equal(run.mode,"LIVE_SEARCH"); } };
   globalThis.fetch = async () => new Response(JSON.stringify(mockOpenAIResponse()), {status:200,headers:{"content-type":"application/json"}});
   try {
     const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer team-secret","content-type":"application/json"},body:"{}"}));
@@ -104,6 +111,10 @@ test("authorized search function normalizes a mocked hosted-search response end 
     assert.equal(payload.opportunities[0].win_band, "HIGH");
     assert.equal(payload.run.returned_count, 1);
     assert.equal(payload.run.persistence, "NETLIFY_BLOBS");
+    assert.equal(payload.run.counters.candidates_seen, 1);
+    assert.equal(payload.run.counters.candidates_verified, 1);
+    assert.equal(payload.run.counters.new_opportunities, 1);
+    assert.equal(payload.run.counters.workspace_total, 1);
   } finally {
     globalThis.fetch = oldFetch;
     restore();

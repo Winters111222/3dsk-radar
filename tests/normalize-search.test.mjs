@@ -12,10 +12,17 @@ function candidate(overrides = {}) {
     company:"Example Studio",
     summary:"External vendor request for scanned realistic characters and production basemesh conforming.",
     opportunity_kind:"OPEN_OPPORTUNITY",
+    commercial_role:"BUYER",
+    notice_status:"OPEN",
+    studio_eligibility:"YES",
+    eligibility_reason:"Worldwide external vendor request.",
+    scope_fit:"CORE",
     categories:["WRAP_BASEMESH","CHARACTER_OUTSOURCING"],
     location:"Worldwide",
     remote_scope:"WORLDWIDE_VENDOR",
     published_date:"2026-09-05",
+    source_updated_date:null,
+    acceptance_source_url:null,
     source_url:PRIMARY,
     apply_url:PRIMARY,
     fit_score:92,
@@ -111,6 +118,32 @@ test("visual AI motion-only results are rejected instead of falling back to Othe
   const result = normalizeCandidate(candidate({categories:["VISUAL_AI_MOTION"]}), verified, NOW);
   assert.equal(result.opportunity, null);
   assert.equal(result.rejection, "excluded_search_category");
+});
+
+test("hard truth gates reject stale listings and accept old listings only with current source evidence", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  const stale = normalizeCandidate(candidate({published_date:"2026-07-08"}), verified, NOW);
+  assert.equal(stale.rejection, "stale_or_unverified");
+  const active = normalizeCandidate(candidate({published_date:"2026-07-08",acceptance_source_url:PRIMARY}), verified, NOW);
+  assert.equal(active.opportunity.freshness_basis, "ACTIVE_ACCEPTANCE_EVIDENCE");
+  assert.equal(active.opportunity.acceptance_verified_at, NOW);
+});
+
+test("normalizer rejects sellers and demotes employment signals to Potential Lead", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  assert.equal(normalizeCandidate(candidate({commercial_role:"SELLER"}), verified, NOW).rejection, "seller_not_opportunity");
+  const employment = normalizeCandidate(candidate({commercial_role:"EMPLOYER",studio_eligibility:"UNKNOWN"}), verified, NOW).opportunity;
+  assert.equal(employment.opportunity_kind, "POTENTIAL_LEAD");
+});
+
+test("normalization reports measured rejection and duplicate counters", () => {
+  const payload = response([
+    candidate(),
+    candidate({win_score:89}),
+    candidate({company:"Seller",source_url:CONTACT,apply_url:CONTACT,commercial_role:"SELLER",source_evidence:[{type:"SIGNAL_SOURCE",url:CONTACT,note:"Seller"}]})
+  ]);
+  const normalized = normalizeSearchResponse(payload,{nowIso:NOW,maxResults:12});
+  assert.deepEqual(normalized.counters,{candidates_seen:3,candidates_verified:1,candidates_rejected:1,duplicates_removed:1,rejection_reasons:{seller_not_opportunity:1}});
 });
 
 test("seller license and missing buyer provenance never become an opportunity budget", () => {
