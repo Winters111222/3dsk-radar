@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const envExample = await readFile(new URL("../.env.example", import.meta.url), "utf8");
 const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
 const searchFunction = await readFile(new URL("../netlify/functions/search.mjs", import.meta.url), "utf8");
+const replyFunction = await readFile(new URL("../netlify/functions/generate-response.mjs", import.meta.url), "utf8");
 const healthFunction = await readFile(new URL("../netlify/functions/health.mjs", import.meta.url), "utf8");
 const profile = await readFile(new URL("../config/company-profile.public.json", import.meta.url), "utf8");
 
@@ -19,13 +20,13 @@ test("browser bundle does not reference server secret environment names", () => 
   assert.doesNotMatch(app, /RADAR_INTERNAL_ACCESS_SECRET/);
 });
 
-test("Netlify Functions read environment only through Netlify.env and never print secret values", () => {
-  assert.match(searchFunction, /Netlify\.env\.get\(key\)/);
-  assert.match(healthFunction, /Netlify\.env\.get\("OPENAI_API_KEY"\)/);
-  assert.match(healthFunction, /Netlify\.env\.get\("RADAR_INTERNAL_ACCESS_SECRET"\)/);
-  assert.doesNotMatch(searchFunction, /process\.env/);
-  assert.doesNotMatch(healthFunction, /process\.env/);
-  assert.doesNotMatch(searchFunction, /console\.(log|error)\([^\n]*(apiKey|RADAR_INTERNAL_ACCESS_SECRET)/);
+test("Netlify Functions read environment through Netlify.env and never print secret values", () => {
+  for (const source of [searchFunction, replyFunction, healthFunction]) {
+    assert.match(source, /Netlify.*env.*get/);
+    assert.doesNotMatch(source, /process\.env/);
+    assert.doesNotMatch(source, /console\.(log|error)\([^\n]*(apiKey|RADAR_INTERNAL_ACCESS_SECRET)/);
+  }
+  assert.doesNotMatch(healthFunction, /OPENAI_API_KEY/);
 });
 
 test("public company profile contains no credential placeholders presented as real credits", () => {
