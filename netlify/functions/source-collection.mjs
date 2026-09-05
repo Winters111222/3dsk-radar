@@ -3,6 +3,7 @@ import { boundedCollectorInteger, CollectorError } from "../../src/server/collec
 import { collectSourcePage, collectorDefinition } from "../../src/server/collectors/dispatch.mjs";
 import { collectorRegistry } from "../../src/server/collectors/registry.mjs";
 import { envValue, sourceCollectionEnabled } from "../../src/server/runtime.mjs";
+import { runtimeQualificationSummary, sourceRuntimeEligible } from "../../src/server/source-qualification.mjs";
 
 function json(payload, status = 200, extraHeaders = {}) {
   return Response.json(payload, { status, headers:{ "cache-control":"no-store", ...extraHeaders } });
@@ -41,7 +42,7 @@ export default async function handler(request) {
 
   const enabled = sourceCollectionEnabled();
   if (request.method === "GET") {
-    return json({ ok:true, collection_enabled:enabled, openai_requests:0, estimated_cost_usd:0, collectors:collectorRegistry({ collectionEnabled:enabled }) });
+    return json({ ok:true, collection_enabled:enabled, qualification:runtimeQualificationSummary(), openai_requests:0, estimated_cost_usd:0, collectors:collectorRegistry({ collectionEnabled:enabled }) });
   }
   if (!enabled) {
     return json({ ok:false, error:{ code:"SOURCE_COLLECTION_LOCKED", message:"Read-only source collection is intentionally locked until deployed zero-cost acceptance explicitly enables it." } }, 423);
@@ -54,6 +55,9 @@ export default async function handler(request) {
   }
   if (!Object.hasOwn(collector.queryPacks, body.query_pack_id)) {
     return json({ ok:false, error:{ code:collector.unknownPackCode, message:"Choose one of the approved source query packs." } }, 400);
+  }
+  if (!sourceRuntimeEligible(body.source_id)) {
+    return json({ ok:false, error:{ code:"SOURCE_RELEVANCE_LOCKED", message:"This source has not passed historical relevance, access and source-specific yield gates." } }, 423);
   }
 
   const state = runtimeState();
