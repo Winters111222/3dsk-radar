@@ -3,15 +3,15 @@
   const originalFetch = window.fetch.bind(window);
 
   function formatUsd(value) {
-    if (!Number.isFinite(Number(value))) return "N/A";
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return "N/A";
     const amount = Number(value);
     return amount >= 1 ? `$${amount.toFixed(2)}` : `$${amount.toFixed(4)}`;
   }
 
   function costSnapshot(run) {
-    if (!run || !Number.isFinite(Number(run.estimated_cost_usd))) return null;
+    if (!run) return null;
     return {
-      estimated_cost_usd: Number(run.estimated_cost_usd),
+      estimated_cost_usd: run.estimated_cost_usd == null ? null : Number(run.estimated_cost_usd),
       model: run.model || "unknown model",
       web_search_call_count: Number(run.web_search_call_count || run.cost_breakdown?.web_search_call_count || 0),
       total_tokens: Number(run.cost_breakdown?.total_tokens || run.usage?.total_tokens || 0),
@@ -34,6 +34,7 @@
     return panel;
   }
 
+  const escape = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]));
   function render(snapshot) {
     const panel = ensurePanel();
     if (!panel) return;
@@ -41,15 +42,13 @@
       panel.innerHTML = `<div><span class="search-cost-label">LAST SEARCH COST</span><strong class="search-cost-value">$0.0000</strong></div><div class="search-cost-detail"><strong>Fixture / no paid search yet</strong><span>Live Search cost will appear here after a successful paid run.</span></div><span class="search-cost-estimate">EST. COST</span>`;
       return;
     }
-    panel.innerHTML = `<div><span class="search-cost-label">LAST SEARCH COST</span><strong class="search-cost-value">${formatUsd(snapshot.estimated_cost_usd)}</strong></div><div class="search-cost-detail"><strong>${snapshot.web_search_call_count} web search call${snapshot.web_search_call_count === 1 ? "" : "s"} · ${snapshot.total_tokens.toLocaleString("en-US")} tokens · ${snapshot.model}</strong><span>Search ${formatUsd(snapshot.web_search_usd)} + tokens ${formatUsd(snapshot.token_usd)} · ${snapshot.pricing_basis}. Final invoice may vary.</span></div><span class="search-cost-estimate">EST. COST</span>`;
+    panel.innerHTML = `<div><span class="search-cost-label">LAST SEARCH COST</span><strong class="search-cost-value">${formatUsd(snapshot.estimated_cost_usd)}</strong></div><div class="search-cost-detail"><strong>${snapshot.web_search_call_count} web search call${snapshot.web_search_call_count === 1 ? "" : "s"} · ${snapshot.total_tokens.toLocaleString("en-US")} tokens · ${escape(snapshot.model)}</strong><span>Search ${formatUsd(snapshot.web_search_usd)} + tokens ${formatUsd(snapshot.token_usd)} · ${escape(snapshot.pricing_basis)}. Final invoice may vary.</span></div><span class="search-cost-estimate">EST. COST</span>`;
   }
 
-  try {
-    const stored = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
-    render(stored);
-  } catch {
-    render(null);
-  }
+  render(null);
+  window.addEventListener("radar:search-history", event => {
+    try { render(costSnapshot(event.detail)); } catch { render(null); }
+  });
 
   window.fetch = async (...args) => {
     const response = await originalFetch(...args);

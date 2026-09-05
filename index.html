@@ -18,8 +18,8 @@
         <div><p class="eyebrow">INTERNAL SALES TOOL · PRE-LIVE BUILD</p><h1>Opportunity Radar</h1></div>
       </div>
       <div class="topbar-meta">
-        <span class="security-pill">Live AI locked until final acceptance</span>
-        <span id="dataset-pill" class="dataset-pill">Synthetic fixtures</span>
+        <span id="ai-state" class="security-pill">Live AI locked until final acceptance</span>
+        <span id="dataset-pill" class="dataset-pill">Team access required</span>
       </div>
     </header>
 
@@ -28,15 +28,17 @@
         <div class="hero-copy">
           <p class="eyebrow">WORLDWIDE · B2B · OUTSOURCING · CONTRACT</p>
           <h2>Find the next character-production opportunity worth answering.</h2>
-          <p>The app is being completed end-to-end before the first paid live search. Shared bookmarks, contact history and duplicate-outreach warnings are already part of the system contract.</p>
+          <p>Keep opportunities, company bookmarks and outreach history in one shared workspace. New searches add results; refreshing this page never starts a paid search or clears your history.</p>
         </div>
         <div class="hero-actions">
           <label class="access-control" for="access-code"><span>TEAM ACCESS CODE</span><input id="access-code" type="password" autocomplete="current-password" placeholder="Stored only for this browser session"></label>
           <div class="hero-button-row"><button id="connect-button" class="secondary-button" type="button">LOAD TEAM STATE</button><button id="find-button" class="primary-button" type="button">FIND NEW OPPORTUNITIES</button></div>
+          <p id="last-search" class="microcopy">Connect to view saved search history</p><div class="hero-button-row"><button id="demo-button" class="action-button" type="button">EXPLORE DEMO · $0</button><button id="signout-button" class="action-button" type="button">DISCONNECT</button></div>
           <p id="scan-note" class="microcopy">Paid AI is server-locked until final acceptance.</p>
         </div>
       </section>
 
+      <details id="prelive-tools" class="panel result-filters" hidden><summary>Pre-live system checks · isolated test workspace</summary><p>Test data are separate from real opportunities. Paid AI must remain locked.</p><button id="seed-test-button" class="action-button" type="button">LOAD SHARED TEST DATA</button><button id="check-locks-button" class="action-button" type="button">CHECK AI LOCKS · $0</button><pre id="system-check-result" style="white-space:pre-wrap;overflow-wrap:anywhere" aria-live="polite"></pre></details>
       <section id="summary-grid" class="summary-grid" aria-label="Opportunity summary"></section>
 
       <section class="toolbar panel">
@@ -66,7 +68,7 @@
         <div class="panel table-panel">
           <div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3>Ranked opportunities</h3></div><span id="result-count" class="result-count"></span></div>
           <div class="table-scroll"><table><thead><tr>
-            <th scope="col">Select</th><th scope="col"><button type="button" data-sort="company_bookmarked">★<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="fit_score">Fit<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="win_score">Win<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="title">Opportunity<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company">Company<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="opportunity_kind">Type<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="budget_type">Budget<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="published_date">Date<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company_last_contacted_at">Outreach<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="contact_email">Contact<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="status">Status<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="source_url">Source<span aria-hidden="true"> ↕</span></button></th>
+            <th scope="col">Select</th><th scope="col"><button type="button" data-sort="company_bookmarked">★<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="fit_score">Fit<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="win_score">Win<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="title">Opportunity<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company">Company<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="opportunity_kind">Type<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="budget_type">Budget<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="published_date">Date<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="first_seen">Found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="last_seen">Last found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company_last_contacted_at">Outreach<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="contact_email">Contact<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="status">Status<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="source_url">Source<span aria-hidden="true"> ↕</span></button></th>
           </tr></thead><tbody id="opportunity-body"></tbody></table></div>
         </div>
         <aside id="detail-panel" class="panel detail-panel" tabindex="-1" aria-label="Opportunity detail" aria-live="polite"></aside>

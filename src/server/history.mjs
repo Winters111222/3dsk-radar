@@ -12,7 +12,8 @@ export function mergeOpportunityHistory(existingItems, incomingItems, companySta
     const previous=existingByFingerprint.get(opportunityFingerprint(incoming));
     const key=companyKey(incoming.company);
     const companyState=companyStatesByKey[key]||emptyCompanyState(incoming.company);
-    const normalized={...incoming,id:previous?.id||incoming.id,first_seen:previous?.first_seen||incoming.first_seen||nowIso,last_seen:nowIso,is_new:!previous,status:previous?.status||incoming.status||"NEW"};
+    const normalized={...previous,...incoming,id:previous?.id||incoming.id,first_seen:previous?.first_seen||incoming.first_seen||nowIso,last_seen:nowIso,is_new:!previous,status:previous?.status||incoming.status||"NEW"};
+    if(previous){for(const field of ["reply_to","reply_subject","reply_body","reply_generated_at","reply_model","reply_response_id"]){if(Object.hasOwn(previous,field))normalized[field]=previous[field];}}
     mergedCurrent.push(applyOpportunityState(normalized,normalized.status,companyState));
   }
   return mergedCurrent;

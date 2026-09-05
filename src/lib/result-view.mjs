@@ -10,10 +10,10 @@ export const CATEGORIES = {
 export const SORTS = {
   fit_score: "Fit", win_score: "Win", title: "Opportunity", company: "Company",
   opportunity_kind: "Type", budget_type: "Budget provenance", published_date: "Date",
-  company_last_contacted_at: "Last outreach", contact_email: "Contact", status: "Status",
+  first_seen: "First found", last_seen: "Last found", company_last_contacted_at: "Last outreach", contact_email: "Contact", status: "Status",
   company_bookmarked: "Bookmark", source_url: "Source"
 };
-const dates = new Set(["published_date", "company_last_contacted_at"]);
+const dates = new Set(["published_date", "company_last_contacted_at", "first_seen", "last_seen"]);
 const numbers = new Set(["fit_score", "win_score", "company_bookmarked"]);
 export function visibleResults(items, filters) {
   const {view="ALL", status="ALL", minFit=0, categories=[], sortKey="win_score", sortDirection="desc"} = filters;
