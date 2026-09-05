@@ -1,9 +1,10 @@
 import { CATEGORIES, SORTS, visibleResults } from "./lib/result-view.mjs";
 import { bandForScore, contactDisplay, STATUS_VALUES } from "./lib/domain.mjs";
 
+const acceptanceWorkspace = new URLSearchParams(location.search).get("workspace") === "acceptance";
 const STATUS_STORAGE_KEY = "3dsk-radar-fixture-status-v2";
 const ACCESS_SESSION_KEY = "3dsk-radar-access-v2";
-const state = { opportunities:[], companies:new Map(), selectedId:null, view:"ALL", status:"ALL", minFit:0, datasetMode:"FIXTURE", lastRun:null, categories:[], sortKey:"win_score", sortDirection:"desc" };
+const state = { opportunities:[], companies:new Map(), selectedId:null, view:"ALL", status:"ALL", minFit:0, datasetMode:"DISCONNECTED", lastRun:null, categories:[], sortKey:"win_score", sortDirection:"desc" };
 const els = {
   body:document.querySelector("#opportunity-body"), detail:document.querySelector("#detail-panel"), summary:document.querySelector("#summary-grid"), count:document.querySelector("#result-count"),
   find:document.querySelector("#find-button"), connect:document.querySelector("#connect-button"), scanNote:document.querySelector("#scan-note"), statusFilter:document.querySelector("#status-filter"), fitFilter:document.querySelector("#fit-filter"),
@@ -18,7 +19,7 @@ function saveFixtureStatus(id,status){ localStorage.setItem(STATUS_STORAGE_KEY,J
 function companyStateFor(item){ return state.companies.get(item.company_key || companyMapKey(item.company)) || { company:item.company, bookmarked:Boolean(item.company_bookmarked), last_contacted_at:item.company_last_contacted_at||null, contact_count:item.company_contact_count||0, contact_history:[] }; }
 function applyCompanyState(company){ state.companies.set(company.company_key || companyMapKey(company.company),company); for(const item of state.opportunities){ if((item.company_key&&company.company_key&&item.company_key===company.company_key)||companyMapKey(item.company)===companyMapKey(company.company)){ item.company_key=company.company_key||item.company_key; item.company_bookmarked=Boolean(company.bookmarked); item.company_last_contacted_at=company.last_contacted_at||null; item.company_contact_count=company.contact_count||0; } } }
 function accessCode(){ return els.accessCode.value.trim(); }
-function authHeaders(){ return {"content-type":"application/json","authorization":`Bearer ${accessCode()}`}; }
+function authHeaders(){ return {...(acceptanceWorkspace?{"x-radar-workspace":"acceptance"}:{}),"content-type":"application/json","authorization":`Bearer ${accessCode()}`}; }
 async function api(path,options={}){ const response=await fetch(path,{...options,headers:{...authHeaders(),...(options.headers||{})}}); const payload=await response.json().catch(()=>({})); if(!response.ok||!payload.ok) throw new Error(payload?.error?.message||`${path} failed (${response.status})`); return payload; }
 
 function filtered(){ return visibleResults(state.opportunities,state); }
@@ -33,7 +34,7 @@ function statusOptions(selected){ return STATUS_VALUES.map((s)=>`<option value="
 function outreachMarkup(item){ const company=companyStateFor(item); if(!company.last_contacted_at)return'<span class="outreach none">NOT EMAILED</span>'; const days=daysSince(company.last_contacted_at); const recent=days!==null&&days<=30; return`<span class="outreach ${recent?"recent":"past"}">EMAILED ${days===0?"TODAY":`${days}D AGO`}</span><span class="company">${company.contact_count||1}× total</span>`; }
 
 function renderSummary(){ const all=state.opportunities; const uniqueCompanies=new Set(all.map((x)=>companyMapKey(x.company))).size; const bookmarked=new Set(all.filter((x)=>x.company_bookmarked).map((x)=>companyMapKey(x.company))).size; const contacted=new Set(all.filter((x)=>x.company_last_contacted_at).map((x)=>companyMapKey(x.company))).size; const cards=[["OPPORTUNITIES",all.length,state.datasetMode.toLowerCase()],["COMPANIES",uniqueCompanies,"unique buyers"],["BOOKMARKED",bookmarked,"companies"],["EMAILED",contacted,"companies with history"],["HIGH FIT",all.filter((x)=>x.fit_score>=80).length,"FIT 80+"]]; els.summary.innerHTML=cards.map(([l,v,s])=>`<article class="summary-card"><span class="label">${escapeHtml(l)}</span><strong class="value">${escapeHtml(v)}</strong><span class="sub">${escapeHtml(s)}</span></article>`).join(""); }
-function renderTable(){ const items=filtered(); if(!items.some(x=>x.id===state.selectedId))state.selectedId=items[0]?.id||null; renderSort(); renderDetail(); els.count.textContent=`${items.length} shown · ${state.opportunities.length} total`; if(!items.length){els.body.innerHTML='<tr class="empty-row"><td colspan="13">No opportunities match these filters. Clear categories or adjust Status and Minimum fit.</td></tr>';return;} els.body.innerHTML=items.map((item)=>{const budget=budgetView(item);return`<tr data-id="${escapeHtml(item.id)}" class="${item.id===state.selectedId?"is-selected":""}">
+function renderTable(){ const items=filtered(); if(!items.some(x=>x.id===state.selectedId))state.selectedId=items[0]?.id||null; renderSort(); renderDetail(); els.count.textContent=`${items.length} shown · ${state.opportunities.length} total`; if(!items.length){els.body.innerHTML=`<tr class="empty-row"><td colspan="15">${state.datasetMode==="DISCONNECTED"?"Enter your team access code to load saved opportunities.":state.opportunities.length?"No opportunities match these filters. Clear categories or adjust Status and Minimum fit.":"No saved opportunities yet. New searches will be saved here."}</td></tr>`;return;} els.body.innerHTML=items.map((item)=>{const budget=budgetView(item);return`<tr data-id="${escapeHtml(item.id)}" class="${item.id===state.selectedId?"is-selected":""}">
 <td data-label="Select"><input class="select-radio" type="radio" name="selected-opportunity" aria-label="Select ${escapeHtml(item.title)}" ${item.id===state.selectedId?"checked":""}></td>
 <td data-label="Bookmark"><button class="star-button ${item.company_bookmarked?"is-starred":""}" data-bookmark-company="${escapeHtml(item.company)}" type="button" title="${item.company_bookmarked?"Remove company bookmark":"Bookmark company"}">${item.company_bookmarked?"★":"☆"}</button></td>
 <td data-label="Fit">${scoreMarkup("FIT",item.fit_score)}</td><td data-label="Win">${scoreMarkup("WIN",item.win_score)}</td>
@@ -42,6 +43,7 @@ function renderTable(){ const items=filtered(); if(!items.some(x=>x.id===state.s
 <td data-label="Type">${kindBadge(item)}<div class="minor-line">${item.categories.map(x=>escapeHtml(CATEGORIES[x]||x)).join(" · ")}</div></td>
 <td data-label="Budget" class="budget-cell"><span class="budget-value">${escapeHtml(budget.value)}</span><span class="provenance ${budget.cls}">${escapeHtml(budget.meta)}</span></td>
 <td data-label="Date">${escapeHtml(formatDate(item.published_date))}<span class="company">${escapeHtml(freshness(item.published_date))}</span></td>
+<td data-label="Found">${escapeHtml(formatTimestamp(item.first_seen))}</td><td data-label="Last found">${escapeHtml(formatTimestamp(item.last_seen))}</td>
 <td data-label="Outreach">${outreachMarkup(item)}</td>
 <td data-label="Contact" class="${item.contact_email?"contact-yes":"contact-no"}">${escapeHtml(contactDisplay(item))}</td>
 <td data-label="Status"><select class="status-select" aria-label="Status for ${escapeHtml(item.company)}" data-status-id="${escapeHtml(item.id)}">${statusOptions(item.status)}</select></td>
@@ -54,7 +56,7 @@ function renderDetail(){ const item=state.opportunities.find((x)=>x.id===state.s
 <div class="detail-head"><div class="detail-title-row"><div><p class="eyebrow">${item.opportunity_kind==="OPEN_OPPORTUNITY"?"OPEN OPPORTUNITY":"POTENTIAL LEAD · NOT AN ACTIVE REQUEST"}</p><h3>${escapeHtml(item.title)}</h3><p class="detail-company">${escapeHtml(item.company)} · ${escapeHtml(item.location)}</p></div><button class="star-button detail-star ${item.company_bookmarked?"is-starred":""}" data-bookmark-company="${escapeHtml(item.company)}" type="button">${item.company_bookmarked?"★":"☆"}</button></div><div class="detail-tags">${kindBadge(item)}${item.categories.slice(0,5).map((x)=>`<span class="tag">${escapeHtml(x)}</span>`).join("")}</div></div>
 <div class="detail-body">${recent?`<div class="repeat-warning"><strong>RECENT OUTREACH</strong><span>This company was emailed ${days===0?"today":`${days} days ago`}. Review history before sending again.</span></div>`:""}
 <div class="score-pair"><div class="score-card"><span>FIT SCORE</span><strong>${item.fit_score}</strong><span>${bandForScore(item.fit_score)} MATCH</span></div><div class="score-card"><span>WIN SCORE</span><strong>${item.win_score}</strong><span>${item.win_band} · HEURISTIC</span></div></div>
-<div class="detail-section"><h4>SUMMARY</h4><p>${escapeHtml(item.summary)}</p></div><div class="detail-section"><h4>WHY IT FITS</h4>${bullets(item.why_it_fits,"No fit rationale available.")}</div><div class="detail-section"><h4>RISKS / GAPS</h4>${bullets([...(item.risks||[]),...(item.missing_requirements||[])],"No recorded gaps.")}</div>
+<div class="detail-section"><h4>DISCOVERY HISTORY</h4><p>First found: ${escapeHtml(formatTimestamp(item.first_seen))}<br>Last found: ${escapeHtml(formatTimestamp(item.last_seen))}<br>Published: ${escapeHtml(formatDate(item.published_date))}</p><p class="muted">Saved results remain available. The original listing may no longer be active.</p></div><div class="detail-section"><h4>SUMMARY</h4><p>${escapeHtml(item.summary)}</p></div><div class="detail-section"><h4>WHY IT FITS</h4>${bullets(item.why_it_fits,"No fit rationale available.")}</div><div class="detail-section"><h4>RISKS / GAPS</h4>${bullets([...(item.risks||[]),...(item.missing_requirements||[])],"No recorded gaps.")}</div>
 <div class="detail-section"><h4>BUDGET</h4><p><strong>${escapeHtml(budget.value)}</strong> · ${escapeHtml(budget.meta)}<br><span class="muted">${escapeHtml(item.budget_reason)}</span></p></div><div class="detail-section"><h4>CONTACT</h4>${contact}</div>
 <div class="detail-section"><h4>COMPANY OUTREACH HISTORY</h4><p><strong>${company.contact_count||0} email${company.contact_count===1?"":"s"} recorded</strong>${company.last_contacted_at?` · last ${escapeHtml(formatTimestamp(company.last_contacted_at))}`:""}</p>${historyMarkup(company)}</div>
 <div class="detail-section"><h4>SOURCE EVIDENCE</h4>${evidenceMarkup(item)}</div>
@@ -69,7 +71,22 @@ async function toggleBookmark(companyName){ const items=state.opportunities.filt
 async function markEmailSent(){ const item=state.opportunities.find((x)=>x.id===state.selectedId); if(!item)return; if(state.datasetMode==="FIXTURE"){const now=new Date().toISOString(),current=companyStateFor(item);const company={...current,company:item.company,last_contacted_at:now,contact_count:(current.contact_count||0)+1,contact_history:[{sent_at:now,recipient:item.contact_email||null,subject:item.reply_subject||null,opportunity_id:item.id},...(current.contact_history||[])]};applyCompanyState(company);item.status="CONTACTED";saveFixtureStatus(item.id,"CONTACTED");renderAll();showToast("Fixture outreach recorded — preview only");return;} if(!accessCode()){showToast("Enter team access code first.");return;} try{const payload=await api("/api/company-state",{method:"POST",body:JSON.stringify({action:"MARK_EMAIL_SENT",company:item.company,opportunity_id:item.id})});applyCompanyState(payload.company);Object.assign(item,payload.opportunity||{});renderAll();showToast("Email marked as sent · company history updated");}catch(error){showToast(error.message);} }
 function buildFixtureReply(item){const subject=`${item.company} — realistic character production support`;const capability=item.categories.includes("WRAP_BASEMESH")?"scan cleanup, Wrap to a client-provided basemesh and downstream character preparation":"realistic human character production and scan-based asset finishing";const body=`Hello,\n\nI’m reaching out from 3D.sk regarding your ${item.title}. The scope looks closely aligned with our human-character production pipeline, particularly ${capability}. We can support either a defined part of the pipeline or a broader batch workflow, adapting the handoff to the topology and production requirements you already use.\n\nWhat stood out in your brief is the need for consistent production-ready human assets rather than isolated modeling work. That is the kind of repeatable scan/character workflow our team is set up around.\n\nIf useful, we can review a small sample of your source data and confirm the most efficient handoff point before you define the full batch or request a quotation.\n\nBest regards,\n3D.sk`;return{to:item.contact_email||null,subject,body,generated_at:new Date().toISOString(),model:"FIXTURE_PREVIEW"};}
 async function generateResponse(){const item=state.opportunities.find((x)=>x.id===state.selectedId);if(!item)return;if(state.datasetMode==="FIXTURE"){const reply=buildFixtureReply(item);Object.assign(item,{reply_to:reply.to,reply_subject:reply.subject,reply_body:reply.body,reply_generated_at:reply.generated_at,reply_model:reply.model});renderDetail();showToast("Fixture response generated · $0 API cost");return;}if(!accessCode()){showToast("Enter team access code first.");return;}const button=els.detail.querySelector("[data-generate-response]");if(button){button.disabled=true;button.textContent="GENERATING…";}try{const payload=await api("/api/generate-response",{method:"POST",body:JSON.stringify({opportunity_id:item.id})});Object.assign(item,payload.opportunity||{});renderDetail();showToast("Personalized response generated");}catch(error){renderDetail();showToast(error.message);}}
-async function loadTeamState(){ if(!accessCode()){showToast("Enter team access code first.");els.accessCode.focus();return;} sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode()); els.connect.disabled=true; try{const payload=await api("/api/opportunities"); if(payload.opportunities.length){state.opportunities=payload.opportunities;state.selectedId=state.opportunities[0]?.id||null;state.companies=new Map();for(const c of payload.companies||[])applyCompanyState(c);state.datasetMode="TEAM";els.datasetPill.textContent=`Shared team state · ${state.opportunities.length}`;els.scanNote.textContent="Shared bookmarks, statuses and outreach history loaded.";renderAll();}else{els.scanNote.textContent="Shared team state is empty · fixtures retained until first live search.";showToast("No stored live opportunities yet");}}catch(error){showToast(error.message);}finally{els.connect.disabled=false;} }
+function applyTeamSnapshot(payload){
+  state.opportunities=payload.opportunities;state.selectedId=state.opportunities[0]?.id||null;state.companies=new Map();
+  for(const c of payload.companies||[])applyCompanyState(c);
+  state.datasetMode="TEAM";state.lastRun=payload.last_search||null;
+  els.datasetPill.textContent=`${acceptanceWorkspace?"ISOLATED TEST WORKSPACE":"Saved team results"} · ${state.opportunities.length}`;
+  document.querySelector("#last-search").textContent=state.lastRun?`Last search: ${formatTimestamp(state.lastRun.completed_at)}${state.lastRun.mode==="ZERO_COST_ACCEPTANCE"?" · test data · $0":""}`:"No saved search yet";
+  window.dispatchEvent(new CustomEvent("radar:search-history",{detail:state.lastRun}));
+  renderAll();
+}
+async function loadTeamState(){
+  if(!accessCode()){showToast("Enter team access code first.");els.accessCode.focus();return;}
+  sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode());els.connect.disabled=true;
+  try{applyTeamSnapshot(await api("/api/opportunities"));els.scanNote.textContent="Saved results loaded. Reloading this page does not start a paid search.";}
+  catch(error){showToast(error.message);els.scanNote.textContent=`Saved results could not be loaded: ${error.message}`;}
+  finally{els.connect.disabled=false;}
+}
 async function runLiveSearch(){ if(!accessCode()){showToast("Enter team access code first.");return;} sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode()); const old=els.find.textContent;els.find.disabled=true;els.find.textContent="SEARCHING…";try{const payload=await api("/api/search",{method:"POST",body:"{}"});state.opportunities=payload.opportunities;state.datasetMode="TEAM";state.lastRun=payload.run;await loadTeamState();els.scanNote.textContent=`Live search complete · ${payload.run.returned_count} records`;showToast("Live search complete");}catch(error){els.scanNote.textContent=`Search not run · ${error.message}`;showToast(error.message);}finally{els.find.disabled=false;els.find.textContent=old;} }
 
 els.body.addEventListener("click",(event)=>{const star=event.target.closest("[data-bookmark-company]");if(star){event.stopPropagation();toggleBookmark(star.dataset.bookmarkCompany);return;}if(event.target.closest("select,a,button,input"))return;const row=event.target.closest("tr[data-id]");if(row)selectOpportunity(row.dataset.id);});
@@ -106,5 +123,38 @@ function updateCategories(){
 categoryOptions.addEventListener("change",updateCategories);
 document.querySelector("#clear-categories").addEventListener("click",()=>{categoryOptions.querySelectorAll("input").forEach(input=>input.checked=false);updateCategories();});
 
-async function init(){els.accessCode.value=sessionStorage.getItem(ACCESS_SESSION_KEY)||"";try{const response=await fetch("/fixtures/opportunities.json");if(!response.ok)throw new Error(`Fixture load failed: ${response.status}`);state.opportunities=hydrateFixtureStatuses(await response.json());state.selectedId=state.opportunities[0]?.id||null;renderAll();if(accessCode())loadTeamState();}catch(error){els.body.innerHTML=`<tr><td colspan="13">${escapeHtml(error.message)}</td></tr>`;}}
+async function loadDemo(){
+  const response=await fetch("/fixtures/opportunities.json");
+  if(!response.ok)throw new Error("Demo could not be loaded.");
+  state.opportunities=hydrateFixtureStatuses(await response.json());state.companies=new Map();state.datasetMode="FIXTURE";state.lastRun=null;
+  state.selectedId=state.opportunities[0]?.id||null;els.datasetPill.textContent="DEMO · not saved to team";
+  document.querySelector("#last-search").textContent="Demo data · no paid search";
+  window.dispatchEvent(new CustomEvent("radar:search-history",{detail:null}));renderAll();
+}
+document.querySelector("#demo-button").addEventListener("click",()=>loadDemo().catch(e=>showToast(e.message)));
+document.querySelector("#signout-button").addEventListener("click",()=>{sessionStorage.removeItem(ACCESS_SESSION_KEY);els.accessCode.value="";state.opportunities=[];state.companies=new Map();state.datasetMode="DISCONNECTED";state.selectedId=null;els.datasetPill.textContent="Team access required";document.querySelector("#last-search").textContent="Connect to view saved search history";window.dispatchEvent(new CustomEvent("radar:search-history",{detail:null}));renderAll();});
+document.querySelector("#seed-test-button").addEventListener("click",async()=>{try{applyTeamSnapshot(await api("/api/prelive-workspace",{method:"POST",body:"{}"}));showToast("Isolated shared test data loaded · $0");}catch(e){showToast(e.message);}});
+document.querySelector("#check-locks-button").addEventListener("click",async()=>{
+  const output=document.querySelector("#system-check-result");
+  try{
+    const health=await (await fetch("/api/health")).json();
+    if(health.paid_ai_state!=="LOCKED")throw new Error("Live AI is not locked. No POST checks were attempted.");
+    if(!accessCode()){output.textContent=JSON.stringify({health,message:"Enter team access code to check protected endpoints."},null,2);return;}
+    const checks=[];
+    for(const path of ["/api/search","/api/generate-response"]){
+      const response=await fetch(path,{method:"POST",headers:authHeaders(),body:"{}"});const payload=await response.json();
+      checks.push({path,status:response.status,code:payload.error?.code});
+    }
+    const passed=health.access_configured&&checks.every(c=>c.status===423&&c.code==="LIVE_AI_LOCKED");
+    output.textContent=JSON.stringify({passed,health,checks},null,2);
+  }catch(e){output.textContent=e.message;}
+});
+async function init(){
+  els.accessCode.value=sessionStorage.getItem(ACCESS_SESSION_KEY)||"";
+  renderAll();
+  document.querySelector("#prelive-tools").hidden=!acceptanceWorkspace;
+  try{const h=await(await fetch("/api/health")).json();document.querySelector("#ai-state").textContent=h.paid_ai_state==="LOCKED"?"Live AI locked until final acceptance":"Live AI enabled";}catch{document.querySelector("#ai-state").textContent="Server status unavailable";}
+  if(els.accessCode.value)await loadTeamState();
+  else if(new URLSearchParams(location.search).get("demo")==="1")await loadDemo();
+}
 init();

@@ -11,6 +11,7 @@ export default async () => {
     access_configured: Boolean(envValue("RADAR_INTERNAL_ACCESS_SECRET")),
     live_ai_enabled: liveAIEnabled,
     paid_ai_state: liveAIEnabled ? "ENABLED" : "LOCKED",
+    prelive_acceptance_enabled: envValue("RADAR_PRELIVE_ACCEPTANCE_ENABLED") === "true" && !liveAIEnabled,
     search_backend: "IMPLEMENTED",
     persistence: "NETLIFY_BLOBS",
     response_generation: "IMPLEMENTED"

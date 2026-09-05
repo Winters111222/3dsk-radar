@@ -92,7 +92,7 @@ test("authorized search function normalizes a mocked hosted-search response end 
     OPENAI_API_KEY:"fake-test-key",
     RADAR_SEARCH_COOLDOWN_SECONDS:"0"
   });
-  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResults: async (items) => items };
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResults: async (items) => items, saveSearchRun: async (run) => { assert.equal(run.mode,"LIVE_SEARCH"); } };
   globalThis.fetch = async () => new Response(JSON.stringify(mockOpenAIResponse()), {status:200,headers:{"content-type":"application/json"}});
   try {
     const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer team-secret","content-type":"application/json"},body:"{}"}));

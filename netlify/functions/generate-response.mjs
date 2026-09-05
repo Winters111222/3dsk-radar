@@ -15,7 +15,7 @@ export default async function handler(request){
   const apiKey=envValue("OPENAI_API_KEY");if(!apiKey)return json({ok:false,error:{code:"OPENAI_NOT_CONFIGURED",message:"OPENAI_API_KEY is not configured on the server."}},503);
   const body=await request.json().catch(()=>({}));if(!body.opportunity_id)return json({ok:false,error:{code:"OPPORTUNITY_REQUIRED",message:"opportunity_id is required."}},400);
   try{
-    const repo=await getStateRepository();const opportunity=await repo.getOpportunity(body.opportunity_id);if(!opportunity)return json({ok:false,error:{code:"OPPORTUNITY_NOT_FOUND",message:"Opportunity was not found in shared history."}},404);
+    const repo=await getStateRepository(request);const opportunity=await repo.getOpportunity(body.opportunity_id);if(!opportunity)return json({ok:false,error:{code:"OPPORTUNITY_NOT_FOUND",message:"Opportunity was not found in shared history."}},404);
     const profile=await loadPublicCompanyProfile();const model=envValue("OPENAI_REPLY_MODEL")||"gpt-5.6-sol";
     const runner=globalThis.__RADAR_TEST_REPLY_RUNNER__||runReplyGeneration;
     const generated=await runner({apiKey,model,profile,opportunity,allowStructuredRetry:true});

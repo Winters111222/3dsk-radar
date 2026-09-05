@@ -81,11 +81,18 @@ export function createStateRepository(store) {
       return merged;
     },
 
+    async saveSearchRun(run) {
+      await store.setJSON("metadata/last-search", run);
+    },
+    async lastSearchRun() {
+      return store.get("metadata/last-search", {type:"json"});
+    },
     async snapshot() {
       const opportunities = await this.listOpportunities();
       const companies = await this.listCompanies();
       const byKey = Object.fromEntries(companies.map((item) => [item.company_key, item]));
       return {
+        last_search: await this.lastSearchRun(),
         opportunities: opportunities.map((item) => {
           const company = byKey[companyKey(item.company)] || emptyCompanyState(item.company);
           return { ...item, company_key: company.company_key, company_bookmarked: company.bookmarked, company_last_contacted_at: company.last_contacted_at, company_contact_count: company.contact_count };

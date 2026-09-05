@@ -3,7 +3,7 @@
   functions = "netlify/functions"
 
 [functions]
-  included_files = ["config/company-profile.public.json"]
+  included_files = ["config/company-profile.public.json", "fixtures/opportunities.json"]
 
 [dev]
   publish = "."
