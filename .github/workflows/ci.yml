@@ -31,3 +31,12 @@ jobs:
           for file in src/app.js src/lib/*.mjs src/server/*.mjs netlify/functions/*.mjs; do
             node --check "$file"
           done
+      - name: Package tested source
+        run: git archive --format=tar.gz -o radar-source.tar.gz HEAD
+      - name: Upload tested source
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-prelive-source
+          path: radar-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
