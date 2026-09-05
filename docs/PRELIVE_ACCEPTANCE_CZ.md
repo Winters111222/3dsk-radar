@@ -12,9 +12,9 @@ Dokud není celý tento checklist splněný, nesmí se přepínač změnit na `t
 
 ## Aktuální stav
 
-Pre-live source authority po posledním zero-cost acceptance runu:
+Finální **code authority** pro zero-cost pre-live acceptance:
 
-`356a3cdb8aea5b1d05252f7d4b166517e599510d`
+`efc27f8edf1cfe36cbfe14b0c8cf4238ac48aeee`
 
 Na tomto exact headu GitHub Actions `Radar CI` skončil `SUCCESS`.
 
@@ -25,6 +25,8 @@ Ověřeno:
 - explicitní `npm run accept:fixture` → PASS,
 - fixture acceptance hlásí `cost_usd: 0`,
 - `SELECT → GENERATE RESPONSE → bookmark company → MARK EMAIL SENT → CONTACTED → repeat-outreach warning` → PASS,
+- `npm run accept:http` → PASS,
+- HTTP smoke ověřil reálné servírování `/`, `app.js`, všech tří CSS assetů a fixture JSON,
 - syntax check frontend/server/functions/scripts → PASS,
 - testovaný source artifact vytvořen,
 - izolovaný Netlify deploy-helper artifact vytvořen,
@@ -32,7 +34,9 @@ Ověřeno:
 
 Node runtime je pinovaný přes `.nvmrc` na major `22`; `package.json` vyžaduje minimálně Node `22.12.0`, což odpovídá požadavku použitého `@netlify/blobs`.
 
-## Co musí fungovat bez placeného AI
+Poznámka k HTTP smoke: první verze testu omylem hledala Stage 3 CSS markery v základním `styles.css`. UI je správně rozdělené na `styles.css`, `stage3.css` a `stage4.css`; test byl opraven tak, aby kontroloval skutečný asset split, a na code authority výše prošel.
+
+## Co funguje bez placeného AI
 
 ### UI / rozhodování
 
@@ -58,7 +62,7 @@ Node runtime je pinovaný přes `.nvmrc` na major `22`; `package.json` vyžaduje
 
 ### Response UX
 
-Fixture mode musí bez sítě projít:
+Fixture mode bez sítě prochází:
 
 `SELECT → GENERATE RESPONSE → COPY SUBJECT → COPY RESPONSE → MARK EMAIL SENT`
 
@@ -73,27 +77,31 @@ Produkční Generate Response je implementovaný, ale zamčený stejným server-
 - žádný auto-send,
 - Search i Reply vrací `LIVE_AI_LOCKED`, dokud není finální paid acceptance.
 
-### Infrastructure
+### Infrastructure připravená před deployem
 
 - Netlify projekt `3dsk-opportunity-radar` existuje,
 - Netlify env readback autoritativně potvrdil `RADAR_LIVE_AI_ENABLED=false` pro Functions/runtime,
 - `OPENAI_API_KEY` zatím není potřeba a placený AI zůstává mimo pre-live acceptance,
-- CI testy jsou zelené,
-- testovaný source/deploy artifacts existují.
+- CI je zelené na exact code authority,
+- tested source/deploy artifacts existují,
+- Netlify project při posledním readbacku stále nemá completed/current deploy, tedy nevznikl žádný accidental partial release.
 
-Zbývá ověřit po prvním zero-cost deployi:
+## Co zbývá po prvním zero-cost deployi
 
 - `/api/health` hlásí `paid_ai_state: LOCKED`,
 - static/fixture UI je otevřitelné přes link,
 - server-side access funguje,
 - shared Netlify Blobs bookmark/status/outreach state funguje přes nasazené Functions,
-- `/api/search` a `/api/generate-response` vrací `LIVE_AI_LOCKED` bez OpenAI requestu.
+- `/api/search` vrací `LIVE_AI_LOCKED` bez OpenAI requestu,
+- `/api/generate-response` vrací `LIVE_AI_LOCKED` bez OpenAI requestu.
 
 ## Aktuální infrastrukturní blocker
 
 Execution sandbox použitý v tomto vlákně nemá funkční DNS/odchozí síť pro `netlify-mcp.netlify.app` ani `api.netlify.com`. Netlify MCP proto dokáže vytvořit projekt, spravovat env a vydat jednorázový deploy proxy příkaz, ale lokální upload z tohoto sandboxu nemůže dokončit.
 
-To není runtime/test chyba aplikace. Source artifact a deploy-helper artifact byly vytvořeny z úspěšného CI a jejich předchozí lokální kopie byly ověřeny digestem. Neobcházet tento limit commitováním deploy tokenu/secretem do public repa.
+Zároveň dostupný GitHub connector neumí bezpečně zapsat Actions secret; secrets API je mimo scope. Proto neexistuje bezpečný automatický handoff proxy credentialu do GitHub Actions z tohoto vlákna.
+
+To není runtime/test chyba aplikace. Neobcházet tento limit commitováním Netlify tokenu, proxy URL nebo jiného credentialu do PUBLIC repa.
 
 ## Úplně poslední placený krok
 
@@ -107,4 +115,4 @@ Až po dokončení zero-cost deploy acceptance výše:
 6. na jedné vybrané položce provést jeden live Generate Response,
 7. po acceptance rozhodnout o merge/release.
 
-Žádný placený test se nemá používat k objevování běžných implementačních chyb, které lze odhalit fixture/mock testem.
+Žádný placený test se nemá používat k objevování běžných implementačních chyb, které lze odhalit fixture/mock/HTTP smoke testem.
