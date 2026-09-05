@@ -53,6 +53,8 @@ Phase C — perzistentní multi-source run engine a operator UI: [`docs/PHASE_C_
 
 Phase C — atomický coordinator contract pro budoucí paid run: [`docs/PHASE_C_ATOMIC_COORDINATOR_CZ.md`](docs/PHASE_C_ATOMIC_COORDINATOR_CZ.md)
 
+Phase D — deployed zero-cost acceptance: [`docs/PHASE_D_ZERO_COST_ACCEPTANCE_CZ.md`](docs/PHASE_D_ZERO_COST_ACCEPTANCE_CZ.md)
+
 Pre-live acceptance: [`docs/PRELIVE_ACCEPTANCE_CZ.md`](docs/PRELIVE_ACCEPTANCE_CZ.md)
 
 Instrukce pro další vývojové boty: [`AGENTS.md`](AGENTS.md)
