@@ -1,8 +1,9 @@
+import { CATEGORIES, SORTS, visibleResults } from "./lib/result-view.mjs";
 import { bandForScore, contactDisplay, STATUS_VALUES } from "./lib/domain.mjs";
 
 const STATUS_STORAGE_KEY = "3dsk-radar-fixture-status-v2";
 const ACCESS_SESSION_KEY = "3dsk-radar-access-v2";
-const state = { opportunities:[], companies:new Map(), selectedId:null, view:"ALL", status:"ALL", minFit:0, datasetMode:"FIXTURE", lastRun:null };
+const state = { opportunities:[], companies:new Map(), selectedId:null, view:"ALL", status:"ALL", minFit:0, datasetMode:"FIXTURE", lastRun:null, categories:[], sortKey:"win_score", sortDirection:"desc" };
 const els = {
   body:document.querySelector("#opportunity-body"), detail:document.querySelector("#detail-panel"), summary:document.querySelector("#summary-grid"), count:document.querySelector("#result-count"),
   find:document.querySelector("#find-button"), connect:document.querySelector("#connect-button"), scanNote:document.querySelector("#scan-note"), statusFilter:document.querySelector("#status-filter"), fitFilter:document.querySelector("#fit-filter"),
@@ -20,10 +21,7 @@ function accessCode(){ return els.accessCode.value.trim(); }
 function authHeaders(){ return {"content-type":"application/json","authorization":`Bearer ${accessCode()}`}; }
 async function api(path,options={}){ const response=await fetch(path,{...options,headers:{...authHeaders(),...(options.headers||{})}}); const payload=await response.json().catch(()=>({})); if(!response.ok||!payload.ok) throw new Error(payload?.error?.message||`${path} failed (${response.status})`); return payload; }
 
-function filtered(){ return state.opportunities.filter((item)=>{
-  const viewOk=state.view==="ALL"||(state.view==="BOOKMARKED"&&item.company_bookmarked)||(state.view===item.opportunity_kind);
-  return viewOk&&(state.status==="ALL"||item.status===state.status)&&item.fit_score>=state.minFit;
-}).sort((a,b)=>b.win_score-a.win_score||b.fit_score-a.fit_score); }
+function filtered(){ return visibleResults(state.opportunities,state); }
 function formatDate(value){ if(!value)return"Date unknown"; const date=new Date(`${value}T00:00:00Z`); return Number.isNaN(date.getTime())?"Date unknown":new Intl.DateTimeFormat("en",{month:"short",day:"numeric",year:"numeric"}).format(date); }
 function formatTimestamp(value){ if(!value)return"Never"; const date=new Date(value); return Number.isNaN(date.getTime())?"Unknown":new Intl.DateTimeFormat("en",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(date); }
 function daysSince(value){ if(!value)return null; const ts=new Date(value).getTime(); return Number.isFinite(ts)?Math.max(0,Math.floor((Date.now()-ts)/86400000)):null; }
@@ -35,19 +33,19 @@ function statusOptions(selected){ return STATUS_VALUES.map((s)=>`<option value="
 function outreachMarkup(item){ const company=companyStateFor(item); if(!company.last_contacted_at)return'<span class="outreach none">NOT EMAILED</span>'; const days=daysSince(company.last_contacted_at); const recent=days!==null&&days<=30; return`<span class="outreach ${recent?"recent":"past"}">EMAILED ${days===0?"TODAY":`${days}D AGO`}</span><span class="company">${company.contact_count||1}× total</span>`; }
 
 function renderSummary(){ const all=state.opportunities; const uniqueCompanies=new Set(all.map((x)=>companyMapKey(x.company))).size; const bookmarked=new Set(all.filter((x)=>x.company_bookmarked).map((x)=>companyMapKey(x.company))).size; const contacted=new Set(all.filter((x)=>x.company_last_contacted_at).map((x)=>companyMapKey(x.company))).size; const cards=[["OPPORTUNITIES",all.length,state.datasetMode.toLowerCase()],["COMPANIES",uniqueCompanies,"unique buyers"],["BOOKMARKED",bookmarked,"companies"],["EMAILED",contacted,"companies with history"],["HIGH FIT",all.filter((x)=>x.fit_score>=80).length,"FIT 80+"]]; els.summary.innerHTML=cards.map(([l,v,s])=>`<article class="summary-card"><span class="label">${escapeHtml(l)}</span><strong class="value">${escapeHtml(v)}</strong><span class="sub">${escapeHtml(s)}</span></article>`).join(""); }
-function renderTable(){ const items=filtered(); els.count.textContent=`${items.length} shown · ${state.opportunities.length} total`; if(!items.length){els.body.innerHTML='<tr><td colspan="13">No opportunities match these filters.</td></tr>';return;} els.body.innerHTML=items.map((item)=>{const budget=budgetView(item);return`<tr data-id="${escapeHtml(item.id)}" class="${item.id===state.selectedId?"is-selected":""}">
-<td><input class="select-radio" type="radio" name="selected-opportunity" ${item.id===state.selectedId?"checked":""}></td>
-<td><button class="star-button ${item.company_bookmarked?"is-starred":""}" data-bookmark-company="${escapeHtml(item.company)}" type="button" title="${item.company_bookmarked?"Remove company bookmark":"Bookmark company"}">${item.company_bookmarked?"★":"☆"}</button></td>
-<td>${scoreMarkup("FIT",item.fit_score)}</td><td>${scoreMarkup("WIN",item.win_score)}</td>
-<td><span class="opportunity-title">${escapeHtml(item.title)}</span></td>
-<td><span class="company-name">${escapeHtml(item.company)}</span>${item.company_bookmarked?'<span class="bookmarked-label">BOOKMARKED</span>':""}</td>
-<td>${kindBadge(item)}<div class="minor-line">${escapeHtml(item.categories[0])}</div></td>
-<td class="budget-cell"><span class="budget-value">${escapeHtml(budget.value)}</span><span class="provenance ${budget.cls}">${escapeHtml(budget.meta)}</span></td>
-<td>${escapeHtml(formatDate(item.published_date))}<span class="company">${escapeHtml(freshness(item.published_date))}</span></td>
-<td>${outreachMarkup(item)}</td>
-<td class="${item.contact_email?"contact-yes":"contact-no"}">${escapeHtml(contactDisplay(item))}</td>
-<td><select class="status-select" data-status-id="${escapeHtml(item.id)}">${statusOptions(item.status)}</select></td>
-<td><a class="source-link" href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">OPEN</a></td></tr>`;}).join(""); }
+function renderTable(){ const items=filtered(); if(!items.some(x=>x.id===state.selectedId))state.selectedId=items[0]?.id||null; renderSort(); renderDetail(); els.count.textContent=`${items.length} shown · ${state.opportunities.length} total`; if(!items.length){els.body.innerHTML='<tr class="empty-row"><td colspan="13">No opportunities match these filters. Clear categories or adjust Status and Minimum fit.</td></tr>';return;} els.body.innerHTML=items.map((item)=>{const budget=budgetView(item);return`<tr data-id="${escapeHtml(item.id)}" class="${item.id===state.selectedId?"is-selected":""}">
+<td data-label="Select"><input class="select-radio" type="radio" name="selected-opportunity" aria-label="Select ${escapeHtml(item.title)}" ${item.id===state.selectedId?"checked":""}></td>
+<td data-label="Bookmark"><button class="star-button ${item.company_bookmarked?"is-starred":""}" data-bookmark-company="${escapeHtml(item.company)}" type="button" title="${item.company_bookmarked?"Remove company bookmark":"Bookmark company"}">${item.company_bookmarked?"★":"☆"}</button></td>
+<td data-label="Fit">${scoreMarkup("FIT",item.fit_score)}</td><td data-label="Win">${scoreMarkup("WIN",item.win_score)}</td>
+<td data-label="Opportunity"><span class="opportunity-title">${escapeHtml(item.title)}</span></td>
+<td data-label="Company"><span class="company-name">${escapeHtml(item.company)}</span>${item.company_bookmarked?'<span class="bookmarked-label">BOOKMARKED</span>':""}</td>
+<td data-label="Type">${kindBadge(item)}<div class="minor-line">${item.categories.map(x=>escapeHtml(CATEGORIES[x]||x)).join(" · ")}</div></td>
+<td data-label="Budget" class="budget-cell"><span class="budget-value">${escapeHtml(budget.value)}</span><span class="provenance ${budget.cls}">${escapeHtml(budget.meta)}</span></td>
+<td data-label="Date">${escapeHtml(formatDate(item.published_date))}<span class="company">${escapeHtml(freshness(item.published_date))}</span></td>
+<td data-label="Outreach">${outreachMarkup(item)}</td>
+<td data-label="Contact" class="${item.contact_email?"contact-yes":"contact-no"}">${escapeHtml(contactDisplay(item))}</td>
+<td data-label="Status"><select class="status-select" aria-label="Status for ${escapeHtml(item.company)}" data-status-id="${escapeHtml(item.id)}">${statusOptions(item.status)}</select></td>
+<td data-label="Source"><a class="source-link" href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">OPEN</a></td></tr>`;}).join(""); }
 function bullets(items,empty){ return items?.length?`<ul>${items.map((x)=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>`:`<p>${escapeHtml(empty)}</p>`; }
 function evidenceMarkup(item){ return item.source_evidence?.length?`<ul class="evidence-list">${item.source_evidence.map((e)=>`<li><a href="${escapeHtml(e.url)}" target="_blank" rel="noreferrer">${escapeHtml(e.type)}</a><span>${escapeHtml(e.note)}</span></li>`).join("")}</ul>`:"<p>No source evidence recorded.</p>"; }
 function historyMarkup(company){ if(!company.contact_history?.length)return"<p>Never contacted.</p>"; return`<ul class="history-list">${company.contact_history.slice(0,5).map((x)=>`<li><strong>${escapeHtml(formatTimestamp(x.sent_at))}</strong><span>${escapeHtml(x.recipient||"Recipient not recorded")}${x.subject?` · ${escapeHtml(x.subject)}`:""}</span></li>`).join("")}</ul>`; }
@@ -62,7 +60,7 @@ function renderDetail(){ const item=state.opportunities.find((x)=>x.id===state.s
 <div class="detail-section"><h4>SOURCE EVIDENCE</h4>${evidenceMarkup(item)}</div>
 ${replyMarkup(item)}<div class="detail-actions">${item.contact_email?'<button class="action-button" data-copy="email" type="button">COPY EMAIL</button>':`<a class="action-button" href="${escapeHtml(item.apply_url)}" target="_blank" rel="noreferrer">OPEN CONTACT / APPLY</a>`}<a class="action-button" href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">OPEN SOURCE</a><button class="action-button sent full" data-mark-sent="1" type="button">✓ MARK EMAIL SENT</button><button class="action-button primary full" data-generate-response="1" type="button">${item.reply_body?"REGENERATE RESPONSE":"GENERATE RESPONSE"}</button><button class="action-button" data-copy-subject="1" type="button" ${item.reply_subject?"":"disabled"}>COPY SUBJECT</button><button class="action-button" data-copy-response="1" type="button" ${item.reply_body?"":"disabled"}>COPY RESPONSE</button></div></div>`; }
 function renderAll(){renderSummary();renderTable();renderDetail();}
-function selectOpportunity(id){state.selectedId=id;renderTable();renderDetail();}
+function selectOpportunity(id){state.selectedId=id;renderTable();renderDetail();if(window.matchMedia("(max-width: 760px)").matches){els.detail.scrollIntoView({behavior:"smooth",block:"start"});els.detail.focus({preventScroll:true});}}
 let toastTimer; function showToast(text){clearTimeout(toastTimer);els.toast.textContent=text;els.toast.classList.add("is-visible");toastTimer=setTimeout(()=>els.toast.classList.remove("is-visible"),2400);}
 async function copyText(value,label){try{await navigator.clipboard.writeText(value);showToast(`${label} copied`);}catch{showToast("Clipboard unavailable");}}
 
@@ -79,6 +77,34 @@ els.body.addEventListener("change",(event)=>{if(event.target.matches(".status-se
 els.detail.addEventListener("click",(event)=>{const star=event.target.closest("[data-bookmark-company]");if(star){toggleBookmark(star.dataset.bookmarkCompany);return;}const item=state.opportunities.find((x)=>x.id===state.selectedId);if(event.target.dataset.copy==="email"&&item?.contact_email)copyText(item.contact_email,"Email");if(event.target.dataset.copySubject&&item?.reply_subject)copyText(item.reply_subject,"Subject");if(event.target.dataset.copyResponse&&item?.reply_body)copyText(item.reply_body,"Response");if(event.target.dataset.markSent)markEmailSent();if(event.target.dataset.generateResponse)generateResponse();});
 document.querySelectorAll("[data-view]").forEach((button)=>button.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach((x)=>x.classList.remove("is-active"));button.classList.add("is-active");state.view=button.dataset.view;renderTable();}));
 els.statusFilter.addEventListener("change",()=>{state.status=els.statusFilter.value;renderTable();}); els.fitFilter.addEventListener("change",()=>{state.minFit=Number(els.fitFilter.value);renderTable();}); els.connect.addEventListener("click",loadTeamState);els.find.addEventListener("click",runLiveSearch);
+
+
+const sortSelect=document.querySelector("#sort-select"), sortDirection=document.querySelector("#sort-direction"), categoryOptions=document.querySelector("#category-options");
+sortSelect.innerHTML=Object.entries(SORTS).map(([key,label])=>`<option value="${key}">${label}</option>`).join("");
+categoryOptions.innerHTML=Object.entries(CATEGORIES).map(([key,label])=>`<label class="category-choice"><input type="checkbox" value="${key}"><span>${label}</span></label>`).join("");
+function renderSort(){
+  sortSelect.value=state.sortKey;
+  sortDirection.textContent=state.sortDirection==="desc"?"↓ Descending":"↑ Ascending";
+  document.querySelectorAll("[data-sort]").forEach(button=>{
+    const active=button.dataset.sort===state.sortKey;
+    button.closest("th").setAttribute("aria-sort",active?(state.sortDirection==="asc"?"ascending":"descending"):"none");
+    button.querySelector("span").textContent=active?(state.sortDirection==="asc"?" ↑":" ↓"):" ↕";
+  });
+}
+document.querySelectorAll("[data-sort]").forEach(button=>button.addEventListener("click",()=>{
+  const key=button.dataset.sort;
+  state.sortDirection=state.sortKey===key?(state.sortDirection==="asc"?"desc":"asc"):["fit_score","win_score","published_date","company_last_contacted_at","company_bookmarked"].includes(key)?"desc":"asc";
+  state.sortKey=key;renderTable();
+}));
+sortSelect.addEventListener("change",()=>{state.sortKey=sortSelect.value;renderTable();});
+sortDirection.addEventListener("click",()=>{state.sortDirection=state.sortDirection==="asc"?"desc":"asc";renderTable();});
+function updateCategories(){
+  state.categories=[...categoryOptions.querySelectorAll("input:checked")].map(input=>input.value);
+  document.querySelector("#category-count").textContent=state.categories.length?`${state.categories.length} selected · match any`:"All categories";
+  renderTable();
+}
+categoryOptions.addEventListener("change",updateCategories);
+document.querySelector("#clear-categories").addEventListener("click",()=>{categoryOptions.querySelectorAll("input").forEach(input=>input.checked=false);updateCategories();});
 
 async function init(){els.accessCode.value=sessionStorage.getItem(ACCESS_SESSION_KEY)||"";try{const response=await fetch("/fixtures/opportunities.json");if(!response.ok)throw new Error(`Fixture load failed: ${response.status}`);state.opportunities=hydrateFixtureStatuses(await response.json());state.selectedId=state.opportunities[0]?.id||null;renderAll();if(accessCode())loadTeamState();}catch(error){els.body.innerHTML=`<tr><td colspan="13">${escapeHtml(error.message)}</td></tr>`;}}
 init();

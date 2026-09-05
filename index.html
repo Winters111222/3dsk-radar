@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/src/styles.css">
   <link rel="stylesheet" href="/src/stage3.css">
   <link rel="stylesheet" href="/src/stage4.css">
+  <link rel="stylesheet" href="/src/responsive.css">
 </head>
 <body>
   <div class="app-shell">
@@ -51,14 +52,24 @@
         </div>
       </section>
 
+      <section class="panel result-filters" aria-label="Categories and sorting">
+        <details class="category-filter" open>
+          <summary>Categories <span id="category-count">All categories</span></summary>
+          <p class="microcopy">Select one or more categories. Results can match any selected category.</p>
+          <div id="category-options" class="category-options"></div>
+          <button id="clear-categories" class="action-button" type="button">CLEAR CATEGORIES</button>
+        </details>
+        <div class="sort-controls"><label for="sort-select">Sort by</label><select id="sort-select"></select><button id="sort-direction" class="action-button" type="button">↓ Descending</button></div>
+        <p class="microcopy">Budget sorts by provenance, not amount: currencies and hourly / project budgets are not directly comparable.</p>
+      </section>
       <section class="results-layout">
         <div class="panel table-panel">
           <div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3>Ranked opportunities</h3></div><span id="result-count" class="result-count"></span></div>
           <div class="table-scroll"><table><thead><tr>
-            <th>Select</th><th>★</th><th>Fit</th><th>Win</th><th>Opportunity</th><th>Company</th><th>Type</th><th>Budget</th><th>Date</th><th>Outreach</th><th>Contact</th><th>Status</th><th>Source</th>
+            <th scope="col">Select</th><th scope="col"><button type="button" data-sort="company_bookmarked">★<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="fit_score">Fit<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="win_score">Win<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="title">Opportunity<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company">Company<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="opportunity_kind">Type<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="budget_type">Budget<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="published_date">Date<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company_last_contacted_at">Outreach<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="contact_email">Contact<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="status">Status<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="source_url">Source<span aria-hidden="true"> ↕</span></button></th>
           </tr></thead><tbody id="opportunity-body"></tbody></table></div>
         </div>
-        <aside id="detail-panel" class="panel detail-panel" aria-live="polite"></aside>
+        <aside id="detail-panel" class="panel detail-panel" tabindex="-1" aria-label="Opportunity detail" aria-live="polite"></aside>
       </section>
 
       <section class="panel safety-note"><div><p class="eyebrow">SAFETY CONTRACT</p><h3>Truth beats completion.</h3></div><p>No guessed email addresses. Potential leads are never presented as open requests. Published, estimated and unknown budgets remain distinct. Company-level contact history survives new opportunities so repeat outreach is visible before a second email is prepared.</p></section>
