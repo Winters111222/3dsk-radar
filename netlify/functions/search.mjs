@@ -2,9 +2,6 @@ import { authorizeRequest } from "../../src/server/auth.mjs";
 import { loadPublicCompanyProfile } from "../../src/server/profile.mjs";
 import { runOpportunitySearch } from "../../src/server/openai-search.mjs";
 
-let searchInFlight = false;
-let lastSearchStartedAt = 0;
-
 function json(payload, status = 200, extraHeaders = {}) {
   return Response.json(payload, {
     status,
@@ -20,45 +17,57 @@ function boundedInt(value, fallback, min, max) {
   return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
 }
 
+function envValue(key) {
+  return Netlify.env.get(key) || "";
+}
+
+function runtimeSearchState() {
+  const key = "__3DSK_RADAR_STAGE2_SEARCH_STATE__";
+  if (!globalThis[key]) globalThis[key] = { inFlight: false, lastStartedAt: 0 };
+  return globalThis[key];
+}
+
 function cooldownMs() {
-  return boundedInt(process.env.RADAR_SEARCH_COOLDOWN_SECONDS, 30, 0, 600) * 1000;
+  return boundedInt(envValue("RADAR_SEARCH_COOLDOWN_SECONDS"), 30, 0, 600) * 1000;
 }
 
 export default async function handler(request) {
   if (request.method !== "POST") return json({ ok: false, error: { code: "METHOD_NOT_ALLOWED", message: "Use POST /api/search." } }, 405, { allow: "POST" });
 
-  const auth = authorizeRequest(request, process.env.RADAR_INTERNAL_ACCESS_SECRET);
+  const auth = authorizeRequest(request, envValue("RADAR_INTERNAL_ACCESS_SECRET"));
   if (!auth.ok) {
     const message = auth.status === 503 ? "Internal access is not configured on the server." : "Invalid internal access code.";
     return json({ ok: false, error: { code: auth.code, message } }, auth.status);
   }
 
-  if (!process.env.OPENAI_API_KEY) return json({ ok: false, error: { code: "OPENAI_NOT_CONFIGURED", message: "OPENAI_API_KEY is not configured on the server." } }, 503);
+  const apiKey = envValue("OPENAI_API_KEY");
+  if (!apiKey) return json({ ok: false, error: { code: "OPENAI_NOT_CONFIGURED", message: "OPENAI_API_KEY is not configured on the server." } }, 503);
 
+  const runtime = runtimeSearchState();
   const now = Date.now();
-  const remaining = Math.max(0, cooldownMs() - (now - lastSearchStartedAt));
-  if (searchInFlight || remaining > 0) {
+  const remaining = Math.max(0, cooldownMs() - (now - runtime.lastStartedAt));
+  if (runtime.inFlight || remaining > 0) {
     return json({
       ok: false,
       error: {
         code: "SEARCH_RATE_LIMITED",
-        message: searchInFlight ? "A search is already running." : "Search cooldown is active.",
-        retry_after_seconds: searchInFlight ? 15 : Math.ceil(remaining / 1000)
+        message: runtime.inFlight ? "A search is already running." : "Search cooldown is active.",
+        retry_after_seconds: runtime.inFlight ? 15 : Math.ceil(remaining / 1000)
       }
     }, 429);
   }
 
-  searchInFlight = true;
-  lastSearchStartedAt = now;
+  runtime.inFlight = true;
+  runtime.lastStartedAt = now;
 
   try {
     const profile = await loadPublicCompanyProfile();
     const nowIso = new Date().toISOString();
-    const maxResults = boundedInt(process.env.RADAR_SEARCH_MAX_RESULTS, 12, 1, 20);
-    const model = process.env.OPENAI_SEARCH_MODEL || "gpt-5.6-luna";
+    const maxResults = boundedInt(envValue("RADAR_SEARCH_MAX_RESULTS"), 12, 1, 20);
+    const model = envValue("OPENAI_SEARCH_MODEL") || "gpt-5.6-luna";
 
     const result = await runOpportunitySearch({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey,
       model,
       profile,
       nowIso,
@@ -95,7 +104,7 @@ export default async function handler(request) {
       }
     }, status);
   } finally {
-    searchInFlight = false;
+    runtime.inFlight = false;
   }
 }
 

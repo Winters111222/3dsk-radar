@@ -48,6 +48,19 @@ function mockOpenAIResponse() {
   };
 }
 
+function installNetlifyEnv(values) {
+  const old = globalThis.Netlify;
+  globalThis.Netlify = { env: { get: (key) => values[key] ?? undefined } };
+  return () => {
+    if (old === undefined) delete globalThis.Netlify;
+    else globalThis.Netlify = old;
+  };
+}
+
+function clearWarmState() {
+  delete globalThis.__3DSK_RADAR_STAGE2_SEARCH_STATE__;
+}
+
 test("search function rejects non-POST without touching paid path", async () => {
   const response = await handler(new Request("https://radar.test/api/search"));
   assert.equal(response.status, 405);
@@ -56,29 +69,27 @@ test("search function rejects non-POST without touching paid path", async () => 
 });
 
 test("search function rejects invalid access before checking OpenAI config", async () => {
-  const oldSecret = process.env.RADAR_INTERNAL_ACCESS_SECRET;
-  const oldKey = process.env.OPENAI_API_KEY;
-  process.env.RADAR_INTERNAL_ACCESS_SECRET = "right-secret";
-  delete process.env.OPENAI_API_KEY;
+  clearWarmState();
+  const restore = installNetlifyEnv({ RADAR_INTERNAL_ACCESS_SECRET:"right-secret" });
   try {
     const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer wrong-secret"}}));
     assert.equal(response.status, 401);
     const payload = await response.json();
     assert.equal(payload.error.code, "UNAUTHORIZED");
   } finally {
-    if (oldSecret === undefined) delete process.env.RADAR_INTERNAL_ACCESS_SECRET; else process.env.RADAR_INTERNAL_ACCESS_SECRET = oldSecret;
-    if (oldKey === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = oldKey;
+    restore();
+    clearWarmState();
   }
 });
 
 test("authorized search function normalizes a mocked hosted-search response end to end", async () => {
   const oldFetch = globalThis.fetch;
-  const oldSecret = process.env.RADAR_INTERNAL_ACCESS_SECRET;
-  const oldKey = process.env.OPENAI_API_KEY;
-  const oldCooldown = process.env.RADAR_SEARCH_COOLDOWN_SECONDS;
-  process.env.RADAR_INTERNAL_ACCESS_SECRET = "team-secret";
-  process.env.OPENAI_API_KEY = "fake-test-key";
-  process.env.RADAR_SEARCH_COOLDOWN_SECONDS = "0";
+  clearWarmState();
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    OPENAI_API_KEY:"fake-test-key",
+    RADAR_SEARCH_COOLDOWN_SECONDS:"0"
+  });
   globalThis.fetch = async () => new Response(JSON.stringify(mockOpenAIResponse()), {status:200,headers:{"content-type":"application/json"}});
   try {
     const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer team-secret","content-type":"application/json"},body:"{}"}));
@@ -92,8 +103,7 @@ test("authorized search function normalizes a mocked hosted-search response end 
     assert.equal(payload.run.persistence, "STAGE_3_PENDING");
   } finally {
     globalThis.fetch = oldFetch;
-    if (oldSecret === undefined) delete process.env.RADAR_INTERNAL_ACCESS_SECRET; else process.env.RADAR_INTERNAL_ACCESS_SECRET = oldSecret;
-    if (oldKey === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = oldKey;
-    if (oldCooldown === undefined) delete process.env.RADAR_SEARCH_COOLDOWN_SECONDS; else process.env.RADAR_SEARCH_COOLDOWN_SECONDS = oldCooldown;
+    restore();
+    clearWarmState();
   }
 });
