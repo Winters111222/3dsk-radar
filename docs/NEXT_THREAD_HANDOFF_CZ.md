@@ -1,5 +1,65 @@
 # 3D.SK Opportunity Radar — NEXT THREAD HANDOFF CZ
 
+## Aktuální doplnění — Phase B UK OCDS + community access review, 5. 9. 2026
+
+Nejnovější navazující práce je ve stacked Draft PR #15:
+
+- PR: `https://github.com/Winters111222/3dsk-radar/pull/15`
+- branch: `feat/phase-b-uk-ocds-20260905`
+- base: Draft PR #14 / `feat/ted-source-collector-20260905`
+- exact base HEAD: `7bbb77fd3962a3a7512778abc8c2d5d9d77fc614`
+- první plně otestovaný implementation HEAD PR #15: `a28da7b51c475dcc0b11eafb606e000f11db056b`
+- PR #15 ani PR #14 nemergovat bez explicitního souhlasu vlastníka; `main` neměnit.
+
+Phase B nyní obsahuje tři samostatné runtime collectory za společným default-off gate:
+
+1. TED Search API v3,
+2. Find a Tender OCDS release packages,
+3. Contracts Finder OCDS Search.
+
+Všechny používají pevné upstream URL, čtyři schválené query packs bez Visual / AI / Motion, nejvýše 50 records na stránku, timeout, měřené counters, `openai_requests: 0`, `cost_usd: 0` a `persistence: NONE`. Oba UK adaptery mají serverem vytvořené 30denní okno, validovaný cursor a lokální stale/inactive/deadline/scope filtry. Contracts Finder přijímá canonical provenance pouze z first-party `tenderNotice` URL. Upstream tender value je jen raw pole a není zatím `PUBLISHED` budget.
+
+Access review Polycount, Unreal a Blender Artists je dokončený. Všechny tři zdroje zůstávají `BLOCKED_ACCESS_REVIEW`; nepřidávat HTML fallback. Unreal a Blender publikovaným robots zakazují category RSS. U Polycount není přes existující first-party RSS dostatečně potvrzené komerční automatizované reuse user content. Přesné důvody: [PHASE_B_ACCESS_REVIEW_CZ.md](PHASE_B_ACCESS_REVIEW_CZ.md).
+
+Síťové ověření k tomuto checkpointu:
+
+- TED: 2 malé anonymní canary requesty, HTTP 200,
+- Find a Tender: 1 malý anonymní canary s `limit=1`, HTTP 200,
+- Contracts Finder: 1 malý anonymní canary s `limit=1`, HTTP 200,
+- celkem OpenAI requests: 0,
+- celková cena: `$0`.
+
+Offline acceptance implementation HEADu:
+
+- `npm test` → 107/107 PASS,
+- `npm run accept:collector` → PASS pro 3 mock collectory, network/OpenAI/cost = 0,
+- `npm run accept:fixture` → PASS,
+- `npm run accept:http` → PASS,
+- `npm run sources:check` → PASS,
+- `git diff --check` → PASS.
+
+Aktuální orientační roadmapa:
+
+- původní V0.1: přibližně 96 %,
+- výzkum a katalog: 100 %,
+- odstranění Visual / AI / Motion: 100 %,
+- Phase A: 100 %,
+- Phase B: přibližně 88 %,
+- Phase C: 0 %,
+- Phase D: 0 %,
+- celý rozšířený Radar: přibližně 81 %.
+
+Další doporučený krok: na další stacked branchi dokončit Phase B měřením výtěžnosti všech čtyř packs bez AI a podle výsledků rozhodnout, zda před Phase C přidat CanadaBuys. Potom Phase C: multi-source run state, chunky/cursors, persistence, leases/idempotence, cancel, cross-source + tender revision dedupe, 500-page simulace a 403/429/timeout/interruption testy. Žádný placený OpenAI Search před dokončením B/C a zelenou deployed zero-cost částí D.
+
+Bez změny zůstává:
+
+```text
+RADAR_LIVE_AI_ENABLED=false
+RADAR_SOURCE_COLLECTION_ENABLED=false
+```
+
+V tomto kroku nebyl proveden deploy, merge, změna Netlify environment, zápis do team state ani placený OpenAI request.
+
 ## Aktuální doplnění — výzkum širokého Search, 5. 9. 2026
 
 Níže uvedený původní handoff PR #6 je historický. Pro tento výzkumný krok byl znovu ověřen aktuální PR #10 head `e57912f1c42544493912120228a15ea4b0d54112`; navazující review branch je `research/source-catalog-20260905`. Před další prací ověř aktuální head této větve a jejího draft PR. Produktový stav odvozuj od exact heads, nikoli od čísel uvedených v historickém předání.

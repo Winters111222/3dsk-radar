@@ -1,10 +1,11 @@
 export class CollectorError extends Error {
-  constructor(code, message, { status = 502, upstreamStatus = null } = {}) {
+  constructor(code, message, { status = 502, upstreamStatus = null, retryAfterSeconds = null } = {}) {
     super(message);
     this.name = "CollectorError";
     this.code = code;
     this.status = status;
     this.upstreamStatus = upstreamStatus;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
