@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>3D.SK Opportunity Radar</title>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">3D.SK</div>
+        <div>
+          <p class="eyebrow">INTERNAL SALES TOOL · STAGE 1 FIXTURE MODE</p>
+          <h1>Opportunity Radar</h1>
+        </div>
+      </div>
+      <div class="topbar-meta">
+        <span class="security-pill">Preview access · no paid API calls</span>
+        <span id="dataset-pill" class="dataset-pill">Synthetic fixtures</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero panel">
+        <div class="hero-copy">
+          <p class="eyebrow">WORLDWIDE · B2B · OUTSOURCING · CONTRACT</p>
+          <h2>Find the next character-production opportunity worth answering.</h2>
+          <p>Stage 1 exercises the full decision UI against synthetic fixtures. Search, response generation and shared persistence remain intentionally disconnected.</p>
+        </div>
+        <div class="hero-actions">
+          <button id="find-button" class="primary-button" type="button">FIND NEW OPPORTUNITIES</button>
+          <p id="scan-note" class="microcopy">Fixture-only scan · $0 external API cost</p>
+        </div>
+      </section>
+
+      <section id="summary-grid" class="summary-grid" aria-label="Opportunity summary"></section>
+
+      <section class="toolbar panel">
+        <div class="segmented" role="group" aria-label="Opportunity kind filter">
+          <button class="segment is-active" data-kind="ALL" type="button">ALL</button>
+          <button class="segment" data-kind="OPEN_OPPORTUNITY" type="button">OPEN OPPORTUNITIES</button>
+          <button class="segment" data-kind="POTENTIAL_LEAD" type="button">POTENTIAL LEADS</button>
+        </div>
+        <div class="toolbar-controls">
+          <label>
+            <span>Status</span>
+            <select id="status-filter">
+              <option value="ALL">All</option>
+              <option value="NEW">New</option>
+              <option value="INTERESTING">Interesting</option>
+              <option value="CONTACTED">Contacted</option>
+              <option value="IGNORE">Ignore</option>
+            </select>
+          </label>
+          <label>
+            <span>Minimum fit</span>
+            <select id="fit-filter">
+              <option value="0">Any</option>
+              <option value="60">60+</option>
+              <option value="80">80+</option>
+              <option value="90">90+</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="results-layout">
+        <div class="panel table-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">DISPLAY → SELECT</p>
+              <h3>Ranked opportunities</h3>
+            </div>
+            <span id="result-count" class="result-count"></span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Select</th><th>Fit</th><th>Win</th><th>Opportunity</th><th>Type</th><th>Budget</th><th>Date</th><th>Contact</th><th>Status</th><th>Source</th>
+                </tr>
+              </thead>
+              <tbody id="opportunity-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside id="detail-panel" class="panel detail-panel" aria-live="polite"></aside>
+      </section>
+
+      <section class="panel safety-note">
+        <div>
+          <p class="eyebrow">SAFETY CONTRACT</p>
+          <h3>Truth beats completion.</h3>
+        </div>
+        <p>No guessed email addresses. Published, estimated and unknown budgets remain visibly distinct. Potential leads are never presented as open opportunities. Win Score is a heuristic opportunity score, not a probability of winning.</p>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
