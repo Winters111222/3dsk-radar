@@ -22,17 +22,33 @@ function transport({ commit = COMMIT, provenance = "CI_TESTED_SOURCE", live = fa
 
 test("locked deployed acceptance verifies identity before three non-dispatching lock probes", async () => {
   const mock = transport();
-  const result = await runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret-never-returned", fetchImpl:mock.fetchImpl });
+  const progress = [];
+  const result = await runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret-never-returned", fetchImpl:mock.fetchImpl, onProgress:event => progress.push(event) });
   assert.equal(result.ok, true);
   assert.equal(result.source_requests, 0);
   assert.equal(result.openai_requests, 0);
   assert.equal(result.writes, 0);
   assert.equal(result.retries, 0);
   assert.equal(mock.calls.length, 5);
+  assert.equal(progress.filter(event => event.state === "started").length, 5);
+  assert.equal(progress.filter(event => event.state === "completed").length, 5);
   assert.equal(mock.calls[0].options.method, undefined);
   assert.equal(mock.calls[1].options.method, undefined);
   assert.ok(mock.calls.slice(2).every((call) => call.options.headers.authorization === "Bearer secret-never-returned"));
   assert.doesNotMatch(JSON.stringify(result), /secret-never-returned/);
+});
+
+test("timeout reports the exact path and initiated request count without retry", async () => {
+  const progress = [];
+  const fetchImpl = async () => { throw new DOMException("timed out", "TimeoutError"); };
+  await assert.rejects(
+    () => runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", fetchImpl, onProgress:event => progress.push(event) }),
+    /ACCEPTANCE_HTTP_TIMEOUT:\/build-metadata\.json/
+  );
+  assert.deepEqual(progress, [
+    { request_index:1, method:"GET", path:"/build-metadata.json", state:"started" },
+    { request_index:1, method:"GET", path:"/build-metadata.json", state:"failed", error_code:"ACCEPTANCE_HTTP_TIMEOUT:/build-metadata.json" }
+  ]);
 });
 
 test("identity or unlocked health fails before any protected POST", async () => {

@@ -2,6 +2,7 @@ import { pathToFileURL } from "node:url";
 
 export const LOCKED_ACCEPTANCE_CONFIRMATION = "I_APPROVE_LOCKED_ZERO_COST_ACCEPTANCE";
 const MAX_JSON_BYTES = 65_536;
+export const ACCEPTANCE_HTTP_TIMEOUT_MS = 45_000;
 
 export function normalizedAcceptanceBaseUrl(value) {
   let url;
@@ -29,20 +30,41 @@ async function responseJson(response) {
 }
 
 async function requestJson(fetchImpl, url, options = {}) {
-  const response = await fetchImpl(url, { ...options, redirect:"error", signal:AbortSignal.timeout(12_000) });
+  let response;
+  try {
+    response = await fetchImpl(url, { ...options, redirect:"error", signal:AbortSignal.timeout(ACCEPTANCE_HTTP_TIMEOUT_MS) });
+  } catch (error) {
+    if (error?.name === "TimeoutError") throw new Error(`ACCEPTANCE_HTTP_TIMEOUT:${new URL(url).pathname}`);
+    throw error;
+  }
   return { status:response.status, payload:await responseJson(response) };
 }
 
-export async function runLockedDeployedAcceptance({ baseUrl, commitRef, accessCode, fetchImpl = fetch } = {}) {
+export async function runLockedDeployedAcceptance({ baseUrl, commitRef, accessCode, fetchImpl = fetch, onProgress = () => {} } = {}) {
   const base = normalizedAcceptanceBaseUrl(baseUrl);
   const commit = expectedCommit(commitRef);
   if (typeof accessCode !== "string" || !accessCode.trim()) throw new Error("ACCEPTANCE_ACCESS_CODE_REQUIRED");
 
-  const metadata = await requestJson(fetchImpl, `${base}/build-metadata.json`);
+  let requestCount = 0;
+  const request = async (path, options = {}) => {
+    const requestIndex = ++requestCount;
+    const method = options.method || "GET";
+    onProgress({ request_index:requestIndex, method, path, state:"started" });
+    try {
+      const result = await requestJson(fetchImpl, `${base}${path}`, options);
+      onProgress({ request_index:requestIndex, method, path, state:"completed", status:result.status });
+      return result;
+    } catch (error) {
+      onProgress({ request_index:requestIndex, method, path, state:"failed", error_code:String(error?.message || "ACCEPTANCE_HTTP_FAILED").slice(0,120) });
+      throw error;
+    }
+  };
+
+  const metadata = await request("/build-metadata.json");
   if (metadata.status !== 200 || metadata.payload?.schema_version !== 2 || metadata.payload?.service !== "3dsk-opportunity-radar" || metadata.payload?.commit_ref !== commit || metadata.payload?.acceptance_profile !== "LOCKED_ZERO_COST" || metadata.payload?.artifact_provenance !== "CI_TESTED_SOURCE") {
     throw new Error("ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH");
   }
-  const health = await requestJson(fetchImpl, `${base}/api/health`);
+  const health = await request("/api/health");
   if (health.status !== 200 || health.payload?.service !== "3dsk-opportunity-radar" || health.payload?.paid_ai_state !== "LOCKED" || health.payload?.live_ai_enabled !== false || health.payload?.source_collection !== "LOCKED" || health.payload?.access_configured !== true) {
     throw new Error("ACCEPTANCE_HEALTH_BOUNDARY_FAILED");
   }
@@ -54,7 +76,7 @@ export async function runLockedDeployedAcceptance({ baseUrl, commitRef, accessCo
     ["/api/generate-response", {}, "LIVE_AI_LOCKED"],
     ["/api/source-runs", { action:"START", profile_id:"FOCUSED", request_id:"deployed_lock_check" }, "SOURCE_COLLECTION_LOCKED"]
   ]) {
-    const result = await requestJson(fetchImpl, `${base}${path}`, { method:"POST", headers, body:JSON.stringify(body) });
+    const result = await request(path, { method:"POST", headers, body:JSON.stringify(body) });
     if (result.status !== 423 || result.payload?.error?.code !== expectedCode) throw new Error(`ACCEPTANCE_LOCK_FAILED:${path}`);
     checks.push({ path, status:result.status, code:expectedCode });
   }
@@ -65,7 +87,7 @@ export async function runLockedDeployedAcceptance({ baseUrl, commitRef, accessCo
     deploy_context:metadata.payload.deploy_context || null,
     paid_ai_state:"LOCKED",
     source_collection:"LOCKED",
-    network_requests:5,
+    network_requests:requestCount,
     source_requests:0,
     openai_requests:0,
     writes:0,
@@ -79,7 +101,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
   const result = await runLockedDeployedAcceptance({
     baseUrl:process.env.RADAR_ACCEPTANCE_BASE_URL,
     commitRef:process.env.RADAR_EXPECTED_COMMIT,
-    accessCode:process.env.RADAR_ACCEPTANCE_ACCESS_CODE
+    accessCode:process.env.RADAR_ACCEPTANCE_ACCESS_CODE,
+    onProgress:event => console.error(`[acceptance] ${JSON.stringify(event)}`)
   });
   console.log(JSON.stringify(result, null, 2));
 }
