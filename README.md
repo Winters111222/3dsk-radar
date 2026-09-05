@@ -43,8 +43,10 @@ Závazný Search scope: [`docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md`](docs/PRODUC
 
 Search Phase A — truth/freshness acceptance: [`docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md`](docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md)
 
+Search Phase B — read-only source collection: [`docs/PHASE_B_SOURCE_COLLECTION_CZ.md`](docs/PHASE_B_SOURCE_COLLECTION_CZ.md)
+
 Pre-live acceptance: [`docs/PRELIVE_ACCEPTANCE_CZ.md`](docs/PRELIVE_ACCEPTANCE_CZ.md)
 
 Instrukce pro další vývojové boty: [`AGENTS.md`](AGENTS.md)
 
-Výzkum zdrojů a návrh širokého Search (5. 9. 2026): [`docs/SEARCH_SOURCE_STRATEGY_CZ.md`](docs/SEARCH_SOURCE_STRATEGY_CZ.md). Obsahuje 49 zdrojových záznamů, přístupová omezení, query packs a implementační pořadí. Katalog zatím není zapojen do runtime crawleru; integritu ověří `npm run sources:check` bez sítě a AI.
+Výzkum zdrojů a návrh širokého Search (5. 9. 2026): [`docs/SEARCH_SOURCE_STRATEGY_CZ.md`](docs/SEARCH_SOURCE_STRATEGY_CZ.md). Obsahuje 49 zdrojových záznamů, přístupová omezení, query packs a implementační pořadí. První samostatný TED collector je implementovaný za default-off gate; výzkumný katalog zůstává oddělený od runtime registry. Integritu ověří `npm run sources:check` a `npm run accept:collector` bez sítě a AI.

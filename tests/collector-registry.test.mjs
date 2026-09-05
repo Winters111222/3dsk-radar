@@ -1,0 +1,16 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { collectorRegistry } from "../src/server/collectors/registry.mjs";
+
+test("collector registry exposes TED separately and blocks unreviewed community automation", () => {
+  const locked = collectorRegistry({ collectionEnabled:false });
+  assert.equal(locked.find((item) => item.source_id === "ted_eu").status, "LOCKED");
+  assert.equal(locked.find((item) => item.source_id === "ted_eu").ai_cost_usd, 0);
+  assert.equal(locked.find((item) => item.source_id === "ted_eu").network_verified, true);
+  assert.equal(locked.find((item) => item.source_id === "ted_eu").deployed_endpoint_verified, false);
+  for (const id of ["polycount_paid", "unreal_job_offerings", "blender_paid"]) {
+    assert.equal(locked.find((item) => item.source_id === id).status, "BLOCKED_ACCESS_REVIEW");
+  }
+  assert.doesNotMatch(JSON.stringify(locked), /visual.ai.motion/i);
+  assert.equal(collectorRegistry({ collectionEnabled:true }).find((item) => item.source_id === "ted_eu").status, "READY");
+});
