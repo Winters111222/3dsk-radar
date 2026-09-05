@@ -1,5 +1,56 @@
 # 3D.SK Opportunity Radar — NEXT THREAD HANDOFF CZ
 
+## Aktuální doplnění — Phase C operator UI, 5. 9. 2026
+
+Navazující práce je ve stacked Draft PR #18 nad Draft PR #17:
+
+- Draft PR #18: https://github.com/Winters111222/3dsk-radar/pull/18,
+- branch: `feat/phase-c-operator-ui-20260905`,
+- první remote implementation HEAD PR #18: `4ce0ab364126c6c1201d2e678faa86bf39da84d9`,
+- exact base / remote HEAD PR #17: `9a802b90f80033ca6200a0ff17e9a108cb9e7e4e`,
+- GitHub Radar CI PR #17 / run #71: SUCCESS,
+- PR #14–#18 nemergovat bez explicitního souhlasu vlastníka,
+- `main` neměnit.
+
+Phase C je nyní přibližně 80 %. Nový responzivní `Source candidate collection` panel umí z jednoho kliknutí START/RESUME přes persisted chunky, progress pro services/pages/raw candidates, cancel a načtení posledního běhu po refreshi. Browser loop má hard cap 25 chunků na jednu session; při cooldownu opakuje stejné operation ID, na `RETRY_WAIT`/`UNCERTAIN` zastaví a dlouhý běh lze bezpečně obnovit.
+
+Raw kandidáti jsou v samostatném review seznamu výrazně označení `RAW · NEEDS TRUTH REVIEW`; nejsou zapisováni mezi opportunities. Původní paid Search je při serverovém locku disabled a UI neumí změnit Netlify environment. Pre-live lock check nyní ověřuje také `SOURCE_COLLECTION_LOCKED` před jakýmkoli source runem.
+
+Ověření lokální branche:
+
+- `npm test` → 133/133 PASS,
+- `npm run accept:run` → PASS včetně operator loop a raw-candidate invariant,
+- `npm run accept:collector` → PASS,
+- `npm run accept:fixture` → PASS,
+- `npm run accept:http` → PASS,
+- `npm run sources:check` → PASS,
+- simulated 501 / accepted 500 pages,
+- offered 215 / accepted 180 candidates,
+- network requests 0, OpenAI requests 0, cost `$0`,
+- `git diff --check` → PASS.
+
+Aktuální orientační roadmapa:
+
+- původní V0.1: přibližně 96 %,
+- výzkum a katalog: 100 %,
+- odstranění Visual / AI / Motion: 100 %,
+- Phase A: 100 %,
+- Phase B: 100 %,
+- Phase C: přibližně 80 %,
+- Phase D: 0 %,
+- celý rozšířený Radar: přibližně 93 %.
+
+Do Phase C zbývá detailní enrichment, skutečný detail-page adapter, napojení na Phase A promotion a atomický coordinator před budoucím placeným dispatch. Potom Phase D: deployed zero-cost acceptance. Bez explicitního souhlasu stále žádný placený OpenAI run.
+
+Bez změny zůstává:
+
+```text
+RADAR_LIVE_AI_ENABLED=false
+RADAR_SOURCE_COLLECTION_ENABLED=false
+```
+
+V tomto kroku nebyl proveden deploy, merge, změna Netlify environment, live source request ani OpenAI request.
+
 ## Aktuální doplnění — Phase C run engine, 5. 9. 2026
 
 Nejnovější navazující práce je ve stacked Draft PR #17 nad Draft PR #16:

@@ -34,6 +34,37 @@ a { color:inherit; }
 .primary-button:hover { transform:translateY(-1px); }
 .primary-button:disabled { opacity:.45; cursor:not-allowed; transform:none; }
 .microcopy { color:#778493; margin:0; font-size:12px; line-height:1.45; }
+.source-run-panel { margin:14px 0; padding:22px; }
+.source-run-head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; }
+.source-run-head h3 { margin:0; font-size:20px; }
+.source-run-head p:last-child { max-width:780px; margin:8px 0 0; color:#8f9baa; font-size:13px; line-height:1.5; }
+.source-run-status { display:inline-flex; border:1px solid #344152; border-radius:999px; padding:7px 10px; color:#b9c6d5; background:#131a22; font-size:10px; font-weight:900; letter-spacing:.08em; }
+.source-run-status[data-state="COMPLETED"] { color:#aee3be; border-color:#294936; background:#102018; }
+.source-run-status[data-state="RUNNING"],.source-run-status[data-state="PAUSED"] { color:#b6d3ff; border-color:#294667; background:#111b27; }
+.source-run-status[data-state="CANCELLED"],.source-run-status[data-state="UNCERTAIN"] { color:#f1d78f; border-color:#5a4b27; background:#201b10; }
+.source-run-controls { display:grid; grid-template-columns:minmax(260px,1fr) auto auto; align-items:end; gap:10px; margin:18px 0 14px; }
+.source-run-controls label { display:flex; flex-direction:column; gap:7px; color:#8491a0; font-size:10px; font-weight:850; letter-spacing:.11em; }
+.source-run-controls select { width:100%; min-height:48px; }
+.source-run-controls .primary-button,.source-run-controls .action-button { min-height:48px; }
+.source-run-progress { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:14px 0; }
+.source-progress-card { border:1px solid var(--line); background:#0d1116; border-radius:12px; padding:13px 15px; }
+.source-progress-card span { display:block; color:#8693a2; font-size:10px; font-weight:850; letter-spacing:.09em; }
+.source-progress-card strong { display:block; margin:6px 0 9px; font-size:17px; }
+.source-progress-track { height:4px; overflow:hidden; background:#222a33; border-radius:999px; }
+.source-progress-track i { display:block; height:100%; background:#7ba8ff; border-radius:999px; }
+.source-candidate-review { margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
+.source-candidate-review summary { cursor:pointer; font-size:12px; font-weight:850; letter-spacing:.04em; }
+.source-candidate-review summary span { margin-left:7px; color:#f1c75b; font-size:10px; text-transform:uppercase; }
+.source-candidate-review > .microcopy { margin:10px 0; }
+.source-run-candidates { list-style:none; padding:0; margin:0; display:grid; gap:8px; max-height:360px; overflow:auto; }
+.source-run-candidates li { display:flex; align-items:center; justify-content:space-between; gap:16px; border:1px solid #252d37; border-radius:10px; padding:12px; background:#0e1217; }
+.source-run-candidates li > div { min-width:0; }
+.source-run-candidates strong,.source-run-candidates small { display:block; }
+.source-run-candidates strong { margin:5px 0; font-size:13px; overflow-wrap:anywhere; }
+.source-run-candidates small { color:#778493; line-height:1.4; }
+.source-run-candidates a { flex-shrink:0; color:#d5dce4; font-size:10px; font-weight:850; text-decoration:none; border-bottom:1px solid #546273; }
+.raw-candidate-badge { color:#f1d78f; font-size:9px; font-weight:900; letter-spacing:.06em; }
+.source-run-candidates .source-candidate-empty { color:#778493; justify-content:flex-start; }
 .summary-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin:14px 0; }
 .summary-card { padding:20px 22px; border:1px solid var(--line); background:#101419; border-radius:15px; min-width:0; }
 .summary-card .label { color:#8693a2; font-size:11px; font-weight:800; letter-spacing:.11em; }

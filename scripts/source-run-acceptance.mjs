@@ -1,5 +1,6 @@
 // Offline Phase C acceptance. Simulates limits and persistence without external network or OpenAI.
 import { pathToFileURL } from "node:url";
+import { continueSourceRunLoop, sourceCandidateView } from "../src/lib/source-run-view.mjs";
 import { createStateRepository } from "../src/server/state-repository.mjs";
 import { applyCandidateOutcome, canFetchPage, createSourceRun, mergeSourceCandidate, recordFetchedPage, rejectCandidateAtCap } from "../src/server/source-run-contract.mjs";
 import { continueSourceRun, startSourceRun } from "../src/server/source-run-service.mjs";
@@ -56,6 +57,16 @@ export async function runSourceRunAcceptance() {
     }
   });
   const replay = await continueSourceRun({ repository, runId:"accept_run_state", operationId:"accept_operation_01", nowIso:NOW, collectPage:async () => { throw new Error("replay must not dispatch"); } });
+  const uiOperations = [];
+  const ui = await continueSourceRunLoop({
+    initialRun:{ ...first.run, status:"PAUSED", completion_reason:"CHUNK_LIMIT_REACHED" },
+    makeOperationId:() => "accept_ui_operation",
+    continueChunk:async (_runId, operationId) => {
+      uiOperations.push(operationId);
+      return { run:{ ...first.run, status:"COMPLETED", completion_reason:"PLAN_EXHAUSTED" } };
+    }
+  });
+  const rawCandidate = sourceCandidateView((await repository.listSourceRunCandidates("accept_run_state"))[0]);
 
   const checks = {
     page_500_accepted:limitRun.counters.total_pages_fetched === 500,
@@ -63,6 +74,8 @@ export async function runSourceRunAcceptance() {
     candidates_capped_at_180:candidateRun.counters.candidates_accepted === 180 && candidateRun.counters.candidates_rejected_cap === 35,
     chunk_persisted:first.run.counters.list_pages_fetched === 1 && (await repository.listSourceRunCandidates("accept_run_state")).length === 1,
     operation_replayed_without_dispatch:replay.replayed === true && mockCalls === 1,
+    operator_loop_completed:ui.reason === "COMPLETED" && uiOperations.length === 1,
+    candidate_stays_raw:rawCandidate.review_state === "RAW_CANDIDATE",
     paid_execution_locked:first.run.paid_execution === "LOCKED",
     no_openai:first.run.counters.openai_requests === 0,
     zero_cost:first.run.counters.cost_usd === 0

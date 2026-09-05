@@ -74,8 +74,8 @@ npm run measure:collector:live -- --confirm-live-read-only
 | Odstranění Visual / AI / Motion | 100 % |
 | Phase A — pravdivost, freshness, counters | 100 % |
 | Phase B — první funkční sběr | 100 % |
-| Phase C — široký řízený run | přibližně 70 % |
+| Phase C — široký řízený run | přibližně 80 % |
 | Phase D — deployed zero-cost acceptance + controlled live | 0 % |
-| Revidovaný celý Radar | přibližně 91 % |
+| Revidovaný celý Radar | přibližně 93 % |
 
 Původní V0.1 zůstává přibližně na 96 %, ale toto číslo nezahrnuje nově schválený široký crawler. První placený OpenAI Search je povolen až po dokončení B a C a po zelené **zero-cost** části D. Potom se spustí právě jeden Focused acceptance run s předem nastaveným stropem `$0.50`; Wide run dostane maximálně `$1.00` teprve po ruční kontrole kvality Focused výsledků.
