@@ -24,11 +24,13 @@ jobs:
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Run tests
         run: npm test
+      - name: Run zero-cost fixture acceptance
+        run: npm run accept:fixture
       - name: Syntax check
         shell: bash
         run: |
           set -euo pipefail
-          for file in src/app.js src/lib/*.mjs src/server/*.mjs netlify/functions/*.mjs; do
+          for file in src/app.js src/lib/*.mjs src/server/*.mjs netlify/functions/*.mjs scripts/*.mjs; do
             node --check "$file"
           done
       - name: Package tested source
