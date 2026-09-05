@@ -59,6 +59,7 @@ function installNetlifyEnv(values) {
 
 function clearWarmState() {
   delete globalThis.__3DSK_RADAR_STAGE2_SEARCH_STATE__;
+  delete globalThis.__RADAR_TEST_STATE_REPOSITORY__;
 }
 
 test("search function rejects non-POST without touching paid path", async () => {
@@ -87,9 +88,11 @@ test("authorized search function normalizes a mocked hosted-search response end 
   clearWarmState();
   const restore = installNetlifyEnv({
     RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
     OPENAI_API_KEY:"fake-test-key",
     RADAR_SEARCH_COOLDOWN_SECONDS:"0"
   });
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResults: async (items) => items };
   globalThis.fetch = async () => new Response(JSON.stringify(mockOpenAIResponse()), {status:200,headers:{"content-type":"application/json"}});
   try {
     const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer team-secret","content-type":"application/json"},body:"{}"}));
@@ -100,7 +103,7 @@ test("authorized search function normalizes a mocked hosted-search response end 
     assert.equal(payload.opportunities[0].source_url, SOURCE);
     assert.equal(payload.opportunities[0].win_band, "HIGH");
     assert.equal(payload.run.returned_count, 1);
-    assert.equal(payload.run.persistence, "STAGE_3_PENDING");
+    assert.equal(payload.run.persistence, "NETLIFY_BLOBS");
   } finally {
     globalThis.fetch = oldFetch;
     restore();
