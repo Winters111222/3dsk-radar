@@ -32,10 +32,25 @@
         </div>
         <div class="hero-actions">
           <label class="access-control" for="access-code"><span>TEAM ACCESS CODE</span><input id="access-code" type="password" autocomplete="current-password" placeholder="Stored only for this browser session"></label>
-          <div class="hero-button-row"><button id="connect-button" class="secondary-button" type="button">LOAD TEAM STATE</button><button id="find-button" class="primary-button" type="button">FIND NEW OPPORTUNITIES</button></div>
+          <div class="hero-button-row"><button id="connect-button" class="secondary-button" type="button">LOAD TEAM STATE</button><button id="find-button" class="primary-button" type="button" disabled>FIND NEW OPPORTUNITIES · PAID LOCKED</button></div>
           <p id="last-search" class="microcopy">Connect to view saved search history</p><div class="hero-button-row"><button id="demo-button" class="action-button" type="button">EXPLORE DEMO · $0</button><button id="signout-button" class="action-button" type="button">DISCONNECT</button></div>
           <p id="scan-note" class="microcopy">Paid AI is server-locked until final acceptance.</p>
         </div>
+      </section>
+
+      <section id="source-run-panel" class="panel source-run-panel" aria-label="Zero-cost source collection">
+        <div class="source-run-head">
+          <div><p class="eyebrow">PHASE C · PERSISTED · ZERO AI COST</p><h3>Source candidate collection</h3><p>Collect bounded first-party source records, preserve progress between page loads and review provenance before any record can become an opportunity.</p></div>
+          <span id="source-run-status" class="source-run-status" data-state="LOCKED">LOCKED</span>
+        </div>
+        <div class="source-run-controls">
+          <label for="source-run-profile"><span>RUN PROFILE</span><select id="source-run-profile"><option value="FOCUSED">Focused · 120 page / 45 candidate cap</option><option value="WIDE">Wide · 500 page / 180 candidate cap</option></select></label>
+          <button id="source-run-button" class="primary-button" type="button" disabled>START ZERO-COST SOURCE RUN</button>
+          <button id="source-run-cancel" class="action-button" type="button" disabled>CANCEL RUN</button>
+        </div>
+        <div id="source-run-progress" class="source-run-progress" aria-label="Source run progress"></div>
+        <p id="source-run-note" class="microcopy" aria-live="polite">Source collection status is loading.</p>
+        <details class="source-candidate-review"><summary>Raw candidate review <span>not opportunities</span></summary><p class="microcopy">These records passed collector-level freshness and scope filters only. They still need detail enrichment and Phase A buyer/status/studio truth gates.</p><ul id="source-run-candidates" class="source-run-candidates"></ul></details>
       </section>
 
       <details id="prelive-tools" class="panel result-filters" hidden><summary>Pre-live system checks · isolated test workspace</summary><p>Test data are separate from real opportunities. Paid AI must remain locked.</p><button id="seed-test-button" class="action-button" type="button">LOAD SHARED TEST DATA</button><button id="check-locks-button" class="action-button" type="button">CHECK AI LOCKS · $0</button><pre id="system-check-result" style="white-space:pre-wrap;overflow-wrap:anywhere" aria-live="polite"></pre></details>

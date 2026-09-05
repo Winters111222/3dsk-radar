@@ -1,6 +1,6 @@
 # Phase C — perzistentní multi-source run engine
 
-Stav k 5. 9. 2026: **orchestration slice je implementovaný a offline ověřený; Phase C celkem přibližně 70 %**. Endpoint není nasazený a default-off gate se nezměnil.
+Stav k 5. 9. 2026: **orchestration a operator-UI slice jsou implementované a offline ověřené; Phase C celkem přibližně 80 %**. Endpoint ani UI změny nejsou nasazené a default-off gate se nezměnil.
 
 ## Implementovaný contract
 
@@ -27,6 +27,20 @@ Aktivní run ukládá do Netlify Blobs odděleně:
 - cost reservation ledger v integer `microusd`.
 
 Kandidáti se **neukládají do `opportunities/`**. Jsou raw source records čekající na detailní ověření a Phase A truth klasifikaci. Jejich existence proto není tvrzení, že jde o otevřenou buyer poptávku.
+
+## Operator UI
+
+Aplikace má samostatný responzivní panel `Source candidate collection`, který:
+
+- zobrazuje FOCUSED/WIDE limity, stav, services/pages/candidates progress a maximálně 24 posledních raw kandidátů,
+- každý kandidát výrazně označuje `RAW · NEEDS TRUTH REVIEW` a nikdy jej nepřidává do opportunity tabulky,
+- jedním kliknutím vytvoří nebo obnoví běh a postupně volá persisted chunky,
+- při HTTP cooldownu opakuje pouze stejný bezpečný `operation_id`,
+- zastaví se na `RETRY_WAIT`, `UNCERTAIN`, cancel nebo po 25 chunkech v jedné browser session,
+- po refreshi načte poslední run a dovolí bezpečný resume,
+- neumí a nesmí měnit Netlify environment ani odemknout collection/AI gate.
+
+Původní placené `FIND NEW OPPORTUNITIES` je při `paid_ai_state: LOCKED` skutečně disabled a viditelně označené `PAID LOCKED`. Zero-cost source collection se zpřístupní pouze serverovým gate po budoucí deployed acceptance.
 
 ## Idempotence, retry a přerušení
 
@@ -58,15 +72,14 @@ npm test
 npm run accept:run
 ```
 
-Acceptance nabízí 501 stran a přijme přesně hard cap 500 (140 list + 360 detail), nabízí 215 kandidátů a přijme přesně 180. Samostatné testy kryjí 403/429/timeout, cursor/chunk persistence, exact replay bez dalšího fetch, cancel, tender revision, cross-source dedupe a neočekávané přerušení. Fixture transport hlásí `network_requests: 0`, `openai_requests: 0`, `cost_usd: 0`.
+Acceptance nabízí 501 stran a přijme přesně hard cap 500 (140 list + 360 detail), nabízí 215 kandidátů a přijme přesně 180. Samostatné testy kryjí 403/429/timeout, cursor/chunk persistence, exact replay bez dalšího fetch, cancel během fetch, tender revision, cross-source dedupe, operator-loop transient retry, mobile layout a neočekávané přerušení. Fixture transport hlásí `network_requests: 0`, `openai_requests: 0`, `cost_usd: 0`.
 
 ## Co zbývá do 100 % Phase C
 
 1. detailní enrichment a napojení raw kandidátů na Phase A truth gates,
 2. bezpečné řízení detail-page budgetu skutečným detail adaptérem,
 3. atomický distribuovaný coordinator pro budoucí paid cost reservations,
-4. UI řízení jednoho kliku přes více chunků včetně progress/cancel,
-5. teprve po nasazení zero-cost části v Phase D ověřit reálnou multi-page výtěžnost.
+4. teprve po nasazení zero-cost části v Phase D ověřit reálnou multi-page výtěžnost.
 
 Bez změny zůstává:
 

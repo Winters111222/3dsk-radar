@@ -1,15 +1,17 @@
 import { CATEGORIES, SORTS, visibleResults } from "./lib/result-view.mjs";
 import { bandForScore, contactDisplay, STATUS_VALUES } from "./lib/domain.mjs";
+import { continueSourceRunLoop, isTerminalSourceRun, sourceCandidateView, sourceRunProgress } from "./lib/source-run-view.mjs";
 
 const acceptanceWorkspace = new URLSearchParams(location.search).get("workspace") === "acceptance";
 const STATUS_STORAGE_KEY = "3dsk-radar-fixture-status-v2";
 const ACCESS_SESSION_KEY = "3dsk-radar-access-v2";
-const state = { opportunities:[], companies:new Map(), selectedId:null, view:"ALL", status:"ALL", minFit:0, datasetMode:"DISCONNECTED", lastRun:null, categories:[], sortKey:"win_score", sortDirection:"desc" };
+const state = { opportunities:[], companies:new Map(), selectedId:null, view:"ALL", status:"ALL", minFit:0, datasetMode:"DISCONNECTED", lastRun:null, categories:[], sortKey:"win_score", sortDirection:"desc", sourceRun:null, sourceCandidates:[], sourceRunBusy:false, sourceRunStop:false, sourceRunMessage:null, collectionEnabled:false };
 const els = {
   body:document.querySelector("#opportunity-body"), detail:document.querySelector("#detail-panel"), summary:document.querySelector("#summary-grid"), count:document.querySelector("#result-count"),
   find:document.querySelector("#find-button"), connect:document.querySelector("#connect-button"), scanNote:document.querySelector("#scan-note"), statusFilter:document.querySelector("#status-filter"), fitFilter:document.querySelector("#fit-filter"),
   toast:document.querySelector("#toast"), accessCode:document.querySelector("#access-code"), datasetPill:document.querySelector("#dataset-pill"),
-  runCounters:document.querySelector("#run-counters"), runCounterGrid:document.querySelector("#run-counter-grid"), runCounterMode:document.querySelector("#run-counter-mode")
+  runCounters:document.querySelector("#run-counters"), runCounterGrid:document.querySelector("#run-counter-grid"), runCounterMode:document.querySelector("#run-counter-mode"),
+  sourceRunPanel:document.querySelector("#source-run-panel"), sourceRunStatus:document.querySelector("#source-run-status"), sourceRunProgress:document.querySelector("#source-run-progress"), sourceRunCandidates:document.querySelector("#source-run-candidates"), sourceRunButton:document.querySelector("#source-run-button"), sourceRunCancel:document.querySelector("#source-run-cancel"), sourceRunProfile:document.querySelector("#source-run-profile"), sourceRunNote:document.querySelector("#source-run-note")
 };
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'\"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
 const companyMapKey = (company) => String(company || "").trim().toLowerCase();
@@ -21,7 +23,7 @@ function companyStateFor(item){ return state.companies.get(item.company_key || c
 function applyCompanyState(company){ state.companies.set(company.company_key || companyMapKey(company.company),company); for(const item of state.opportunities){ if((item.company_key&&company.company_key&&item.company_key===company.company_key)||companyMapKey(item.company)===companyMapKey(company.company)){ item.company_key=company.company_key||item.company_key; item.company_bookmarked=Boolean(company.bookmarked); item.company_last_contacted_at=company.last_contacted_at||null; item.company_contact_count=company.contact_count||0; } } }
 function accessCode(){ return els.accessCode.value.trim(); }
 function authHeaders(){ return {...(acceptanceWorkspace?{"x-radar-workspace":"acceptance"}:{}),"content-type":"application/json","authorization":`Bearer ${accessCode()}`}; }
-async function api(path,options={}){ const response=await fetch(path,{...options,headers:{...authHeaders(),...(options.headers||{})}}); const payload=await response.json().catch(()=>({})); if(!response.ok||!payload.ok) throw new Error(payload?.error?.message||`${path} failed (${response.status})`); return payload; }
+async function api(path,options={}){ const response=await fetch(path,{...options,headers:{...authHeaders(),...(options.headers||{})}}); const payload=await response.json().catch(()=>({})); if(!response.ok||!payload.ok){const error=new Error(payload?.error?.message||`${path} failed (${response.status})`);error.code=payload?.error?.code||"API_FAILED";error.status=response.status;error.retryAfterSeconds=payload?.error?.retry_after_seconds||null;throw error;} return payload; }
 
 function filtered(){ return visibleResults(state.opportunities,state); }
 function formatDate(value){ if(!value)return"Date unknown"; const date=new Date(`${value}T00:00:00Z`); return Number.isNaN(date.getTime())?"Date unknown":new Intl.DateTimeFormat("en",{month:"short",day:"numeric",year:"numeric"}).format(date); }
@@ -36,6 +38,21 @@ function outreachMarkup(item){ const company=companyStateFor(item); if(!company.
 
 function renderSummary(){ const all=state.opportunities; const uniqueCompanies=new Set(all.map((x)=>companyMapKey(x.company))).size; const bookmarked=new Set(all.filter((x)=>x.company_bookmarked).map((x)=>companyMapKey(x.company))).size; const contacted=new Set(all.filter((x)=>x.company_last_contacted_at).map((x)=>companyMapKey(x.company))).size; const cards=[["OPPORTUNITIES",all.length,state.datasetMode.toLowerCase()],["COMPANIES",uniqueCompanies,"unique buyers"],["BOOKMARKED",bookmarked,"companies"],["EMAILED",contacted,"companies with history"],["HIGH FIT",all.filter((x)=>x.fit_score>=80).length,"FIT 80+"]]; els.summary.innerHTML=cards.map(([l,v,s])=>`<article class="summary-card"><span class="label">${escapeHtml(l)}</span><strong class="value">${escapeHtml(v)}</strong><span class="sub">${escapeHtml(s)}</span></article>`).join(""); }
 function renderRunCounters(){ const counters=state.lastRun?.counters; if(!counters){els.runCounters.hidden=true;els.runCounterGrid.innerHTML="";return;} const value=(number)=>Number.isFinite(number)?number:"—"; const cards=[["SOURCE URLS",counters.source_urls_verified,"verified originals"],["CANDIDATES",counters.candidates_seen,"seen"],["VERIFIED",counters.candidates_verified,"after truth gates"],["REJECTED",counters.candidates_rejected,"with reason"],["DUPLICATES",counters.duplicates_removed,"removed"],["NEW",counters.new_opportunities,"first seen"],["UPDATED",counters.updated_opportunities,"known records"],["WORKSPACE",counters.workspace_total,"saved total"]]; els.runCounterMode.textContent=counters.collector_mode||"UNKNOWN MODE";els.runCounterGrid.innerHTML=cards.map(([label,number,note])=>`<article class="run-counter"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value(number))}</strong><small>${escapeHtml(note)}</small></article>`).join("");els.runCounters.hidden=false; }
+function sourceName(id){return({ted_eu:"TED",find_tender_uk:"Find a Tender",contracts_finder_uk:"Contracts Finder"})[id]||id;}
+function progressCard(label,metric){const percent=Math.round(metric.ratio*100);return`<article class="source-progress-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(metric.value)} / ${escapeHtml(metric.maximum)}</strong><div class="source-progress-track"><i style="width:${percent}%"></i></div></article>`;}
+function renderSourceRun(){
+  const run=state.sourceRun,progress=sourceRunProgress(run),terminal=isTerminalSourceRun(run),active=Boolean(run&&!terminal);
+  els.sourceRunStatus.textContent=!state.collectionEnabled?"LOCKED":run?.status||"READY";
+  els.sourceRunStatus.dataset.state=!state.collectionEnabled?"LOCKED":run?.status||"READY";
+  els.sourceRunProgress.innerHTML=[progressCard("SERVICES",progress.services),progressCard("PAGES",progress.pages),progressCard("RAW CANDIDATES",progress.candidates)].join("");
+  const candidates=state.sourceCandidates.map(sourceCandidateView).slice(0,24);
+  els.sourceRunCandidates.innerHTML=candidates.length?candidates.map((item)=>`<li><div><span class="raw-candidate-badge">RAW · NEEDS TRUTH REVIEW</span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.buyers.join(", ")||"Buyer not stated")} · ${escapeHtml(sourceName(item.source_id))}${item.observed_date?` · ${escapeHtml(item.observed_date)}`:""}${item.reference_count>1?` · ${escapeHtml(item.reference_count)} sources/revisions`:""}</small></div>${item.source_url?`<a href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">OPEN SOURCE</a>`:""}</li>`).join(""):'<li class="source-candidate-empty">No persisted raw candidates yet.</li>';
+  els.sourceRunButton.disabled=state.sourceRunBusy||!state.collectionEnabled;
+  els.sourceRunButton.textContent=state.sourceRunBusy?"COLLECTING…":active?"RESUME SOURCE RUN":"START ZERO-COST SOURCE RUN";
+  els.sourceRunCancel.disabled=state.sourceRunBusy?false:!active;
+  els.sourceRunProfile.disabled=state.sourceRunBusy||active;
+  els.sourceRunNote.textContent=state.sourceRunMessage||(!state.collectionEnabled?"Source collection is server-locked. Enabling it later requires deployed zero-cost acceptance; this UI cannot change environment settings.":run?`Run ${run.run_id} · ${run.completion_reason||"ready"} · raw candidates are not opportunities.`:"Choose a bounded profile. One click advances up to 25 persisted chunks; long runs can be resumed safely.");
+}
 function renderTable(){ const items=filtered(); if(!items.some(x=>x.id===state.selectedId))state.selectedId=items[0]?.id||null; renderSort(); renderDetail(); els.count.textContent=`${items.length} shown · ${state.opportunities.length} total`; if(!items.length){els.body.innerHTML=`<tr class="empty-row"><td colspan="15">${state.datasetMode==="DISCONNECTED"?"Enter your team access code to load saved opportunities.":state.opportunities.length?"No opportunities match these filters. Clear categories or adjust Status and Minimum fit.":"No saved opportunities yet. New searches will be saved here."}</td></tr>`;return;} els.body.innerHTML=items.map((item)=>{const budget=budgetView(item);return`<tr data-id="${escapeHtml(item.id)}" class="${item.id===state.selectedId?"is-selected":""}">
 <td data-label="Select"><input class="select-radio" type="radio" name="selected-opportunity" aria-label="Select ${escapeHtml(item.title)}" ${item.id===state.selectedId?"checked":""}></td>
 <td data-label="Bookmark"><button class="star-button ${item.company_bookmarked?"is-starred":""}" data-bookmark-company="${escapeHtml(item.company)}" type="button" title="${item.company_bookmarked?"Remove company bookmark":"Bookmark company"}">${item.company_bookmarked?"★":"☆"}</button></td>
@@ -64,7 +81,7 @@ function renderDetail(){ const item=state.opportunities.find((x)=>x.id===state.s
 <div class="detail-section"><h4>COMPANY OUTREACH HISTORY</h4><p><strong>${company.contact_count||0} email${company.contact_count===1?"":"s"} recorded</strong>${company.last_contacted_at?` · last ${escapeHtml(formatTimestamp(company.last_contacted_at))}`:""}</p>${historyMarkup(company)}</div>
 <div class="detail-section"><h4>SOURCE EVIDENCE</h4>${evidenceMarkup(item)}</div>
 ${replyMarkup(item)}<div class="detail-actions">${item.contact_email?'<button class="action-button" data-copy="email" type="button">COPY EMAIL</button>':`<a class="action-button" href="${escapeHtml(item.apply_url)}" target="_blank" rel="noreferrer">OPEN CONTACT / APPLY</a>`}<a class="action-button" href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">OPEN SOURCE</a><button class="action-button sent full" data-mark-sent="1" type="button">✓ MARK EMAIL SENT</button><button class="action-button primary full" data-generate-response="1" type="button">${item.reply_body?"REGENERATE RESPONSE":"GENERATE RESPONSE"}</button><button class="action-button" data-copy-subject="1" type="button" ${item.reply_subject?"":"disabled"}>COPY SUBJECT</button><button class="action-button" data-copy-response="1" type="button" ${item.reply_body?"":"disabled"}>COPY RESPONSE</button></div></div>`; }
-function renderAll(){renderSummary();renderRunCounters();renderTable();renderDetail();}
+function renderAll(){renderSummary();renderRunCounters();renderSourceRun();renderTable();renderDetail();}
 function selectOpportunity(id){state.selectedId=id;renderTable();renderDetail();if(window.matchMedia("(max-width: 760px)").matches){els.detail.scrollIntoView({behavior:"smooth",block:"start"});els.detail.focus({preventScroll:true});}}
 let toastTimer; function showToast(text){clearTimeout(toastTimer);els.toast.textContent=text;els.toast.classList.add("is-visible");toastTimer=setTimeout(()=>els.toast.classList.remove("is-visible"),2400);}
 async function copyText(value,label){try{await navigator.clipboard.writeText(value);showToast(`${label} copied`);}catch{showToast("Clipboard unavailable");}}
@@ -74,6 +91,45 @@ async function toggleBookmark(companyName){ const items=state.opportunities.filt
 async function markEmailSent(){ const item=state.opportunities.find((x)=>x.id===state.selectedId); if(!item)return; if(state.datasetMode==="FIXTURE"){const now=new Date().toISOString(),current=companyStateFor(item);const company={...current,company:item.company,last_contacted_at:now,contact_count:(current.contact_count||0)+1,contact_history:[{sent_at:now,recipient:item.contact_email||null,subject:item.reply_subject||null,opportunity_id:item.id},...(current.contact_history||[])]};applyCompanyState(company);item.status="CONTACTED";saveFixtureStatus(item.id,"CONTACTED");renderAll();showToast("Fixture outreach recorded — preview only");return;} if(!accessCode()){showToast("Enter team access code first.");return;} try{const payload=await api("/api/company-state",{method:"POST",body:JSON.stringify({action:"MARK_EMAIL_SENT",company:item.company,opportunity_id:item.id})});applyCompanyState(payload.company);Object.assign(item,payload.opportunity||{});renderAll();showToast("Email marked as sent · company history updated");}catch(error){showToast(error.message);} }
 function buildFixtureReply(item){const subject=`${item.company} — realistic character production support`;const capability=item.categories.includes("WRAP_BASEMESH")?"scan cleanup, Wrap to a client-provided basemesh and downstream character preparation":"realistic human character production and scan-based asset finishing";const body=`Hello,\n\nI’m reaching out from 3D.sk regarding your ${item.title}. The scope looks closely aligned with our human-character production pipeline, particularly ${capability}. We can support either a defined part of the pipeline or a broader batch workflow, adapting the handoff to the topology and production requirements you already use.\n\nWhat stood out in your brief is the need for consistent production-ready human assets rather than isolated modeling work. That is the kind of repeatable scan/character workflow our team is set up around.\n\nIf useful, we can review a small sample of your source data and confirm the most efficient handoff point before you define the full batch or request a quotation.\n\nBest regards,\n3D.sk`;return{to:item.contact_email||null,subject,body,generated_at:new Date().toISOString(),model:"FIXTURE_PREVIEW"};}
 async function generateResponse(){const item=state.opportunities.find((x)=>x.id===state.selectedId);if(!item)return;if(state.datasetMode==="FIXTURE"){const reply=buildFixtureReply(item);Object.assign(item,{reply_to:reply.to,reply_subject:reply.subject,reply_body:reply.body,reply_generated_at:reply.generated_at,reply_model:reply.model});renderDetail();showToast("Fixture response generated · $0 API cost");return;}if(!accessCode()){showToast("Enter team access code first.");return;}const button=els.detail.querySelector("[data-generate-response]");if(button){button.disabled=true;button.textContent="GENERATING…";}try{const payload=await api("/api/generate-response",{method:"POST",body:JSON.stringify({opportunity_id:item.id})});Object.assign(item,payload.opportunity||{});renderDetail();showToast("Personalized response generated");}catch(error){renderDetail();showToast(error.message);}}
+function clientOperationId(prefix){return`${prefix}_${crypto.randomUUID()}`;}
+function applySourceRunSnapshot(payload){state.sourceRun=payload?.run||null;state.sourceCandidates=Array.isArray(payload?.candidates)?payload.candidates:state.sourceCandidates;if(typeof payload?.collection_enabled==="boolean")state.collectionEnabled=payload.collection_enabled;renderSourceRun();}
+async function loadSourceRunSnapshot(){
+  if(!accessCode())return;
+  try{applySourceRunSnapshot(await api("/api/source-runs"));}
+  catch(error){if(error.code==="SOURCE_RUN_NOT_FOUND"){state.sourceRun=null;state.sourceCandidates=[];renderSourceRun();return;}throw error;}
+}
+async function sourceRunWait(milliseconds){const seconds=Math.max(1,Math.ceil(milliseconds/1000));state.sourceRunMessage=`Server cooldown · continuing in ${seconds}s. Progress is already persisted.`;renderSourceRun();await new Promise(resolve=>setTimeout(resolve,milliseconds));state.sourceRunMessage=null;}
+async function runSourceCollection(){
+  if(!accessCode()){showToast("Enter team access code first.");els.accessCode.focus();return;}
+  if(!state.collectionEnabled){showToast("Source collection is server-locked.");return;}
+  if(state.sourceRunBusy)return;
+  sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode());state.sourceRunBusy=true;state.sourceRunStop=false;state.sourceRunMessage=null;renderSourceRun();
+  try{
+    if(!state.sourceRun||isTerminalSourceRun(state.sourceRun)){
+      const started=await api("/api/source-runs",{method:"POST",body:JSON.stringify({action:"START",profile_id:els.sourceRunProfile.value,request_id:clientOperationId("request")})});
+      state.sourceRun=started.run;state.sourceCandidates=[];renderSourceRun();
+    }
+    const result=await continueSourceRunLoop({
+      initialRun:state.sourceRun,
+      makeOperationId:()=>clientOperationId("operation"),
+      shouldStop:()=>state.sourceRunStop,
+      wait:sourceRunWait,
+      maxChunks:25,
+      continueChunk:(runId,operationId)=>api("/api/source-runs",{method:"POST",body:JSON.stringify({action:"CONTINUE",run_id:runId,operation_id:operationId})}),
+      onUpdate:async(payload)=>{state.sourceRun=payload.run;renderSourceRun();await loadSourceRunSnapshot();}
+    });
+    state.sourceRun=result.run;await loadSourceRunSnapshot();
+    const messages={COMPLETED:"Source collection completed.",CANCELLED:"Source collection cancelled; completed work was preserved.",UNCERTAIN:"Source run stopped in UNCERTAIN state; no automatic redispatch.",RETRY_WAIT:"Sources requested a retry delay. Resume later.",UI_CHUNK_CAP_REACHED:"25 chunks completed. Progress is saved; resume when ready.",STOP_REQUESTED:"Cancel requested; completed work is preserved."};
+    state.sourceRunMessage=messages[result.reason]||`Source run paused · ${result.reason}`;showToast(messages[result.reason]||"Source run progress saved");
+  }catch(error){state.sourceRunMessage=`Source run paused safely · ${error.message}`;showToast(error.message);}
+  finally{state.sourceRunBusy=false;renderSourceRun();}
+}
+async function cancelSourceCollection(){
+  if(!state.sourceRun||isTerminalSourceRun(state.sourceRun)||!accessCode())return;
+  state.sourceRunStop=true;state.sourceRunMessage="Cancel requested…";renderSourceRun();
+  try{const payload=await api("/api/source-runs",{method:"POST",body:JSON.stringify({action:"CANCEL",run_id:state.sourceRun.run_id,operation_id:clientOperationId("cancel")})});state.sourceRun=payload.run;await loadSourceRunSnapshot();showToast("Cancel marker persisted");}
+  catch(error){showToast(error.message);}
+}
 function applyTeamSnapshot(payload){
   state.opportunities=payload.opportunities;state.selectedId=state.opportunities[0]?.id||null;state.companies=new Map();
   for(const c of payload.companies||[])applyCompanyState(c);
@@ -86,7 +142,7 @@ function applyTeamSnapshot(payload){
 async function loadTeamState(){
   if(!accessCode()){showToast("Enter team access code first.");els.accessCode.focus();return;}
   sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode());els.connect.disabled=true;
-  try{applyTeamSnapshot(await api("/api/opportunities"));els.scanNote.textContent="Saved results loaded. Reloading this page does not start a paid search.";}
+  try{applyTeamSnapshot(await api("/api/opportunities"));await loadSourceRunSnapshot();els.scanNote.textContent="Saved results loaded. Reloading this page does not start a paid search.";}
   catch(error){showToast(error.message);els.scanNote.textContent=`Saved results could not be loaded: ${error.message}`;}
   finally{els.connect.disabled=false;}
 }
@@ -96,7 +152,7 @@ els.body.addEventListener("click",(event)=>{const star=event.target.closest("[da
 els.body.addEventListener("change",(event)=>{if(event.target.matches(".status-select"))setStatus(event.target.dataset.statusId,event.target.value);if(event.target.matches(".select-radio"))selectOpportunity(event.target.closest("tr").dataset.id);});
 els.detail.addEventListener("click",(event)=>{const star=event.target.closest("[data-bookmark-company]");if(star){toggleBookmark(star.dataset.bookmarkCompany);return;}const item=state.opportunities.find((x)=>x.id===state.selectedId);if(event.target.dataset.copy==="email"&&item?.contact_email)copyText(item.contact_email,"Email");if(event.target.dataset.copySubject&&item?.reply_subject)copyText(item.reply_subject,"Subject");if(event.target.dataset.copyResponse&&item?.reply_body)copyText(item.reply_body,"Response");if(event.target.dataset.markSent)markEmailSent();if(event.target.dataset.generateResponse)generateResponse();});
 document.querySelectorAll("[data-view]").forEach((button)=>button.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach((x)=>x.classList.remove("is-active"));button.classList.add("is-active");state.view=button.dataset.view;renderTable();}));
-els.statusFilter.addEventListener("change",()=>{state.status=els.statusFilter.value;renderTable();}); els.fitFilter.addEventListener("change",()=>{state.minFit=Number(els.fitFilter.value);renderTable();}); els.connect.addEventListener("click",loadTeamState);els.find.addEventListener("click",runLiveSearch);
+els.statusFilter.addEventListener("change",()=>{state.status=els.statusFilter.value;renderTable();}); els.fitFilter.addEventListener("change",()=>{state.minFit=Number(els.fitFilter.value);renderTable();}); els.connect.addEventListener("click",loadTeamState);els.find.addEventListener("click",runLiveSearch);els.sourceRunButton.addEventListener("click",runSourceCollection);els.sourceRunCancel.addEventListener("click",cancelSourceCollection);
 
 
 const sortSelect=document.querySelector("#sort-select"), sortDirection=document.querySelector("#sort-direction"), categoryOptions=document.querySelector("#category-options");
@@ -135,7 +191,7 @@ async function loadDemo(){
   window.dispatchEvent(new CustomEvent("radar:search-history",{detail:null}));renderAll();
 }
 document.querySelector("#demo-button").addEventListener("click",()=>loadDemo().catch(e=>showToast(e.message)));
-document.querySelector("#signout-button").addEventListener("click",()=>{sessionStorage.removeItem(ACCESS_SESSION_KEY);els.accessCode.value="";state.opportunities=[];state.companies=new Map();state.datasetMode="DISCONNECTED";state.selectedId=null;els.datasetPill.textContent="Team access required";document.querySelector("#last-search").textContent="Connect to view saved search history";window.dispatchEvent(new CustomEvent("radar:search-history",{detail:null}));renderAll();});
+document.querySelector("#signout-button").addEventListener("click",()=>{sessionStorage.removeItem(ACCESS_SESSION_KEY);els.accessCode.value="";state.opportunities=[];state.companies=new Map();state.datasetMode="DISCONNECTED";state.selectedId=null;state.sourceRun=null;state.sourceCandidates=[];state.sourceRunStop=true;state.sourceRunMessage=null;els.datasetPill.textContent="Team access required";document.querySelector("#last-search").textContent="Connect to view saved search history";window.dispatchEvent(new CustomEvent("radar:search-history",{detail:null}));renderAll();});
 document.querySelector("#seed-test-button").addEventListener("click",async()=>{try{applyTeamSnapshot(await api("/api/prelive-workspace",{method:"POST",body:"{}"}));showToast("Isolated shared test data loaded · $0");}catch(e){showToast(e.message);}});
 document.querySelector("#check-locks-button").addEventListener("click",async()=>{
   const output=document.querySelector("#system-check-result");
@@ -148,7 +204,12 @@ document.querySelector("#check-locks-button").addEventListener("click",async()=>
       const response=await fetch(path,{method:"POST",headers:authHeaders(),body:"{}"});const payload=await response.json();
       checks.push({path,status:response.status,code:payload.error?.code});
     }
-    const passed=health.access_configured&&checks.every(c=>c.status===423&&c.code==="LIVE_AI_LOCKED");
+    if(health.source_collection==="LOCKED"){
+      const response=await fetch("/api/source-runs",{method:"POST",headers:authHeaders(),body:JSON.stringify({action:"START",profile_id:"FOCUSED",request_id:"prelive_lock_check"})});const payload=await response.json();
+      checks.push({path:"/api/source-runs",status:response.status,code:payload.error?.code});
+    }
+    const paidChecks=checks.filter(c=>c.path!=="/api/source-runs");const sourceChecks=checks.filter(c=>c.path==="/api/source-runs");
+    const passed=health.access_configured&&paidChecks.every(c=>c.status===423&&c.code==="LIVE_AI_LOCKED")&&sourceChecks.every(c=>c.status===423&&c.code==="SOURCE_COLLECTION_LOCKED");
     output.textContent=JSON.stringify({passed,health,checks},null,2);
   }catch(e){output.textContent=e.message;}
 });
@@ -156,7 +217,7 @@ async function init(){
   els.accessCode.value=sessionStorage.getItem(ACCESS_SESSION_KEY)||"";
   renderAll();
   document.querySelector("#prelive-tools").hidden=!acceptanceWorkspace;
-  try{const h=await(await fetch("/api/health")).json();document.querySelector("#ai-state").textContent=h.paid_ai_state==="LOCKED"?"Live AI locked until final acceptance":"Live AI enabled";}catch{document.querySelector("#ai-state").textContent="Server status unavailable";}
+  try{const h=await(await fetch("/api/health")).json();state.collectionEnabled=h.source_collection==="ENABLED";const paidLocked=h.paid_ai_state==="LOCKED";document.querySelector("#ai-state").textContent=paidLocked?"Live AI locked until final acceptance":"Live AI enabled";els.find.disabled=paidLocked;els.find.textContent=paidLocked?"FIND NEW OPPORTUNITIES · PAID LOCKED":"FIND NEW OPPORTUNITIES";renderSourceRun();}catch{document.querySelector("#ai-state").textContent="Server status unavailable";}
   if(els.accessCode.value)await loadTeamState();
   else if(new URLSearchParams(location.search).get("demo")==="1")await loadDemo();
 }
