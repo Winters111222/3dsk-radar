@@ -25,10 +25,10 @@ test("Phase C operator UI exposes bounded start, resume, progress and cancel con
   assert.match(app, /action:"CANCEL"/);
 });
 
-test("raw candidate panel explicitly refuses opportunity promotion", () => {
-  assert.match(html, /not opportunities/i);
-  assert.match(html, /still need detail enrichment and Phase A buyer\/status\/studio truth gates/i);
-  assert.match(app, /raw candidates are not opportunities/i);
+test("candidate panel permits only truth-gated promotion", () => {
+  assert.match(html, /fixed first-party detail adapter/i);
+  assert.match(html, /only records that pass Phase A buyer, status, studio eligibility, scope, freshness, provenance and dedupe gates become opportunities/i);
+  assert.match(app, /only truth-gated records are promoted/i);
   assert.doesNotMatch(app, /state\.opportunities\s*=\s*state\.sourceCandidates/);
 });
 

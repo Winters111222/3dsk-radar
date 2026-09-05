@@ -3,6 +3,7 @@ import { boundedCollectorInteger, CollectorError } from "../../src/server/collec
 import { collectSourcePage } from "../../src/server/collectors/dispatch.mjs";
 import { getStateRepository } from "../../src/server/netlify-state.mjs";
 import { envValue, sourceCollectionEnabled } from "../../src/server/runtime.mjs";
+import { fetchSourceDetail } from "../../src/server/source-detail-adapters.mjs";
 import { cancelSourceRun, continueSourceRun, startSourceRun } from "../../src/server/source-run-service.mjs";
 import { SOURCE_RUN_PROFILES, validClientId } from "../../src/server/source-run-contract.mjs";
 
@@ -26,6 +27,14 @@ function sourceFetch(sourceId) {
     find_tender_uk:globalThis.__RADAR_TEST_FIND_TENDER_FETCH__,
     contracts_finder_uk:globalThis.__RADAR_TEST_CONTRACTS_FINDER_FETCH__
   }[sourceId] || fetch;
+}
+
+function sourceDetailFetch(sourceId) {
+  return {
+    ted_eu:globalThis.__RADAR_TEST_TED_DETAIL_FETCH__,
+    find_tender_uk:globalThis.__RADAR_TEST_FIND_TENDER_DETAIL_FETCH__,
+    contracts_finder_uk:globalThis.__RADAR_TEST_CONTRACTS_FINDER_DETAIL_FETCH__
+  }[sourceId] || sourceFetch(sourceId);
 }
 
 function safeError(error) {
@@ -108,7 +117,8 @@ export default async function handler(request, context) {
         runId:body.run_id,
         operationId:body.operation_id,
         nowIso,
-        collectPage:({ sourceId, queryPackId, position, nowIso:at, limit }) => collectSourcePage({ sourceId, queryPackId, position, nowIso:at, limit, fetchImpl:sourceFetch(sourceId) })
+        collectPage:({ sourceId, queryPackId, position, nowIso:at, limit }) => collectSourcePage({ sourceId, queryPackId, position, nowIso:at, limit, fetchImpl:sourceFetch(sourceId) }),
+        fetchDetail:({ candidate, nowIso:at }) => fetchSourceDetail({ candidate, nowIso:at, fetchImpl:sourceDetailFetch(candidate?.primary_record?.source_id) })
       });
       return json({ ok:true, ...result.result, replayed:result.replayed, run:result.run });
     } finally {

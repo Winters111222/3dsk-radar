@@ -68,6 +68,38 @@ export async function runSourceRunAcceptance() {
   });
   const rawCandidate = sourceCandidateView((await repository.listSourceRunCandidates("accept_run_state"))[0]);
 
+  const promotionRepository = createStateRepository(memoryStore());
+  const promotionStart = await startSourceRun({ repository:promotionRepository, profileId:"FOCUSED", requestId:"accept_promote_01", nowIso:NOW, runId:"accept_run_promote" });
+  const promotionCandidate = mergeSourceCandidate(null, candidate(1000), NOW).candidate;
+  await promotionRepository.saveSourceRunCandidate("accept_run_promote", promotionCandidate);
+  await promotionRepository.saveSourceRun({
+    ...promotionStart.run,
+    phase:"ENRICHMENT",
+    status:"PAUSED",
+    completion_reason:"COLLECTION_COMPLETE",
+    work_items:promotionStart.run.work_items.map((item) => ({ ...item, status:"COMPLETED" })),
+    counters:{ ...promotionStart.run.counters, source_services_completed:promotionStart.run.work_items.length, candidates_seen:1, candidates_accepted:1 }
+  });
+  const promoted = await continueSourceRun({
+    repository:promotionRepository,
+    runId:"accept_run_promote",
+    operationId:"accept_promote_op",
+    nowIso:NOW,
+    maxPages:1,
+    collectPage:async () => { throw new Error("collection must not resume during enrichment"); },
+    fetchDetail:async () => {
+      const document = {
+        ocid:"ocds-1000",
+        date:"2026-09-05T10:00:00Z",
+        buyer:{ name:"Buyer 1000", contactPoint:{ email:"procurement@example.gov.uk" } },
+        tender:{ title:"Character services 1000", description:"Realistic 3D character production services for digital humans.", status:"active", tenderPeriod:{ endDate:"2026-09-20T12:00:00Z" } }
+      };
+      return { source_id:"find_tender_uk", source_identity:"ocds-1000", fetched_at:NOW, document, releases:[document] };
+    }
+  });
+  const promotedCandidate = sourceCandidateView((await promotionRepository.listSourceRunCandidates("accept_run_promote"))[0]);
+  const promotedOpportunities = await promotionRepository.listOpportunities();
+
   const checks = {
     page_500_accepted:limitRun.counters.total_pages_fetched === 500,
     page_501_blocked:canFetchPage(limitRun, "detail").ok === false,
@@ -76,6 +108,8 @@ export async function runSourceRunAcceptance() {
     operation_replayed_without_dispatch:replay.replayed === true && mockCalls === 1,
     operator_loop_completed:ui.reason === "COMPLETED" && uiOperations.length === 1,
     candidate_stays_raw:rawCandidate.review_state === "RAW_CANDIDATE",
+    detail_truth_promoted:promoted.run.status === "COMPLETED" && promotedCandidate.review_state === "PROMOTED" && promotedOpportunities.length === 1,
+    promotion_stays_zero_ai:promoted.run.counters.openai_requests === 0 && promoted.run.counters.cost_usd === 0,
     paid_execution_locked:first.run.paid_execution === "LOCKED",
     no_openai:first.run.counters.openai_requests === 0,
     zero_cost:first.run.counters.cost_usd === 0

@@ -17,6 +17,9 @@ function installRuntime(t, values) {
     delete globalThis.__RADAR_TEST_TED_FETCH__;
     delete globalThis.__RADAR_TEST_FIND_TENDER_FETCH__;
     delete globalThis.__RADAR_TEST_CONTRACTS_FINDER_FETCH__;
+    delete globalThis.__RADAR_TEST_TED_DETAIL_FETCH__;
+    delete globalThis.__RADAR_TEST_FIND_TENDER_DETAIL_FETCH__;
+    delete globalThis.__RADAR_TEST_CONTRACTS_FINDER_DETAIL_FETCH__;
     delete globalThis.__3DSK_RADAR_SOURCE_RUN_STATE__;
     if (previousNetlify === undefined) delete globalThis.Netlify;
     else globalThis.Netlify = previousNetlify;

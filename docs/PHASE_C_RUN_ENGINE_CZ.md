@@ -1,6 +1,6 @@
 # Phase C — perzistentní multi-source run engine
 
-Stav k 5. 9. 2026: **orchestration a operator-UI slice jsou implementované a offline ověřené; Phase C celkem přibližně 80 %**. Endpoint ani UI změny nejsou nasazené a default-off gate se nezměnil.
+Stav k 5. 9. 2026: **Phase C code scope je implementovaný a offline ověřený (100 %)**. Endpoint ani UI změny nejsou nasazené a default-off gate se nezměnil. Budoucí paid dispatch zůstává zamčený; atomický provider je přesně specifikován, nikoli nasazen.
 
 ## Implementovaný contract
 
@@ -26,14 +26,22 @@ Aktivní run ukládá do Netlify Blobs odděleně:
 - cancel marker,
 - cost reservation ledger v integer `microusd`.
 
-Kandidáti se **neukládají do `opportunities/`**. Jsou raw source records čekající na detailní ověření a Phase A truth klasifikaci. Jejich existence proto není tvrzení, že jde o otevřenou buyer poptávku.
+Raw kandidáti se **neukládají přímo do `opportunities/`**. Run engine pro každý z nich použije zdrojově specifický first-party detail adapter, uloží review stav a teprve výsledek, který projde existujícími Phase A gates, promítne přes dedupe/history repository. Zamítnutý nebo blokovaný kandidát zůstává mimo opportunities s explicitním důvodem.
+
+Implementované detail endpointy jsou fixní a nepřebírají URL od kandidáta:
+
+- TED Search API v3: přesné `publication-number`,
+- Find a Tender: OCDS record package podle validovaného `ocid`,
+- Contracts Finder: OCDS record podle validovaného `ocid`.
+
+Detail response má byte cap, timeout, kontrolu schématu i identity. 403/429/503 a timeout mohou být zopakovány nejvýše jednou v nové operaci; schema drift, identity mismatch a jiné trvalé chyby failnou closed. Detail ani klasifikace nepoužívají OpenAI.
 
 ## Operator UI
 
 Aplikace má samostatný responzivní panel `Source candidate collection`, který:
 
-- zobrazuje FOCUSED/WIDE limity, stav, services/pages/candidates progress a maximálně 24 posledních raw kandidátů,
-- každý kandidát výrazně označuje `RAW · NEEDS TRUTH REVIEW` a nikdy jej nepřidává do opportunity tabulky,
+- zobrazuje FOCUSED/WIDE limity, fázi, services/pages/candidates/truth-review progress a maximálně 24 posledních kandidátů,
+- rozlišuje raw, detail fetch, retry, promoted, rejected, blocked a cancel-after-enrichment stav,
 - jedním kliknutím vytvoří nebo obnoví běh a postupně volá persisted chunky,
 - při HTTP cooldownu opakuje pouze stejný bezpečný `operation_id`,
 - zastaví se na `RETRY_WAIT`, `UNCERTAIN`, cancel nebo po 25 chunkech v jedné browser session,
@@ -46,9 +54,9 @@ Původní placené `FIND NEW OPPORTUNITIES` je při `paid_ai_state: LOCKED` skut
 
 Každý `START` vyžaduje klientský `request_id`; opakování vrací stejný run a změna profilu pod stejným ID končí konfliktem. Každý `CONTINUE` a `CANCEL` vyžaduje `operation_id`. Dokončená operace se pouze přehraje bez dalšího fetch. Fresh `IN_PROGRESS` lease blokuje konkurenční pokračování. Stará nebo nejasně přerušená operace přepne run do `UNCERTAIN` a stejný operation ID už síť znovu neotevře.
 
-403 rate limit z Contracts Finder, 429/503 a timeout/network hranice jsou retryable nejvýše jednou v **nové** operaci po `not_before`; v tomtéž chunku se request neopakuje. Neočekávané přerušení failne do `UNCERTAIN`. Cancel zachová všechny už uložené stránky a kandidáty.
+403 rate limit z Contracts Finder, 429/503 a timeout/network hranice list i detail adaptéru jsou retryable nejvýše jednou v **nové** operaci po `not_before`; v tomtéž chunku se request neopakuje. Neočekávané přerušení failne do `UNCERTAIN`. Cancel zachová všechny už uložené stránky a kandidáty; cancel zjištěný po detail fetch uloží enrichment evidence, ale neprovede promotion.
 
-Netlify Blobs poskytuje strong-consistency čtení/zápis, ale používaný contract nemá compare-and-swap ani podmíněný atomický write. Per-instance lock, persisted leases a idempotency records výrazně omezují duplicitní dispatch, ale nejsou poctivou zárukou distribuované exactly-once exekuce při souběhu více function instancí. Proto:
+Netlify Blobs poskytuje strong-consistency čtení/zápis, ale používaný contract nemá compare-and-swap ani podmíněný atomický write. Per-instance lock, persisted leases a idempotency records výrazně omezují duplicitní dispatch, ale nejsou poctivou zárukou distribuované exactly-once exekuce při souběhu více function instancí. Přesný provider contract, fencing a unlock kritéria jsou v [`PHASE_C_ATOMIC_COORDINATOR_CZ.md`](PHASE_C_ATOMIC_COORDINATOR_CZ.md). Proto:
 
 - source run je zatím provozně single-writer,
 - `paid_execution` zůstává `LOCKED`,
@@ -72,14 +80,13 @@ npm test
 npm run accept:run
 ```
 
-Acceptance nabízí 501 stran a přijme přesně hard cap 500 (140 list + 360 detail), nabízí 215 kandidátů a přijme přesně 180. Samostatné testy kryjí 403/429/timeout, cursor/chunk persistence, exact replay bez dalšího fetch, cancel během fetch, tender revision, cross-source dedupe, operator-loop transient retry, mobile layout a neočekávané přerušení. Fixture transport hlásí `network_requests: 0`, `openai_requests: 0`, `cost_usd: 0`.
+Acceptance nabízí 501 stran a přijme přesně hard cap 500 (140 list + 360 detail), nabízí 215 kandidátů a přijme přesně 180. Navíc provede offline detail → Phase A → promotion průchod. Samostatné testy kryjí fixní endpointy, URL/ID injection, identity mismatch, schema drift, response cap, 403/429/timeout, detail retry, cursor/chunk persistence, exact replay bez dalšího fetch, cancel před promotion, truth rejection, contact/budget provenance, tender revision, cross-source dedupe, operator-loop transient retry, mobile layout a neočekávané přerušení. Fixture transport hlásí `network_requests: 0`, `openai_requests: 0`, `cost_usd: 0`.
 
-## Co zbývá do 100 % Phase C
+## Co zbývá mimo Phase C code scope
 
-1. detailní enrichment a napojení raw kandidátů na Phase A truth gates,
-2. bezpečné řízení detail-page budgetu skutečným detail adaptérem,
-3. atomický distribuovaný coordinator pro budoucí paid cost reservations,
-4. teprve po nasazení zero-cost části v Phase D ověřit reálnou multi-page výtěžnost.
+1. v Phase D nasadit a ověřit pouze zero-cost cestu v reálném prostředí,
+2. před budoucím paid dispatch implementovat a souběžně otestovat provider přesně podle atomic coordinator contractu,
+3. teprve po zelené Phase D a explicitním souhlasu provést jediný FOCUSED test s capem `$0.50`.
 
 Bez změny zůstává:
 

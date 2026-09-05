@@ -50,7 +50,7 @@
         </div>
         <div id="source-run-progress" class="source-run-progress" aria-label="Source run progress"></div>
         <p id="source-run-note" class="microcopy" aria-live="polite">Source collection status is loading.</p>
-        <details class="source-candidate-review"><summary>Raw candidate review <span>not opportunities</span></summary><p class="microcopy">These records passed collector-level freshness and scope filters only. They still need detail enrichment and Phase A buyer/status/studio truth gates.</p><ul id="source-run-candidates" class="source-run-candidates"></ul></details>
+        <details class="source-candidate-review"><summary>Candidate truth review <span>verified promotion only</span></summary><p class="microcopy">Every raw record is fetched through a fixed first-party detail adapter. Only records that pass Phase A buyer, status, studio eligibility, scope, freshness, provenance and dedupe gates become opportunities; all other records retain an explicit rejection reason.</p><ul id="source-run-candidates" class="source-run-candidates"></ul></details>
       </section>
 
       <details id="prelive-tools" class="panel result-filters" hidden><summary>Pre-live system checks · isolated test workspace</summary><p>Test data are separate from real opportunities. Paid AI must remain locked.</p><button id="seed-test-button" class="action-button" type="button">LOAD SHARED TEST DATA</button><button id="check-locks-button" class="action-button" type="button">CHECK AI LOCKS · $0</button><pre id="system-check-result" style="white-space:pre-wrap;overflow-wrap:anywhere" aria-live="polite"></pre></details>

@@ -46,7 +46,7 @@ a { color:inherit; }
 .source-run-controls label { display:flex; flex-direction:column; gap:7px; color:#8491a0; font-size:10px; font-weight:850; letter-spacing:.11em; }
 .source-run-controls select { width:100%; min-height:48px; }
 .source-run-controls .primary-button,.source-run-controls .action-button { min-height:48px; }
-.source-run-progress { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:14px 0; }
+.source-run-progress { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:14px 0; }
 .source-progress-card { border:1px solid var(--line); background:#0d1116; border-radius:12px; padding:13px 15px; }
 .source-progress-card span { display:block; color:#8693a2; font-size:10px; font-weight:850; letter-spacing:.09em; }
 .source-progress-card strong { display:block; margin:6px 0 9px; font-size:17px; }
