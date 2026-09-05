@@ -7,12 +7,12 @@ import { normalizedAcceptanceBaseUrl, runLockedDeployedAcceptance } from "../scr
 const BASE = "https://deploy-preview-20--3dsk-opportunity-radar.netlify.app";
 const COMMIT = "b".repeat(40);
 
-function transport({ commit = COMMIT, live = false, source = "LOCKED" } = {}) {
+function transport({ commit = COMMIT, provenance = "CI_TESTED_SOURCE", live = false, source = "LOCKED" } = {}) {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     const path = new URL(url).pathname;
-    if (path === "/build-metadata.json") return Response.json({ service:"3dsk-opportunity-radar", commit_ref:commit, deploy_context:"deploy-preview", acceptance_profile:"LOCKED_ZERO_COST" });
+    if (path === "/build-metadata.json") return Response.json({ schema_version:2, service:"3dsk-opportunity-radar", commit_ref:commit, deploy_context:"deploy-preview", acceptance_profile:"LOCKED_ZERO_COST", artifact_provenance:provenance });
     if (path === "/api/health") return Response.json({ service:"3dsk-opportunity-radar", paid_ai_state:live ? "ENABLED" : "LOCKED", live_ai_enabled:live, source_collection:source, access_configured:true });
     const code = path === "/api/source-runs" ? "SOURCE_COLLECTION_LOCKED" : "LIVE_AI_LOCKED";
     return Response.json({ ok:false, error:{ code } }, { status:423 });
@@ -39,6 +39,10 @@ test("identity or unlocked health fails before any protected POST", async () => 
   const wrongCommit = transport({ commit:"c".repeat(40) });
   await assert.rejects(() => runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", fetchImpl:wrongCommit.fetchImpl }), /ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH/);
   assert.equal(wrongCommit.calls.length, 1);
+
+  const unsealed = transport({ provenance:"DIRECT_BUILD" });
+  await assert.rejects(() => runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", fetchImpl:unsealed.fetchImpl }), /ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH/);
+  assert.equal(unsealed.calls.length, 1);
 
   const unlocked = transport({ live:true });
   await assert.rejects(() => runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", fetchImpl:unlocked.fetchImpl }), /ACCEPTANCE_HEALTH_BOUNDARY_FAILED/);

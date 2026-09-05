@@ -39,7 +39,7 @@ export async function runLockedDeployedAcceptance({ baseUrl, commitRef, accessCo
   if (typeof accessCode !== "string" || !accessCode.trim()) throw new Error("ACCEPTANCE_ACCESS_CODE_REQUIRED");
 
   const metadata = await requestJson(fetchImpl, `${base}/build-metadata.json`);
-  if (metadata.status !== 200 || metadata.payload?.service !== "3dsk-opportunity-radar" || metadata.payload?.commit_ref !== commit || metadata.payload?.acceptance_profile !== "LOCKED_ZERO_COST") {
+  if (metadata.status !== 200 || metadata.payload?.schema_version !== 2 || metadata.payload?.service !== "3dsk-opportunity-radar" || metadata.payload?.commit_ref !== commit || metadata.payload?.acceptance_profile !== "LOCKED_ZERO_COST" || metadata.payload?.artifact_provenance !== "CI_TESTED_SOURCE") {
     throw new Error("ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH");
   }
   const health = await requestJson(fetchImpl, `${base}/api/health`);
