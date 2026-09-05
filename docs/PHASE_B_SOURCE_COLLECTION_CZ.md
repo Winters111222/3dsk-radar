@@ -41,12 +41,12 @@ RADAR_SOURCE_COLLECTION_ENABLED=false
 
 Výchozí hodnota je `false`. `RADAR_LIVE_AI_ENABLED` může a má zůstat `false`; TED collector nepoužívá `OPENAI_API_KEY`. `GET` pouze vrací registry/status. `POST` při vypnutém gate skončí `SOURCE_COLLECTION_LOCKED` ještě před sítí.
 
-Výsledek collector endpointu je surový read-only dataset a `persistence: NONE`. Není automaticky uložen mezi opportunities, protože ještě neprošel Phase C klasifikací, detailovým ověřením, deduplikací a pravdivostními gates z Phase A.
+Výsledek malého collector endpointu zůstává surový read-only dataset a `persistence: NONE`. Navazující Phase C endpoint jej umí po stránkách ukládat do odděleného candidate workspace, ale stále jej automaticky nepovýší mezi opportunities bez detailního ověření a pravdivostních gates z Phase A.
 
 ## Co následuje mimo Phase B
 
-1. napojení collector records do kandidátního pipeline v Phase C,
-2. cursor/chunky, retry/idempotence, průběžné ukládání a tender revision dedupe v Phase C,
+1. dokončení detailního enrichmentu a Phase A truth klasifikace kandidátů v Phase C,
+2. atomická distribuovaná koordinace před jakoukoli placenou Phase C cestou,
 3. případný CanadaBuys bulk adapter až se samostatným byte/row cap contractem,
 4. nasazená zero-cost acceptance samotného `/api/source-collection` endpointu v Phase D.
 
@@ -74,8 +74,8 @@ npm run measure:collector:live -- --confirm-live-read-only
 | Odstranění Visual / AI / Motion | 100 % |
 | Phase A — pravdivost, freshness, counters | 100 % |
 | Phase B — první funkční sběr | 100 % |
-| Phase C — široký řízený run | 0 % |
+| Phase C — široký řízený run | přibližně 70 % |
 | Phase D — deployed zero-cost acceptance + controlled live | 0 % |
-| Revidovaný celý Radar | přibližně 83 % |
+| Revidovaný celý Radar | přibližně 91 % |
 
 Původní V0.1 zůstává přibližně na 96 %, ale toto číslo nezahrnuje nově schválený široký crawler. První placený OpenAI Search je povolen až po dokončení B a C a po zelené **zero-cost** části D. Potom se spustí právě jeden Focused acceptance run s předem nastaveným stropem `$0.50`; Wide run dostane maximálně `$1.00` teprve po ruční kontrole kvality Focused výsledků.

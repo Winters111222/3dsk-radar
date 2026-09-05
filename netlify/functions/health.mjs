@@ -13,6 +13,7 @@ export default async () => {
     search_backend: "IMPLEMENTED",
     source_collection: sourceCollectionEnabled() ? "ENABLED" : "LOCKED",
     source_collectors: { ted:"IMPLEMENTED_API_VERIFIED", find_tender:"IMPLEMENTED_API_VERIFIED", contracts_finder:"IMPLEMENTED_API_VERIFIED", community:"BLOCKED_ACCESS_REVIEW" },
+    source_run_engine: sourceCollectionEnabled() ? "IMPLEMENTED_ENABLED" : "IMPLEMENTED_LOCKED",
     persistence: "NETLIFY_BLOBS",
     response_generation: "IMPLEMENTED"
   }, { headers: { "cache-control": "no-store" } });

@@ -1,9 +1,26 @@
 import { companyKey, emptyCompanyState, setCompanyBookmark, markEmailSent, undoLastEmailSent } from "./company-memory.mjs";
 import { mergeOpportunityHistory, opportunityFingerprint } from "./history.mjs";
 import { normalizeBudget, normalizeUrl } from "./normalize.mjs";
+import { createHash } from "node:crypto";
 
 const OP_PREFIX = "opportunities/";
 const COMPANY_PREFIX = "companies/";
+const SOURCE_RUN_PREFIX = "source-runs/";
+const SOURCE_RUN_REQUEST_PREFIX = "source-run-requests/";
+
+function safeStateId(value) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{8,80}$/.test(value)) throw new Error("STATE_ID_INVALID");
+  return value;
+}
+
+function sourceRunKey(runId, suffix) {
+  return `${SOURCE_RUN_PREFIX}${safeStateId(runId)}/${suffix}`;
+}
+
+function dedupeIndexKey(runId, value) {
+  const digest = createHash("sha256").update(String(value)).digest("hex");
+  return sourceRunKey(runId, `candidate-index/${digest}`);
+}
 
 // Apply the same guard to previously saved results and reply inputs. Old records
 // without buyer-budget evidence fail closed; reads do not rewrite stored history.
@@ -106,6 +123,75 @@ export function createStateRepository(store) {
     async lastSearchRun() {
       return store.get("metadata/last-search", {type:"json"});
     },
+
+    async getSourceRun(runId) {
+      return store.get(sourceRunKey(runId, "state"), { type:"json" });
+    },
+
+    async saveSourceRun(run) {
+      await store.setJSON(sourceRunKey(run.run_id, "state"), run);
+      await store.setJSON("metadata/last-source-run", { run_id:run.run_id, updated_at:run.updated_at });
+      return run;
+    },
+
+    async lastSourceRun() {
+      const pointer = await store.get("metadata/last-source-run", { type:"json" });
+      return pointer?.run_id ? this.getSourceRun(pointer.run_id) : null;
+    },
+
+    async getSourceRunRequest(requestId) {
+      return store.get(`${SOURCE_RUN_REQUEST_PREFIX}${safeStateId(requestId)}`, { type:"json" });
+    },
+
+    async saveSourceRunRequest(requestId, value) {
+      await store.setJSON(`${SOURCE_RUN_REQUEST_PREFIX}${safeStateId(requestId)}`, value);
+      return value;
+    },
+
+    async getSourceRunOperation(runId, operationId) {
+      return store.get(sourceRunKey(runId, `operations/${safeStateId(operationId)}`), { type:"json" });
+    },
+
+    async saveSourceRunOperation(runId, operation) {
+      await store.setJSON(sourceRunKey(runId, `operations/${safeStateId(operation.operation_id)}`), operation);
+      return operation;
+    },
+
+    async getSourceRunCancel(runId) {
+      return store.get(sourceRunKey(runId, "cancel"), { type:"json" });
+    },
+
+    async saveSourceRunCancel(runId, marker) {
+      await store.setJSON(sourceRunKey(runId, "cancel"), marker);
+      return marker;
+    },
+
+    async listSourceRunCandidates(runId) {
+      return (await listJSON(store, sourceRunKey(runId, "candidates/"))).filter(Boolean);
+    },
+
+    async getSourceRunCandidate(runId, candidateId) {
+      return store.get(sourceRunKey(runId, `candidates/${safeStateId(candidateId)}`), { type:"json" });
+    },
+
+    async findSourceRunCandidate(runId, dedupeKeys) {
+      for (const key of dedupeKeys) {
+        const pointer = await store.get(dedupeIndexKey(runId, key), { type:"json" });
+        if (!pointer?.candidate_id) continue;
+        const candidate = await this.getSourceRunCandidate(runId, pointer.candidate_id);
+        if (candidate) return candidate;
+      }
+      return null;
+    },
+
+    async saveSourceRunCandidate(runId, candidate) {
+      await store.setJSON(sourceRunKey(runId, `candidates/${safeStateId(candidate.candidate_id)}`), candidate);
+      for (const key of candidate.dedupe_keys || []) {
+        await store.setJSON(dedupeIndexKey(runId, key), { candidate_id:candidate.candidate_id });
+      }
+      return candidate;
+    },
+
     async snapshot() {
       const opportunities = await this.listOpportunities();
       const companies = await this.listCompanies();

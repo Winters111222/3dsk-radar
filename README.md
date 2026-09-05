@@ -49,8 +49,10 @@ Phase B access review — komunitní zdroje + UK OCDS: [`docs/PHASE_B_ACCESS_REV
 
 Phase B zero-cost yield measurement a CanadaBuys decision: [`docs/PHASE_B_YIELD_MEASUREMENT_CZ.md`](docs/PHASE_B_YIELD_MEASUREMENT_CZ.md)
 
+Phase C — perzistentní multi-source run engine: [`docs/PHASE_C_RUN_ENGINE_CZ.md`](docs/PHASE_C_RUN_ENGINE_CZ.md)
+
 Pre-live acceptance: [`docs/PRELIVE_ACCEPTANCE_CZ.md`](docs/PRELIVE_ACCEPTANCE_CZ.md)
 
 Instrukce pro další vývojové boty: [`AGENTS.md`](AGENTS.md)
 
-Výzkum zdrojů a návrh širokého Search (5. 9. 2026): [`docs/SEARCH_SOURCE_STRATEGY_CZ.md`](docs/SEARCH_SOURCE_STRATEGY_CZ.md). Obsahuje 49 zdrojových záznamů, přístupová omezení, query packs a implementační pořadí. Samostatné TED, Find a Tender a Contracts Finder collectory jsou implementované za default-off gate; výzkumný katalog zůstává oddělený od runtime registry. Integritu ověří `npm run sources:check` a `npm run accept:collector` bez sítě a AI.
+Výzkum zdrojů a návrh širokého Search (5. 9. 2026): [`docs/SEARCH_SOURCE_STRATEGY_CZ.md`](docs/SEARCH_SOURCE_STRATEGY_CZ.md). Obsahuje 49 zdrojových záznamů, přístupová omezení, query packs a implementační pořadí. Samostatné TED, Find a Tender a Contracts Finder collectory jsou implementované za default-off gate; výzkumný katalog zůstává oddělený od runtime registry. Phase C ukládá jejich surové kandidáty odděleně od hotových opportunities. Integritu ověří `npm run sources:check`, `npm run accept:collector` a `npm run accept:run` bez externí sítě a AI.
