@@ -6,105 +6,18 @@
   <meta name="color-scheme" content="dark">
   <title>3D.SK Opportunity Radar</title>
   <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/stage3.css">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <div class="brand-mark">3D.SK</div>
-        <div>
-          <p class="eyebrow">INTERNAL SALES TOOL · STAGE 2 SEARCH BACKEND</p>
-          <h1>Opportunity Radar</h1>
-        </div>
-      </div>
-      <div class="topbar-meta">
-        <span class="security-pill">Paid search requires server-side access gate</span>
-        <span id="dataset-pill" class="dataset-pill">Synthetic fixtures · no live run yet</span>
-      </div>
-    </header>
-
+    <header class="topbar"><div class="brand-block"><div class="brand-mark">3D.SK</div><div><p class="eyebrow">INTERNAL SALES TOOL · PRE-LIVE BUILD</p><h1>Opportunity Radar</h1></div></div><div class="topbar-meta"><span class="security-pill">Live AI locked until final acceptance</span><span id="dataset-pill" class="dataset-pill">Synthetic fixtures</span></div></header>
     <main>
-      <section class="hero panel">
-        <div class="hero-copy">
-          <p class="eyebrow">WORLDWIDE · B2B · OUTSOURCING · CONTRACT</p>
-          <h2>Find the next character-production opportunity worth answering.</h2>
-          <p>Stage 2 connects the explicit search click to a server-side OpenAI Responses web-search path. Results are normalized and source-gated before they can replace the fixture dataset. Response generation and shared persistence remain intentionally disconnected.</p>
-        </div>
-        <div class="hero-actions">
-          <label class="access-control" for="access-code">
-            <span>TEAM ACCESS CODE</span>
-            <input id="access-code" type="password" autocomplete="current-password" placeholder="Required for paid search">
-          </label>
-          <button id="find-button" class="primary-button" type="button">FIND NEW OPPORTUNITIES</button>
-          <p id="scan-note" class="microcopy">No paid API call runs until this button is clicked.</p>
-        </div>
-      </section>
-
+      <section class="hero panel"><div class="hero-copy"><p class="eyebrow">WORLDWIDE · B2B · OUTSOURCING · CONTRACT</p><h2>Find the next character-production opportunity worth answering.</h2><p>The app is being completed end-to-end before the first paid live search. Shared bookmarks, contact history and duplicate-outreach warnings are already part of the system contract.</p></div><div class="hero-actions"><label class="access-control" for="access-code"><span>TEAM ACCESS CODE</span><input id="access-code" type="password" autocomplete="current-password" placeholder="Stored only for this browser session"></label><div class="hero-button-row"><button id="connect-button" class="secondary-button" type="button">LOAD TEAM STATE</button><button id="find-button" class="primary-button" type="button">FIND NEW OPPORTUNITIES</button></div><p id="scan-note" class="microcopy">Paid AI is server-locked until final acceptance.</p></div></section>
       <section id="summary-grid" class="summary-grid" aria-label="Opportunity summary"></section>
-
-      <section class="toolbar panel">
-        <div class="segmented" role="group" aria-label="Opportunity kind filter">
-          <button class="segment is-active" data-kind="ALL" type="button">ALL</button>
-          <button class="segment" data-kind="OPEN_OPPORTUNITY" type="button">OPEN OPPORTUNITIES</button>
-          <button class="segment" data-kind="POTENTIAL_LEAD" type="button">POTENTIAL LEADS</button>
-        </div>
-        <div class="toolbar-controls">
-          <label>
-            <span>Status</span>
-            <select id="status-filter">
-              <option value="ALL">All</option>
-              <option value="NEW">New</option>
-              <option value="INTERESTING">Interesting</option>
-              <option value="CONTACTED">Contacted</option>
-              <option value="IGNORE">Ignore</option>
-            </select>
-          </label>
-          <label>
-            <span>Minimum fit</span>
-            <select id="fit-filter">
-              <option value="0">Any</option>
-              <option value="60">60+</option>
-              <option value="80">80+</option>
-              <option value="90">90+</option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section class="results-layout">
-        <div class="panel table-panel">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">DISPLAY → SELECT</p>
-              <h3>Ranked opportunities</h3>
-            </div>
-            <span id="result-count" class="result-count"></span>
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Select</th><th>Fit</th><th>Win</th><th>Opportunity</th><th>Type</th><th>Budget</th><th>Date</th><th>Contact</th><th>Status</th><th>Source</th>
-                </tr>
-              </thead>
-              <tbody id="opportunity-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <aside id="detail-panel" class="panel detail-panel" aria-live="polite"></aside>
-      </section>
-
-      <section class="panel safety-note">
-        <div>
-          <p class="eyebrow">SAFETY CONTRACT</p>
-          <h3>Truth beats completion.</h3>
-        </div>
-        <p>Live source URLs must match URLs actually returned by hosted web search before a record reaches the UI. No guessed email addresses. Published, estimated and unknown budgets remain visibly distinct. Potential leads are never presented as open opportunities. Win Score is a heuristic opportunity score, not a probability of winning.</p>
-      </section>
+      <section class="toolbar panel"><div class="segmented" role="group" aria-label="Opportunity view"><button class="segment is-active" data-view="ALL" type="button">ALL</button><button class="segment" data-view="BOOKMARKED" type="button">★ BOOKMARKED</button><button class="segment" data-view="OPEN_OPPORTUNITY" type="button">OPEN OPPORTUNITIES</button><button class="segment" data-view="POTENTIAL_LEAD" type="button">POTENTIAL LEADS</button></div><div class="toolbar-controls"><label><span>Status</span><select id="status-filter"><option value="ALL">All</option><option value="NEW">New</option><option value="INTERESTING">Interesting</option><option value="CONTACTED">Contacted</option><option value="IGNORE">Ignore</option></select></label><label><span>Minimum fit</span><select id="fit-filter"><option value="0">Any</option><option value="60">60+</option><option value="80">80+</option><option value="90">90+</option></select></label></div></section>
+      <section class="results-layout"><div class="panel table-panel"><div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3>Ranked opportunities</h3></div><span id="result-count" class="result-count"></span></div><div class="table-scroll"><table><thead><tr><th>Select</th><th>★</th><th>Fit</th><th>Win</th><th>Opportunity</th><th>Company</th><th>Type</th><th>Budget</th><th>Date</th><th>Outreach</th><th>Contact</th><th>Status</th><th>Source</th></tr></thead><tbody id="opportunity-body"></tbody></table></div></div><aside id="detail-panel" class="panel detail-panel" aria-live="polite"></aside></section>
+      <section class="panel safety-note"><div><p class="eyebrow">SAFETY CONTRACT</p><h3>Truth beats completion.</h3></div><p>No guessed email addresses. Potential leads are never presented as open requests. Published, estimated and unknown budgets remain distinct. Company-level contact history survives new opportunities so repeat outreach is visible before a second email is prepared.</p></section>
     </main>
-  </div>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="/src/app.js"></script>
+  </div><div id="toast" class="toast" role="status" aria-live="polite"></div><script type="module" src="/src/app.js"></script>
 </body>
 </html>
