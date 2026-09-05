@@ -62,3 +62,5 @@ Pre-live acceptance: [`docs/PRELIVE_ACCEPTANCE_CZ.md`](docs/PRELIVE_ACCEPTANCE_C
 Instrukce pro další vývojové boty: [`AGENTS.md`](AGENTS.md)
 
 Výzkum zdrojů a návrh širokého Search (5. 9. 2026): [`docs/SEARCH_SOURCE_STRATEGY_CZ.md`](docs/SEARCH_SOURCE_STRATEGY_CZ.md). Obsahuje 49 zdrojových záznamů, přístupová omezení, query packs a implementační pořadí. Samostatné TED, Find a Tender a Contracts Finder collectory jsou implementované za default-off gate; výzkumný katalog zůstává oddělený od runtime registry. Phase C ukládá raw kandidáty, načítá jejich first-party detail a do opportunities promítá jen položky, které projdou Phase A truth gates. Integritu ověří `npm run sources:check`, `npm run accept:collector` a `npm run accept:run` bez externí sítě a AI.
+
+Audit historické relevance: [`docs/SOURCE_HISTORICAL_RELEVANCE_AUDIT_CZ.md`](docs/SOURCE_HISTORICAL_RELEVANCE_AUDIT_CZ.md). Pouze 5 z 49 výzkumných zdrojů má doloženou konkrétní historickou buyer nabídku odpovídající scope 3D.SK; žádný zatím není runtime způsobilý. Robustní WIDE crawl přes celý katalog je proto zakázaný, dokud zdroj samostatně neprojde důkazem relevance, access review a měřením precision.
