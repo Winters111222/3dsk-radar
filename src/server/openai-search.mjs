@@ -11,6 +11,7 @@ import {
   INDEX_DISCOVERY_MODE
 } from "./index-discovery.mjs";
 import { firecrawlHintsForShard, firecrawlVerifiedUrlsForShard } from "./firecrawl-discovery.mjs";
+import { officialHintsForShard, summarizeOfficialWideDiscovery } from "./official-source-run.mjs";
 
 export const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 
@@ -142,7 +143,9 @@ export async function runWideOpportunitySearch({
   maxOutputTokensPerShard = 6000,
   fetchImpl = fetch,
   timeoutMs = 45000,
-  preDiscovery = null
+  preDiscovery = null,
+  officialDiscovery = null,
+  searchProfile = "WIDE_INDEX"
 }) {
   if (!Array.isArray(shards) || !shards.length) {
     const error = new Error("Wide search plan is empty");
@@ -151,7 +154,10 @@ export async function runWideOpportunitySearch({
   }
 
   const settled = await Promise.all(shards.map(async (shard) => {
-    const discoveryHints = firecrawlHintsForShard(preDiscovery, shard.id);
+    const discoveryHints = [
+      ...firecrawlHintsForShard(preDiscovery, shard.id),
+      ...officialHintsForShard(officialDiscovery, shard.id)
+    ].slice(0, 12);
     const firecrawlVerifiedUrls = firecrawlVerifiedUrlsForShard(preDiscovery, shard.id);
     const requestBody = buildOpenAIRequest({
       profile,
@@ -165,7 +171,8 @@ export async function runWideOpportunitySearch({
       searchFocus:shard.focus,
       shardLabel:shard.label,
       searchContextSize:"high",
-      discoveryHints
+      discoveryHints,
+      signalOnlyDomains:shard.signal_only_domains || []
     });
     let raw = null;
     try {
@@ -191,7 +198,10 @@ export async function runWideOpportunitySearch({
       const trustedUrls = new Set([...sourceUrls, ...firecrawlVerifiedUrls]);
       parsed.opportunities = parsed.opportunities.filter((candidate) => {
         const sourceUrl = normalizeUrl(candidate?.source_url);
-        return sourceUrl && trustedUrls.has(sourceUrl) && urlMatchesAllowedDomain(sourceUrl, shard.allowed_domains);
+        return sourceUrl
+          && trustedUrls.has(sourceUrl)
+          && urlMatchesAllowedDomain(sourceUrl, shard.allowed_domains)
+          && !urlMatchesAllowedDomain(sourceUrl, shard.signal_only_domains || []);
       });
       return {
         ok:true,
@@ -263,11 +273,12 @@ export async function runWideOpportunitySearch({
   return {
     ...normalized,
     discovery_mode:INDEX_DISCOVERY_MODE,
-    search_profile:"WIDE_INDEX",
+    search_profile:searchProfile,
     search_status:successful.length === shards.length ? "COMPLETE" : "PARTIAL",
     coverage,
     allowed_domains:allowedDomains,
-    direct_source_requests:0,
+    direct_source_requests:officialDiscovery?.requests || 0,
+    official_source_discovery:summarizeOfficialWideDiscovery(officialDiscovery),
     cloud_browser:preDiscovery,
     cloud_browser_requests:preDiscovery?.requests || 0,
     cloud_pages_rendered:preDiscovery?.rendered_pages || 0,

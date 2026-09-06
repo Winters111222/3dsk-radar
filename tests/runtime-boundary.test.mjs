@@ -119,6 +119,45 @@ test("health exposes Firecrawl WIDE v2 only behind the exact server gate", async
   assert.equal(production.cloud_browser_credit_cap, 26);
 });
 
+test("health reports WIDE V3 connector readiness without exposing credentials", async t => {
+  runtime(t, {
+    RADAR_BLUESKY_SEARCH_ENABLED:"true",
+    RADAR_UPWORK_API_ENABLED:"true",
+    UPWORK_OAUTH_ACCESS_TOKEN:"private-upwork-token"
+  });
+  const status = await (await health(undefined, {deploy:{context:"production"}})).json();
+  const bluesky = status.source_connectors_v3.find((item) => item.id === "bluesky_public");
+  const upwork = status.source_connectors_v3.find((item) => item.id === "upwork_official");
+  assert.equal(bluesky.status, "CONFIG_READY");
+  assert.equal(upwork.status, "CONFIG_REQUIRED");
+  assert.deepEqual(upwork.missing_configuration, ["UPWORK_API_TENANT_ID"]);
+  assert.equal(JSON.stringify(status).includes("private-upwork-token"), false);
+});
+
+test("health exposes WIDE V3 exact limits without dispatching official or paid requests", async t => {
+  runtime(t, {
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_V3",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"3.00",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"32",
+    RADAR_OFFICIAL_SOURCE_DISCOVERY_ENABLED:"true",
+    RADAR_OFFICIAL_SOURCE_MAX_REQUESTS:"4",
+    RADAR_BLUESKY_SEARCH_ENABLED:"true"
+  });
+  const network = t.mock.method(globalThis, "fetch", () => { throw new Error("Health must not dispatch"); });
+  const status = await (await health(undefined, {deploy:{context:"production"}})).json();
+  assert.equal(status.production_search, "READY");
+  assert.equal(status.production_search_profile, "WIDE_V3");
+  assert.equal(status.production_search_max_usd, 3);
+  assert.equal(status.production_search_max_results, 32);
+  assert.equal(status.production_search_openai_request_limit, 8);
+  assert.equal(status.production_search_web_call_limit, 24);
+  assert.equal(status.official_source_discovery, "READY");
+  assert.equal(status.official_source_request_limit, 4);
+  assert.equal(network.mock.callCount(), 0);
+});
+
 test("real Blobs SDK keeps production data across deploy IDs and isolates preview/acceptance", async t => {
   runtime(t, { RADAR_INTERNAL_ACCESS_SECRET: "fixture-secret", RADAR_LIVE_AI_ENABLED: "false", RADAR_PRELIVE_ACCEPTANCE_ENABLED: "true" });
   const oldContext = globalThis.netlifyBlobsContext;

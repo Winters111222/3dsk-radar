@@ -10,6 +10,7 @@ const OP_SNAPSHOT_KEY = "metadata/opportunities-v1";
 const COMPANY_PREFIX = "companies/";
 const SOURCE_RUN_PREFIX = "source-runs/";
 const SOURCE_RUN_REQUEST_PREFIX = "source-run-requests/";
+const SOURCE_SIGNAL_PREFIX = "source-signals/";
 
 function safeStateId(value) {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{8,80}$/.test(value)) throw new Error("STATE_ID_INVALID");
@@ -287,6 +288,19 @@ export function createStateRepository(store) {
     async lastSourceRun() {
       const pointer = await store.get("metadata/last-source-run", { type:"json" });
       return pointer?.run_id ? this.getSourceRun(pointer.run_id) : null;
+    },
+
+    async getSourceSignal(signalId) {
+      return store.get(`${SOURCE_SIGNAL_PREFIX}${safeStateId(signalId)}`, { type:"json" });
+    },
+
+    async saveSourceSignal(signal) {
+      await store.setJSON(`${SOURCE_SIGNAL_PREFIX}${safeStateId(signal.signal_id)}`, signal);
+      return signal;
+    },
+
+    async listSourceSignals() {
+      return (await listJSON(store, SOURCE_SIGNAL_PREFIX)).filter(Boolean);
     },
 
     async getSourceRunRequest(requestId) {
