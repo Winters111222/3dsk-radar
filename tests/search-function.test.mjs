@@ -221,3 +221,167 @@ test("armed paid search rejects production context before OpenAI or persistence"
     clearWarmState();
   }
 });
+
+test("production search stays locked behind its dedicated gate before OpenAI", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  let fetches = 0;
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"false",
+    OPENAI_API_KEY:"fake-test-key"
+  });
+  globalThis.fetch = async () => { fetches += 1; throw new Error("must not fetch"); };
+  try {
+    const response = await handler(new Request("https://radar.test/api/search", {
+      method:"POST",
+      headers:{ authorization:"Bearer team-secret", "content-type":"application/json" },
+      body:"{}"
+    }), { deploy:{ context:"production" } });
+    assert.equal(response.status, 423);
+    assert.equal((await response.json()).error.code, "PRODUCTION_SEARCH_LOCKED");
+    assert.equal(fetches, 0);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("production search rejects non-production context and invalid budget config before OpenAI", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  let fetches = 0;
+  const values = {
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"0.50",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"6",
+    OPENAI_API_KEY:"fake-test-key"
+  };
+  const restore = installNetlifyEnv(values);
+  globalThis.fetch = async () => { fetches += 1; throw new Error("must not fetch"); };
+  const request = () => new Request("https://radar.test/api/search", {
+    method:"POST",
+    headers:{ authorization:"Bearer team-secret", "content-type":"application/json" },
+    body:"{}"
+  });
+  try {
+    const preview = await handler(request(), PREVIEW_CONTEXT);
+    assert.equal(preview.status, 423);
+    assert.equal((await preview.json()).error.code, "PRODUCTION_SEARCH_PRODUCTION_REQUIRED");
+    values.RADAR_PRODUCTION_SEARCH_MAX_USD = "5.00";
+    const invalid = await handler(request(), { deploy:{ context:"production" } });
+    assert.equal(invalid.status, 503);
+    assert.equal((await invalid.json()).error.code, "PRODUCTION_SEARCH_CONFIG_INVALID");
+    assert.equal(fetches, 0);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("production search dispatches once per UTC day and replays without a second charge or write", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"0.50",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"6",
+    OPENAI_API_KEY:"fake-test-key"
+  });
+  let openaiRequests = 0;
+  let writes = 0;
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator();
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = {
+    mergeSearchResultsWithStats: async (items) => ({ opportunities:items, new_count:1, updated_count:0, workspace_total:1 }),
+    saveSearchRun: async () => { writes += 1; }
+  };
+  globalThis.fetch = async (_url, options) => {
+    openaiRequests += 1;
+    const providerRequest = JSON.parse(options.body);
+    assert.equal(providerRequest.store, false);
+    assert.equal(providerRequest.max_tool_calls, 3);
+    assert.equal(providerRequest.max_output_tokens, 8000);
+    return new Response(JSON.stringify(mockOpenAIResponse()), { status:200, headers:{ "content-type":"application/json" } });
+  };
+  const request = () => new Request("https://radar.test/api/search", {
+    method:"POST",
+    headers:{ authorization:"Bearer team-secret", "content-type":"application/json" },
+    body:JSON.stringify({ run_id:"attacker-controlled", max_cost_usd:99, no_retry:false })
+  });
+  try {
+    const first = await handler(request(), { deploy:{ context:"production" } });
+    const firstPayload = await first.json();
+    const second = await handler(request(), { deploy:{ context:"production" } });
+    const secondPayload = await second.json();
+    assert.equal(first.status, 200);
+    assert.equal(firstPayload.ok, true);
+    assert.match(firstPayload.run.paid_execution.run_id, /^prod-search-\d{8}$/);
+    assert.equal(firstPayload.run.paid_execution.mode, "PRODUCTION_DAILY");
+    assert.equal(firstPayload.run.paid_execution.cap_usd, 0.5);
+    assert.equal(firstPayload.run.paid_execution.openai_requests, 1);
+    assert.equal(firstPayload.run.paid_execution.retries, 0);
+    assert.equal(second.status, 200);
+    assert.equal(secondPayload.replayed, true);
+    assert.equal(openaiRequests, 1);
+    assert.equal(writes, 1);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("concurrent production clicks have one paid winner", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"0.50",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"6",
+    OPENAI_API_KEY:"fake-test-key"
+  });
+  let openaiRequests = 0;
+  let writes = 0;
+  let releaseProvider;
+  const providerGate = new Promise((resolve) => { releaseProvider = resolve; });
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator();
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = {
+    mergeSearchResultsWithStats: async (items) => ({ opportunities:items, new_count:1, updated_count:0, workspace_total:1 }),
+    saveSearchRun: async () => { writes += 1; }
+  };
+  globalThis.fetch = async () => {
+    openaiRequests += 1;
+    await providerGate;
+    return new Response(JSON.stringify(mockOpenAIResponse()), { status:200, headers:{ "content-type":"application/json" } });
+  };
+  const request = () => new Request("https://radar.test/api/search", {
+    method:"POST",
+    headers:{ authorization:"Bearer team-secret", "content-type":"application/json" },
+    body:"{}"
+  });
+  try {
+    const firstPromise = handler(request(), { deploy:{ context:"production" } });
+    await new Promise((resolve) => setImmediate(resolve));
+    const secondPromise = handler(request(), { deploy:{ context:"production" } });
+    await new Promise((resolve) => setImmediate(resolve));
+    releaseProvider();
+    const responses = await Promise.all([firstPromise, secondPromise]);
+    const statuses = responses.map((response) => response.status).sort((a, b) => a - b);
+    assert.deepEqual(statuses, [200, 409]);
+    assert.equal(openaiRequests, 1);
+    assert.equal(writes, 1);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});

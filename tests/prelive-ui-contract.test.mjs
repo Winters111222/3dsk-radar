@@ -46,3 +46,10 @@ test("both paid API endpoints remain locked before key use", () => {
     assert.ok(source.indexOf("LIVE_AI_LOCKED") < source.indexOf("OPENAI_API_KEY"));
   }
 });
+
+test("browser enables paid controls only from their dedicated health states", () => {
+  assert.match(app, /h\.production_search==="READY"/);
+  assert.match(app, /h\.production_reply==="READY"/);
+  assert.match(app, /one paid run per UTC day/);
+  assert.match(app, /Today's search loaded without a second charge/);
+});
