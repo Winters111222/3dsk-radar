@@ -63,6 +63,21 @@ test("health exposes an armed paid gate only in Deploy Preview context", async t
   assert.equal(preview.deploy_context, "deploy-preview");
 });
 
+test("health exposes production search readiness independently from global AI", async t => {
+  runtime(t, {
+    RADAR_INTERNAL_ACCESS_SECRET:"fixture-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"0.50",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"6"
+  });
+  const production = await (await health(undefined, { deploy:{ context:"production" } })).json();
+  const preview = await (await health(undefined, { deploy:{ context:"deploy-preview" } })).json();
+  assert.equal(production.paid_ai_state, "ENABLED");
+  assert.equal(production.production_search, "READY");
+  assert.equal(preview.production_search, "CONTEXT_BLOCKED");
+});
+
 test("real Blobs SDK keeps production data across deploy IDs and isolates preview/acceptance", async t => {
   runtime(t, { RADAR_INTERNAL_ACCESS_SECRET: "fixture-secret", RADAR_LIVE_AI_ENABLED: "false", RADAR_PRELIVE_ACCEPTANCE_ENABLED: "true" });
   const oldContext = globalThis.netlifyBlobsContext;
