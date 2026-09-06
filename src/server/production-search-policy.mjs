@@ -55,7 +55,9 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
     ok:true,
     mode:wide ? "PRODUCTION_DAILY_WIDE_INDEX" : "PRODUCTION_DAILY",
     search_profile:wide ? "WIDE_INDEX" : "FOCUSED",
-    run_id:`prod-search-${windowUtc.replaceAll("-", "")}`,
+    run_id:wide
+      ? `prod-wide-index-search-${windowUtc.replaceAll("-", "")}`
+      : `prod-search-${windowUtc.replaceAll("-", "")}`,
     operation_id:wide ? "daily-wide-index-search" : "daily-focused-search",
     reservation_id:wide ? "daily-wide-index-budget" : "daily-focused-budget",
     window_utc:windowUtc,

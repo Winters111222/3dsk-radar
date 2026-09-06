@@ -36,6 +36,11 @@ RADAR_PRODUCTION_SEARCH_MAX_RESULTS=24
 
 Jiná kombinace se uzamkne jako `CONFIG_BLOCKED`.
 
+FOCUSED a WIDE_INDEX používají rozdílné denní `run_id`, `operation_id` i
+`reservation_id`. Již dokončený FOCUSED běh proto nemůže změnit budget cap ani
+zablokovat první WIDE_INDEX běh ve stejném UTC dni; oba profily přitom zůstávají
+samostatně omezené na jeden koordinovaný běh za den.
+
 ## Pokrytí
 
 Runtime přijímá jen konkrétní veřejné detail URL z 30 serverových politik. Patří sem Upwork, Freelancer, PeoplePerHour, Guru, Reddit r/gameDevClassifieds, Unreal, Polycount, Blender Artists, specializované game/contract portály, veřejné ATS (Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Teamtailor, Recruitee) a vybrané oficiální procurement portály (TED, UK, SAM.gov, CanadaBuys, UNGM, UNDP a World Bank).

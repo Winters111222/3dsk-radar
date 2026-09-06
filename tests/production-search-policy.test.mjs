@@ -52,7 +52,11 @@ test("wide-index profile has exact two-dollar and five-shard server-owned bounda
   assert.equal(config.max_tool_calls, 15);
   assert.equal(config.max_tool_calls_per_request, 3);
   assert.equal(config.shards.length, 5);
-  assert.equal(config.run_id, "prod-search-20260907");
+  assert.equal(config.run_id, "prod-wide-index-search-20260907");
+  assert.notEqual(config.run_id, productionSearchConfiguration({
+    getEnv:configured(),
+    nowIso:"2026-09-07T00:00:01.000Z"
+  }).run_id);
 });
 
 test("production search configuration fails closed above the hard cap or without exact bounds", () => {
