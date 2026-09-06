@@ -53,6 +53,16 @@ test("an acceptance request cannot enter the paid path after live AI is enabled"
   assert.equal(network.mock.callCount(), 0);
 });
 
+test("health exposes an armed paid gate only in Deploy Preview context", async t => {
+  runtime(t, { RADAR_INTERNAL_ACCESS_SECRET:"fixture-secret", RADAR_LIVE_AI_ENABLED:"false", RADAR_PAID_ACCEPTANCE_ENABLED:"true" });
+  const production = await (await health(undefined, { deploy:{ context:"production" } })).json();
+  const preview = await (await health(undefined, { deploy:{ context:"deploy-preview" } })).json();
+  assert.equal(production.paid_acceptance, "CONTEXT_BLOCKED");
+  assert.equal(production.deploy_context, "production");
+  assert.equal(preview.paid_acceptance, "ARMED");
+  assert.equal(preview.deploy_context, "deploy-preview");
+});
+
 test("real Blobs SDK keeps production data across deploy IDs and isolates preview/acceptance", async t => {
   runtime(t, { RADAR_INTERNAL_ACCESS_SECRET: "fixture-secret", RADAR_LIVE_AI_ENABLED: "false", RADAR_PRELIVE_ACCEPTANCE_ENABLED: "true" });
   const oldContext = globalThis.netlifyBlobsContext;
@@ -78,9 +88,12 @@ test("real Blobs SDK keeps production data across deploy IDs and isolates previe
   assert.equal(await preview.getOpportunity("fixture-opportunity"), null);
   const acceptance = await getStateRepository(request("opportunities", "acceptance"), { deploy: { context: "production" } });
   assert.equal(await acceptance.getOpportunity("fixture-opportunity"), null);
-  assert.equal(paths[0], paths[1], "production reads must target the same store after a deploy");
-  assert.notEqual(paths[1], paths[2]);
-  assert.notEqual(paths[1], paths[3]);
+  const productionItem = "/fixture-site/site:radar-state/opportunities/fixture-opportunity";
+  const previewItem = "/region:us-east-2/fixture-site/deploy:bbbbbbbbbbbbbbbbbbbbbbbb:radar-state/opportunities/fixture-opportunity";
+  const acceptanceItem = "/fixture-site/site:radar-prelive-acceptance/opportunities/fixture-opportunity";
+  assert.ok(paths.filter((path) => path === productionItem).length >= 2, "production reads must target the same store after a deploy");
+  assert.ok(paths.includes(previewItem));
+  assert.ok(paths.includes(acceptanceItem));
   const change = new Request("https://radar.test/api/opportunity-status", {
     method: "POST", headers: { authorization: "Bearer fixture-secret", "content-type": "application/json" },
     body: JSON.stringify({ opportunity_id: "fixture-opportunity", status: "INTERESTING" })

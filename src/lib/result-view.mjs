@@ -4,8 +4,7 @@ export const CATEGORIES = {
   WRAP_BASEMESH: "Wrap / Basemesh", FACIAL_FACS: "Facial / FACS",
   CHARACTER_FINISHING: "Character Finishing", CHARACTER_OUTSOURCING: "Character Outsourcing",
   EXTERNAL_DEVELOPMENT: "External Development", PRODUCTION_OVERFLOW: "Production Overflow",
-  PIPELINE_CONSULTING: "Pipeline Consulting", VISUAL_AI_MOTION: "Visual / AI / Motion",
-  OTHER_RELEVANT: "Other Relevant"
+  PIPELINE_CONSULTING: "Pipeline Consulting", OTHER_RELEVANT: "Other Relevant"
 };
 export const SORTS = {
   fit_score: "Fit", win_score: "Win", title: "Opportunity", company: "Company",

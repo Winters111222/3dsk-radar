@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import handler from "../netlify/functions/search.mjs";
+import { memoryPaidCoordinator } from "./helpers/memory-paid-coordinator.mjs";
 
-const SOURCE = "https://buyer.example/vendor-request";
+const SOURCE = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+const PREVIEW_CONTEXT = { deploy:{ context:"deploy-preview" } };
 
 function candidate() {
   return {
@@ -10,10 +12,17 @@ function candidate() {
     company:"Buyer Studio",
     summary:"Public external vendor request for scan cleanup and basemesh conforming.",
     opportunity_kind:"OPEN_OPPORTUNITY",
+    commercial_role:"BUYER",
+    notice_status:"OPEN",
+    studio_eligibility:"YES",
+    eligibility_reason:"Worldwide external vendor request.",
+    scope_fit:"CORE",
     categories:["SCAN_CLEANUP","WRAP_BASEMESH"],
     location:"Worldwide",
     remote_scope:"WORLDWIDE_VENDOR",
     published_date:"2026-09-05",
+    source_updated_date:null,
+    acceptance_source_url:null,
     source_url:SOURCE,
     apply_url:SOURCE,
     fit_score:93,
@@ -60,6 +69,7 @@ function installNetlifyEnv(values) {
 function clearWarmState() {
   delete globalThis.__3DSK_RADAR_STAGE2_SEARCH_STATE__;
   delete globalThis.__RADAR_TEST_STATE_REPOSITORY__;
+  delete globalThis.__RADAR_TEST_PAID_COORDINATOR__;
 }
 
 test("search function rejects non-POST without touching paid path", async () => {
@@ -88,22 +98,123 @@ test("authorized search function normalizes a mocked hosted-search response end 
   clearWarmState();
   const restore = installNetlifyEnv({
     RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
-    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_LIVE_AI_ENABLED:"false",
+    RADAR_PAID_ACCEPTANCE_ENABLED:"true",
+    RADAR_PAID_ACCEPTANCE_RUN_ID:"paid-run-test-001",
+    RADAR_PAID_ACCEPTANCE_MAX_USD:"0.50",
     OPENAI_API_KEY:"fake-test-key",
     RADAR_SEARCH_COOLDOWN_SECONDS:"0"
   });
-  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResults: async (items) => items, saveSearchRun: async (run) => { assert.equal(run.mode,"LIVE_SEARCH"); } };
-  globalThis.fetch = async () => new Response(JSON.stringify(mockOpenAIResponse()), {status:200,headers:{"content-type":"application/json"}});
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator();
+  let savedRun;
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResultsWithStats: async (items) => ({opportunities:items,new_count:1,updated_count:0,workspace_total:1}), saveSearchRun: async (run) => { savedRun=run; } };
+  globalThis.fetch = async (_url, options) => {
+    const request = JSON.parse(options.body);
+    assert.equal(request.max_tool_calls, 3);
+    assert.equal(request.max_output_tokens, 8000);
+    assert.deepEqual(request.tools[0].filters.allowed_domains, ["upwork.com","freelancer.com","reddit.com","forums.unrealengine.com","polycount.com"]);
+    return new Response(JSON.stringify(mockOpenAIResponse()), {status:200,headers:{"content-type":"application/json"}});
+  };
   try {
-    const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer team-secret","content-type":"application/json"},body:"{}"}));
+    const response = await handler(new Request("https://radar.test/api/search", {method:"POST",headers:{authorization:"Bearer team-secret","content-type":"application/json"},body:JSON.stringify({run_id:"paid-run-test-001",operation_id:"focused-search",max_cost_usd:0.50,no_retry:true})}), PREVIEW_CONTEXT);
     assert.equal(response.status, 200);
     const payload = await response.json();
     assert.equal(payload.ok, true);
     assert.equal(payload.opportunities.length, 1);
     assert.equal(payload.opportunities[0].source_url, SOURCE);
     assert.equal(payload.opportunities[0].win_band, "HIGH");
+    assert.equal(payload.opportunities[0].manual_verification_status, "REQUIRED_BEFORE_CONTACT");
+    assert.equal(payload.opportunities[0].direct_source_requests, 0);
     assert.equal(payload.run.returned_count, 1);
     assert.equal(payload.run.persistence, "NETLIFY_BLOBS");
+    assert.equal(payload.run.counters.candidates_seen, 1);
+    assert.equal(payload.run.counters.candidates_verified, 1);
+    assert.equal(payload.run.counters.new_opportunities, 1);
+    assert.equal(payload.run.counters.workspace_total, 1);
+    assert.equal(payload.run.diagnostics.privacy,"AGGREGATED_COUNTS_ONLY");
+    assert.equal(payload.run.diagnostics.source_yield.find((item)=>item.source_id==="upwork").returned,1);
+    assert.deepEqual(savedRun.diagnostics,payload.run.diagnostics);
+    assert.equal(payload.run.attempts, 1);
+    assert.equal(payload.run.mode, "INDEX_DISCOVERY_MANUAL_VERIFY");
+    assert.equal(payload.run.counters.collector_mode, "INDEX_DISCOVERY_MANUAL_VERIFY");
+    assert.equal(payload.run.direct_source_requests, 0);
+    assert.equal(payload.run.paid_acceptance.openai_requests, 1);
+    assert.equal(payload.run.paid_acceptance.retries, 0);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("completed paid operation replays stored result without a second OpenAI request or write", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"false",
+    RADAR_PAID_ACCEPTANCE_ENABLED:"true",
+    RADAR_PAID_ACCEPTANCE_RUN_ID:"paid-run-replay-001",
+    RADAR_PAID_ACCEPTANCE_MAX_USD:"0.50",
+    OPENAI_API_KEY:"fake-test-key"
+  });
+  let openaiRequests = 0;
+  let writes = 0;
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator();
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = {
+    mergeSearchResultsWithStats: async (items) => ({ opportunities:items, new_count:1, updated_count:0, workspace_total:1 }),
+    saveSearchRun: async () => { writes += 1; }
+  };
+  globalThis.fetch = async () => {
+    openaiRequests += 1;
+    return new Response(JSON.stringify(mockOpenAIResponse()), { status:200, headers:{ "content-type":"application/json" } });
+  };
+  const request = () => new Request("https://radar.test/api/search", {
+    method:"POST",
+    headers:{ authorization:"Bearer team-secret", "content-type":"application/json" },
+    body:JSON.stringify({ run_id:"paid-run-replay-001", operation_id:"focused-search", max_cost_usd:0.50, no_retry:true })
+  });
+  try {
+    const first = await handler(request(), PREVIEW_CONTEXT);
+    const second = await handler(request(), PREVIEW_CONTEXT);
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.equal((await second.json()).replayed, true);
+    assert.equal(openaiRequests, 1);
+    assert.equal(writes, 1);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("armed paid search rejects production context before OpenAI or persistence", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  let fetches = 0;
+  let writes = 0;
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"false",
+    RADAR_PAID_ACCEPTANCE_ENABLED:"true",
+    RADAR_PAID_ACCEPTANCE_RUN_ID:"paid-run-context-001",
+    RADAR_PAID_ACCEPTANCE_MAX_USD:"0.50",
+    OPENAI_API_KEY:"fake-test-key"
+  });
+  globalThis.fetch = async () => { fetches += 1; throw new Error("must not fetch"); };
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator();
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResultsWithStats:async () => { writes += 1; }, saveSearchRun:async () => { writes += 1; } };
+  try {
+    const response = await handler(new Request("https://radar.test/api/search", {
+      method:"POST",
+      headers:{ authorization:"Bearer team-secret", "content-type":"application/json" },
+      body:JSON.stringify({ run_id:"paid-run-context-001", operation_id:"focused-search", max_cost_usd:0.50, no_retry:true })
+    }), { deploy:{ context:"production" } });
+    assert.equal(response.status, 423);
+    assert.equal((await response.json()).error.code, "PAID_ACCEPTANCE_PREVIEW_REQUIRED");
+    assert.equal(fetches, 0);
+    assert.equal(writes, 0);
   } finally {
     globalThis.fetch = oldFetch;
     restore();
