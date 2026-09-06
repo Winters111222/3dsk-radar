@@ -215,6 +215,7 @@ Výzkum skončil po cíleném ověření komunit, procurement, employer zdrojů 
 - [Query packs a návrh limitů](../config/search-query-packs.v1.json): 7 tematických balíčků, jazykové varianty, Focused/Wide.
 - [Evidenční příklady](../config/source-evidence-cases.v1.json): 11 veřejných příkladů pro budoucí acceptance. Specifikace očekávaného chování, nikoli hotový klasifikátor.
 - [Historická kvalifikace zdrojů](../config/source-historical-qualification.v1.json): všech 49 zdrojů přesně jednou, Tier A/B/C/DISABLED, pozitivní důkazy a fail-closed runtime rozhodnutí.
+- `npm run report:sources:readiness`: offline přehled tří samostatných bran Tier A — historické evidence, povoleného přístupu a source-specific yieldu. Precision vyžaduje nejméně 30 ručně zkontrolovaných kandidátů na zdroj; kurátorované pozitivní příklady nejsou benchmark.
 - `npm run sources:check`: offline kontrola integrity katalogu. Nevolá internet ani OpenAI.
 
 Tento PR přidává výzkum, data a jejich offline validační CI krok. **Nemění runtime Search, neaktivuje nové zdroje, nemění produkční Netlify env, nic nemerguje a neposílá email.** Následující implementace má být menší navazující PR podle kroků A–D, ne neověřená přestavba v jednom deployi.
