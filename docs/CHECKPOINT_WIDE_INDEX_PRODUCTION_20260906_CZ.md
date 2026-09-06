@@ -5,9 +5,9 @@ Datum: 2026-09-06
 ## Aktuální bezpečný stav
 
 - Draft PR #30 je otevřený a nebyl mergnut do `main`.
-- Produkční branch i feature branch obsahují opravy až po commit
-  `239660f2a6b0281f691e201b415dee7a59bf9fc0`; navazující async oprava je v
-  commitu, který obsahuje tento checkpoint.
+- Async oprava je v exact commitu
+  `76d58c9be5a62a73e525ab92410e90c12c672124`; feature i produkční Git branch
+  na něj byly fast-forwardnuty bez merge do `main`.
 - Produkční site běží v profilu `FOCUSED`, s přesným stropem 0,50 USD a šesti
   sales výsledky.
 - Paid acceptance, source collection a production reply zůstávají zamčené.
@@ -66,19 +66,33 @@ WIDE se nově spouští explicitním kliknutím přes Netlify Background Functio
 
 ## Ověření a další krok
 
-Lokální async acceptance:
+Async acceptance:
 
 - `npm test` → 253/253 PASS,
 - `npm run build` → PASS,
 - `npm run accept:fixture` → PASS, 0 USD,
 - `npm run accept:http` → PASS,
 - Netlify production-context build a bundling 13 functions → PASS,
-- syntax checks a `git diff --check` → PASS.
+- syntax checks a `git diff --check` → PASS,
+- GitHub Actions `Radar CI` run 114 → SUCCESS,
+- Git-backed Deploy Preview `6a9d79818142de00085adf54` → READY na exact
+  commitu `76d58c9…`, 13 functions,
+- Netlify metadata potvrzuje `search-background` v invocation mode
+  `background` a `search-status` v běžném stream mode,
+- preview health potvrzuje zamčený Search, paid acceptance, source collection
+  i production reply; nebyl odeslán žádný placený request.
 
-Zbývá GitHub CI a Git-backed Netlify deploy exact async commitu. Další placený
-WIDE pokus se nesmí provést ve stejném UTC dni jako timeoutovaný request. Po
-novém explicitním schválení a v novém UTC okně lze dočasně aktivovat exact
-WIDE contract, provést jeden background run bez retry, vyčkat na
+Automatický production deploy `6a9d797f2ba8c100077a23da` byl Netlify odmítnut
+před buildem hláškou `Skipped due to account credit usage exceeded`.
+Publikovaná produkce se proto nezměnila a nadále běží na bezpečném deployi
+`6a9d7610fd65e3f317763539`, exact commit `239660f…`, FOCUSED 0,50 USD / 6.
+Nebyl použit ruční upload bez `COMMIT_REF` a nebyla změněna data ani environment.
+
+Zbývá doplnit/obnovit Netlify build kredit a znovu výslovně schválit jeden
+Git-backed production deploy exact commitu `76d58c9…`. Další placený WIDE pokus
+se nesmí provést ve stejném UTC dni jako timeoutovaný request. V novém UTC
+okně lze po samostatném přesném schválení dočasně aktivovat exact WIDE
+contract, provést jeden background run bez retry, vyčkat na
 `COMPLETED | UNCERTAIN` a hned obnovit FOCUSED.
 
 Merge PR #30 zůstává samostatné produktové rozhodnutí až po vyhodnocení

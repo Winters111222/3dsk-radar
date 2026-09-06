@@ -7,7 +7,11 @@
 > timeoutu 504; náklad/stav je UNCERTAIN, nebyl retry a workspace se nezměnil.
 > Produkce je zpět v FOCUSED 0,50 USD / 6. Navazující změna přesouvá WIDE na
 > Netlify Background Function se stavovým pollingem. PR #30 zůstává Draft,
-> otevřený a bez merge do `main`.
+> otevřený a bez merge do `main`. Exact async commit je
+> `76d58c9be5a62a73e525ab92410e90c12c672124`; CI a Git-backed Deploy Preview
+> jsou úspěšné. Production deploy byl před buildem odmítnut kvůli vyčerpanému
+> Netlify kreditu, takže publikovaná produkce zůstává na `239660f…` v FOCUSED.
+> Neobcházej to ručním uploadem bez `COMMIT_REF`.
 
 > Aktualizace 6. 9. 2026: competitor/source-platform balík níže byl
 > implementován v commitu `221562f12dff7d61984d845efd9f5b30c2127aaf`.
