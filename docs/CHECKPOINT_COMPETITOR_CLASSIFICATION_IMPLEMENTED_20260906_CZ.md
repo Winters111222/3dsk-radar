@@ -104,10 +104,34 @@ npm run report:competitors -- /path/to/read-only-opportunities-snapshot.json
 Report nevykonává write a u každého záznamu vypíše současný/proposed
 `record_kind`, klasifikační důvod a stav sales action locku.
 
-V tomto vlákně nebyl dostupný `RADAR_INTERNAL_ACCESS_SECRET` ani export sedmi
-produkčních records. Produkční audit proto nebyl předstírán ani odhadnut ze
-screenshotu. Až bude dodán autorizovaný read-only snapshot, lze report spustit
-bez Netlify nebo Blobs mutace.
+Po dodání team kódu byl nad autentizovaným `GET /api/opportunities` proveden
+read-only audit všech sedmi produkčních records. Snapshot nebyl uložen do
+repozitáře a team kód nebyl zapsán do souboru, logu, dokumentace ani Git
+historie. První audit odhalil legacy regresi: spekulativní text
+`potential subcontracting / overflow lead` byl příliš volně považován za
+konkrétní buyer demand a některé product/service stránky stále procházely jako
+sales.
+
+Klasifikátor byl proto zpřesněn obecnými pravidly, nikoli seznamem konkrétních
+firem:
+
+- subcontract/overflow je buyer signál jen při explicitním `seeking`, `need`,
+  `request` nebo `invite` kontextu,
+- game-production service page je seller signal,
+- third-party marketplace product detail je seller record, pokud na něm není
+  konkrétní buyer demand,
+- commercial/enterprise product nebo service offering je seller signal.
+
+Opakovaný read-only audit pak vrátil:
+
+- 3 × `SALES_OPPORTUNITY`,
+- 3 × `COMPETITOR`,
+- 1 × `SOURCE_PLATFORM`,
+- 0 × manual review,
+- `writes_performed: 0`.
+
+Chráněný produkční snapshot ani nově zjištěné neveřejné detaily nejsou v tomto
+PUBLIC repozitáři zveřejněny. Produkční reclassification write nebyl proveden.
 
 Čistá `reclassifyStoredRecord()` funkce a mock test dokazují, že budoucí
 jednorázová migrace:
@@ -137,20 +161,20 @@ Fixtures nekopírují cizí text z Kabum ani Outscal.
 
 Na implementačním stromu:
 
-- `npm test` → **236/236 PASS**,
+- `npm test` → **240/240 PASS**,
 - `npm run build` → PASS,
 - `npm run accept:fixture` → PASS, `cost_usd: 0`,
 - `npm run accept:http` → PASS, 7 HTTP paths a 6 fixture records,
 - `node --check src/app.js` → PASS,
 - `git diff --check` → PASS,
-- read-only fixture audit → 4 sales, 1 competitor, 1 source platform, 0 writes.
+- read-only fixture audit → 4 sales, 1 competitor, 1 source platform, 0 writes,
+- read-only produkční audit → 3 sales, 3 competitors, 1 source platform,
+  0 manual review, 0 writes.
 
 ## Co následuje
 
 1. Ověřit GitHub CI a automatický Netlify Deploy Preview nového exact PR HEADu.
-2. Získat autorizovaný read-only export sedmi produkčních records a spustit
-   audit report; bez dat nic nehádat.
-3. Teprve po samostatném explicitním souhlasu připravit přesně omezenou,
+2. Teprve po samostatném explicitním souhlasu připravit přesně omezenou,
    idempotentní produkční reclassification migraci s readbackem a bez mazání.
-4. WIDE_INDEX paid run, produkční env změna a merge PR #30 zůstávají mimo tento
+3. WIDE_INDEX paid run, produkční env změna a merge PR #30 zůstávají mimo tento
    checkpoint.

@@ -36,6 +36,35 @@ test("generic service page remains a competitor even when a model labels it buye
   assert.equal(result.effective_commercial_role, "SELLER");
 });
 
+test("a speculative subcontracting label does not turn a seller offer into buyer demand", () => {
+  const result = classifyRecordCandidate(record({
+    source_url:"https://seller.example/game",
+    commercial_role:"BUYER",
+    summary:"An outsourcing company publicly offering digital-human production and scan services. Potential subcontracting or reciprocal overflow lead."
+  }));
+  assert.equal(result.record_kind, "COMPETITOR");
+  assert.equal(result.reason, "GENERIC_SERVICE_OR_PORTFOLIO_PAGE");
+});
+
+test("a game-production service page is a competitor without explicit buyer demand", () => {
+  const result = classifyRecordCandidate(record({
+    source_url:"https://seller.example/game-production",
+    commercial_role:"BUYER",
+    summary:"Commercial service offering for outsourced 3D scanning and digital-human production."
+  }));
+  assert.equal(result.record_kind, "COMPETITOR");
+});
+
+test("a third-party marketplace product listing is a seller record, not buyer demand", () => {
+  const result = classifyRecordCandidate(record({
+    source_url:"https://aws.amazon.com/marketplace/pp/prodview-synthetic",
+    company:"Synthetic Digital Human Vendor",
+    commercial_role:"BUYER",
+    summary:"Enterprise digital-human product offering for customer-facing experiences."
+  }));
+  assert.equal(result.record_kind, "COMPETITOR");
+});
+
 test("Outscal-like archived aggregator is a source platform, never a buyer", () => {
   const result = classifyRecordCandidate(record({
     source_url:"https://jobs-index.example/archive",

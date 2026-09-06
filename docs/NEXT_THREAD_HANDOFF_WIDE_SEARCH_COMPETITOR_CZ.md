@@ -4,9 +4,10 @@
 > implementován v commitu `221562f12dff7d61984d845efd9f5b30c2127aaf`.
 > Nejdřív načti
 > `docs/CHECKPOINT_COMPETITOR_CLASSIFICATION_IMPLEMENTED_20260906_CZ.md`.
-> Produkční audit sedmi records stále čeká na autorizovaný read-only snapshot;
-> produkční reclassification write, placený Search, env změna a merge nebyly
-> provedeny.
+> Produkční audit sedmi records byl po autorizovaném read-only načtení dokončen:
+> 3 sales, 3 competitors, 1 source platform, 0 manual review a 0 writes.
+> Následná obecná legacy-regression oprava má 240/240 testů. Produkční
+> reclassification write, placený Search, env změna a merge nebyly provedeny.
 
 Navazuj na projekt **3D.SK Opportunity Radar** v PUBLIC repozitáři:
 
@@ -128,6 +129,12 @@ Implementuj do stejného Draft PR #30:
 8. Mock migration test: starý Kabum-like lead se reklasifikuje bez smazání
    historie, bookmarků, `first_seen` a `last_seen`.
 9. Spusť `npm test`, `npm run build` a `git diff --check`; aktualizuj PR body.
+
+Tento balík je nyní včetně read-only produkčního auditu dokončen. Další krok je
+pouze samostatně schválená, přesně omezená idempotentní reclassification
+migrace tří competitor records a jednoho source-platform recordu s okamžitým
+readbackem a zachováním historie. Bez takového souhlasu zůstanou produkční data
+beze změny.
 
 ## Co nedělat
 

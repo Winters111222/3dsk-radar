@@ -32,13 +32,21 @@ const PLATFORM_TEXT_PATTERNS = [
 
 const SERVICE_PATH_PATTERNS = [
   /\/(?:services?|solutions?|capabilities|portfolio|pricing)(?:\/|$)/i,
-  /\/(?:what-we-do|our-work)(?:\/|$)/i
+  /\/(?:what-we-do|our-work)(?:\/|$)/i,
+  /\/(?:game-|digital-human-)(?:production|services?)(?:\/|$)/i
 ];
+
+const SELLER_MARKETPLACE_PATHS = Object.freeze([
+  { domains:["aws.amazon.com"], pattern:/\/marketplace\/pp\/(?:[^/]+\/?$)/i }
+]);
 
 const SELLER_TEXT_PATTERNS = [
   /\b(?:we|our (?:studio|team|company)) (?:offer|provide|deliver|speciali[sz]e)\b/i,
   /\b(?:company|studio|agency|team) (?:offers?|provides?|delivers?|speciali[sz]es?)\b/i,
   /\b(?:outsourcing|external development|co-development) studio\b/i,
+  /\b(?:outsourcing|external development|co-development) (?:company|agency|provider)\b/i,
+  /\b(?:commercial|enterprise) (?:[a-z0-9-]+ )*(?:service|product|solution) offering\b/i,
+  /\bpublicly offering (?:[a-z0-9-]+ )*(?:services?|production|assets?|content)\b/i,
   /\b(?:our services|service portfolio|request (?:a )?quote|contact us for (?:a )?quote)\b/i,
   /\b(?:vendor|supplier) of (?:3d|game art|character|photogrammetry|digital human)/i
 ];
@@ -48,7 +56,7 @@ const CONCRETE_BUYER_PATTERNS = [
   /\brequest for (?:proposal|quotation|information)\b/i,
   /\b(?:rfp|rfq|rfi)\b/i,
   /\b(?:vendor|supplier) (?:application|registration|onboarding|submission)s?\b/i,
-  /\b(?:subcontracting|subcontractor|production overflow|overflow capacity|overflow support)\b/i,
+  /\b(?:seek(?:s|ing)?|looking for|need(?:s|ed)?|request(?:s|ing)?|invite(?:s|d)?) (?:an? |additional )?(?:external )?(?:subcontracting|subcontractor|production overflow|overflow capacity|overflow support)\b/i,
   /\bapply (?:to become|as) (?:a |our )?(?:vendor|supplier|production partner)\b/i,
   /\b(?:procurement|tender|contract notice)\b/i
 ];
@@ -80,6 +88,11 @@ function sourcePlatformIdentity(candidate, host, company) {
       && identity.names.some((name) => company === normalizedText(name)));
 }
 
+function sellerMarketplacePage(host, path) {
+  return SELLER_MARKETPLACE_PATHS.some((entry) =>
+    entry.domains.some((domain) => domainMatches(host, domain)) && entry.pattern.test(path));
+}
+
 export function recordKindOf(record) {
   return RECORD_KINDS.includes(record?.record_kind) ? record.record_kind : "SALES_OPPORTUNITY";
 }
@@ -105,7 +118,7 @@ export function classifyRecordCandidate(candidate) {
   const concreteBuyerSignal = matchesAny(CONCRETE_BUYER_PATTERNS, combined);
   const platformSignal = matchesAny(PLATFORM_TEXT_PATTERNS, combined);
   const servicePageSignal = matchesAny(SERVICE_PATH_PATTERNS, sourcePath);
-  const sellerSignal = matchesAny(SELLER_TEXT_PATTERNS, combined);
+  const sellerSignal = matchesAny(SELLER_TEXT_PATTERNS, combined) || sellerMarketplacePage(sourceHost, sourcePath);
   const role = String(candidate?.commercial_role || "UNKNOWN").toUpperCase();
 
   if (sourcePlatformIdentity(candidate, sourceHost, company) || (platformSignal && !concreteBuyerSignal)) {
