@@ -27,11 +27,26 @@ const historicalStatuses = new Set([
 const qualificationActions = new Set([
   "HOLD_ACCESS_BLOCKED",
   "HOLD_FOR_APPROVED_API",
+  "HOLD_FOR_WRITTEN_API_PERMISSION",
+  "HOLD_FOR_COMMERCIAL_API_AGREEMENT",
   "HOLD_FOR_SOURCE_SPECIFIC_YIELD",
   "DISCOVERY_ONLY",
   "MANUAL_ONLY",
   "DISABLED_UNTIL_POSITIVE_EVIDENCE",
   "DISABLED"
+]);
+const accessStatuses = new Set([
+  "AUTOMATION_APPROVED",
+  "APPROVED_API_REQUIRED",
+  "WRITTEN_PERMISSION_REQUIRED",
+  "COMMERCIAL_API_AGREEMENT_REQUIRED",
+  "BLOCKED_BY_ROBOTS",
+  "COMMERCIAL_PERMISSION_UNCONFIRMED"
+]);
+const yieldStatuses = new Set([
+  "NOT_MEASURED",
+  "SOURCE_SPECIFIC_PRECISION_PASSED",
+  "SOURCE_SPECIFIC_PRECISION_FAILED"
 ]);
 const unique = (items, label) => assert.equal(new Set(items).size, items.length, `Duplicate ${label}`);
 const publicUrl = (value) => {
@@ -52,7 +67,8 @@ assert.equal(qualification.runtime_policy.required_access_status, "AUTOMATION_AP
 assert.equal(qualification.runtime_policy.required_yield_status, "SOURCE_SPECIFIC_PRECISION_PASSED");
 assert.ok(qualification.runtime_policy.minimum_positive_examples >= 2);
 assert.ok(qualification.runtime_policy.minimum_precision >= 0.8);
-assert.ok(qualification.runtime_policy.minimum_reviewed_accepted_hits >= 30);
+assert.ok(qualification.runtime_policy.minimum_reviewed_candidates >= 30);
+assert.equal(qualification.runtime_policy.precision_definition, "accepted_relevant_hits / reviewed_candidates");
 unique(catalog.sources.map(x => x.id), "source ID");
 unique(qualification.sources.map(x => x.source_id), "qualified source ID");
 unique(catalog.sources.flatMap(x => x.seed_urls), "source seed URL");
@@ -120,7 +136,21 @@ for (const source of qualification.sources) {
   if (["A", "B"].includes(source.tier)) {
     assert.ok(source.positive_evidence_urls.length > 0, `Tier ${source.tier} requires positive evidence: ${source.source_id}`);
   }
-  if (source.tier === "A") assert.equal(source.historical_status, "PROVEN_DIRECT_BUYER");
+  if (source.tier === "A") {
+    assert.equal(source.historical_status, "PROVEN_DIRECT_BUYER");
+    assert.ok(source.positive_evidence_urls.length >= qualification.runtime_policy.minimum_positive_examples, `Tier A requires two buyer examples: ${source.source_id}`);
+    assert.ok(accessStatuses.has(source.access_status), `Unknown access status: ${source.source_id}`);
+    assert.ok(Array.isArray(source.access_evidence_urls) && source.access_evidence_urls.length > 0, `Tier A requires access evidence: ${source.source_id}`);
+    source.access_evidence_urls.forEach(publicUrl);
+    assert.ok(yieldStatuses.has(source.yield_status), `Unknown yield status: ${source.source_id}`);
+    assert.ok(Number.isSafeInteger(source.reviewed_candidates) && source.reviewed_candidates >= 0);
+    assert.ok(Number.isSafeInteger(source.accepted_relevant_hits) && source.accepted_relevant_hits >= 0);
+    assert.ok(source.accepted_relevant_hits <= source.reviewed_candidates);
+    const expectedPrecision = source.reviewed_candidates === 0
+      ? null
+      : source.accepted_relevant_hits / source.reviewed_candidates;
+    assert.equal(source.measured_precision, expectedPrecision, `Precision mismatch: ${source.source_id}`);
+  }
   if (source.tier === "DISABLED") assert.equal(source.action, "DISABLED");
   if (source.runtime_eligible) {
     assert.equal(source.tier, "A", `Only Tier A may become runtime eligible: ${source.source_id}`);
@@ -128,7 +158,8 @@ for (const source of qualification.sources) {
     assert.equal(source.access_status, qualification.runtime_policy.required_access_status);
     assert.equal(source.yield_status, qualification.runtime_policy.required_yield_status);
     assert.ok(source.measured_precision >= qualification.runtime_policy.minimum_precision);
-    assert.ok(source.reviewed_accepted_hits >= qualification.runtime_policy.minimum_reviewed_accepted_hits);
+    assert.ok(source.reviewed_candidates >= qualification.runtime_policy.minimum_reviewed_candidates);
+    assert.ok(source.accepted_relevant_hits >= 0);
   }
 }
 const runtimeEligible = qualification.sources.filter(source => source.runtime_eligible);
