@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 export const LOCKED_ACCEPTANCE_CONFIRMATION = "I_APPROVE_LOCKED_ZERO_COST_ACCEPTANCE";
 const MAX_JSON_BYTES = 65_536;
 export const ACCEPTANCE_HTTP_TIMEOUT_MS = 45_000;
+const LOCKED_ACCEPTANCE_PROVENANCE = new Set(["CI_TESTED_SOURCE", "NETLIFY_GIT_DEPLOY"]);
 
 export function normalizedAcceptanceBaseUrl(value) {
   let url;
@@ -61,7 +62,7 @@ export async function runLockedDeployedAcceptance({ baseUrl, commitRef, accessCo
   };
 
   const metadata = await request("/build-metadata.json");
-  if (metadata.status !== 200 || metadata.payload?.schema_version !== 2 || metadata.payload?.service !== "3dsk-opportunity-radar" || metadata.payload?.commit_ref !== commit || metadata.payload?.acceptance_profile !== "LOCKED_ZERO_COST" || metadata.payload?.artifact_provenance !== "CI_TESTED_SOURCE") {
+  if (metadata.status !== 200 || metadata.payload?.schema_version !== 2 || metadata.payload?.service !== "3dsk-opportunity-radar" || metadata.payload?.commit_ref !== commit || metadata.payload?.deploy_context !== "deploy-preview" || metadata.payload?.acceptance_profile !== "LOCKED_ZERO_COST" || !LOCKED_ACCEPTANCE_PROVENANCE.has(metadata.payload?.artifact_provenance)) {
     throw new Error("ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH");
   }
   const health = await request("/api/health");
