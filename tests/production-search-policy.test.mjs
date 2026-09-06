@@ -59,6 +59,26 @@ test("wide-index profile has exact two-dollar and five-shard server-owned bounda
   }).run_id);
 });
 
+test("explicit server-owned WIDE recovery slot has a distinct one-time coordinator identity", () => {
+  const config = productionSearchConfiguration({
+    getEnv:configured({
+      RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+      RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+      RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24",
+      RADAR_PRODUCTION_SEARCH_WIDE_RECOVERY_SLOT:"1"
+    }),
+    nowIso:"2026-09-06T18:00:00.000Z"
+  });
+  assert.equal(config.ok, true);
+  assert.equal(config.mode, "PRODUCTION_APPROVED_WIDE_RECOVERY");
+  assert.equal(config.run_id, "prod-wide-index-search-20260906-recovery-1");
+  assert.equal(config.operation_id, "approved-wide-recovery-1");
+  assert.equal(config.reservation_id, "approved-wide-recovery-budget-1");
+  assert.equal(config.cap_microusd, PRODUCTION_WIDE_SEARCH_MAX_CAP_MICROUSD);
+  assert.equal(config.openai_request_limit, 5);
+  assert.equal(config.max_tool_calls, 15);
+});
+
 test("production search configuration fails closed above the hard cap or without exact bounds", () => {
   for (const overrides of [
     { RADAR_PRODUCTION_SEARCH_MAX_USD:"0.51" },
@@ -81,6 +101,29 @@ test("wide-index configuration fails closed unless both wide bounds are exact", 
     assert.equal(productionSearchConfiguration({
       getEnv:configured({ RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX", ...overrides }),
       nowIso:"2026-09-07T10:00:00.000Z"
+    }).ok, false);
+  }
+});
+
+test("recovery slot fails closed outside WIDE or for any value other than the single supported slot", () => {
+  for (const overrides of [
+    { RADAR_PRODUCTION_SEARCH_WIDE_RECOVERY_SLOT:"1" },
+    {
+      RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+      RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+      RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24",
+      RADAR_PRODUCTION_SEARCH_WIDE_RECOVERY_SLOT:"2"
+    },
+    {
+      RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+      RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+      RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24",
+      RADAR_PRODUCTION_SEARCH_WIDE_RECOVERY_SLOT:"retry"
+    }
+  ]) {
+    assert.equal(productionSearchConfiguration({
+      getEnv:configured(overrides),
+      nowIso:"2026-09-06T18:00:00.000Z"
     }).ok, false);
   }
 });

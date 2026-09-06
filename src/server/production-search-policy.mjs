@@ -15,6 +15,7 @@ export const PRODUCTION_SEARCH_MAX_OUTPUT_TOKENS = 8000;
 export const PRODUCTION_WIDE_SEARCH_MAX_CAP_MICROUSD = 2_000_000;
 export const PRODUCTION_WIDE_SEARCH_MAX_RESULTS = 24;
 export const PRODUCTION_WIDE_SEARCH_MAX_OUTPUT_TOKENS_PER_SHARD = 6000;
+export const PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT = "1";
 
 const enabled = (value) => String(value || "").toLowerCase() === "true";
 
@@ -30,6 +31,8 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
   const requestedProfile = String(getEnv("RADAR_PRODUCTION_SEARCH_PROFILE") || "FOCUSED").trim().toUpperCase();
   const wide = requestedProfile === "WIDE_INDEX";
   if (!wide && requestedProfile !== "FOCUSED") return { ok:false };
+  const recoverySlot = String(getEnv("RADAR_PRODUCTION_SEARCH_WIDE_RECOVERY_SLOT") || "").trim();
+  const recovery = wide && recoverySlot === PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT;
   const usdText = String(getEnv("RADAR_PRODUCTION_SEARCH_MAX_USD") || "").trim();
   const resultText = String(getEnv("RADAR_PRODUCTION_SEARCH_MAX_RESULTS") || "").trim();
   const usd = Number(usdText);
@@ -47,19 +50,20 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
     && (wide ? maxResults === expectedMaxResults : maxResults <= expectedMaxResults)
     && Boolean(windowMatch)
     && Number.isFinite(Date.parse(nowIso))
+    && (recoverySlot === "" || recovery)
     && (!wide || validateWideSearchPlan());
 
   if (!valid) return { ok:false };
   const windowUtc = `${windowMatch[1]}-${windowMatch[2]}-${windowMatch[3]}`;
   return {
     ok:true,
-    mode:wide ? "PRODUCTION_DAILY_WIDE_INDEX" : "PRODUCTION_DAILY",
+    mode:wide ? (recovery ? "PRODUCTION_APPROVED_WIDE_RECOVERY" : "PRODUCTION_DAILY_WIDE_INDEX") : "PRODUCTION_DAILY",
     search_profile:wide ? "WIDE_INDEX" : "FOCUSED",
     run_id:wide
-      ? `prod-wide-index-search-${windowUtc.replaceAll("-", "")}`
+      ? `prod-wide-index-search-${windowUtc.replaceAll("-", "")}${recovery ? "-recovery-1" : ""}`
       : `prod-search-${windowUtc.replaceAll("-", "")}`,
-    operation_id:wide ? "daily-wide-index-search" : "daily-focused-search",
-    reservation_id:wide ? "daily-wide-index-budget" : "daily-focused-budget",
+    operation_id:wide ? (recovery ? "approved-wide-recovery-1" : "daily-wide-index-search") : "daily-focused-search",
+    reservation_id:wide ? (recovery ? "approved-wide-recovery-budget-1" : "daily-wide-index-budget") : "daily-focused-budget",
     window_utc:windowUtc,
     cap_microusd:capMicrousd,
     max_results:maxResults,
