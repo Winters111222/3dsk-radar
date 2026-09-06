@@ -35,6 +35,30 @@ test("connector readiness is fail-closed and never reports secret values", () =>
   assert.equal(JSON.stringify(result).includes("secret-token"), false);
   assert.equal(result.find((item) => item.id === "x_official").status, "LOCKED");
   assert.equal(result.find((item) => item.id === "x_official").paid, true);
+  assert.equal(result.find((item) => item.id === "x_official").runtime_available, false);
+});
+
+test("signal connector readiness includes the shared signed-ingest boundary", () => {
+  const env = new Map([
+    ["RADAR_TELEGRAM_SOURCE_ENABLED", "true"],
+    ["TELEGRAM_SOURCE_BOT_TOKEN", "bot-secret"],
+    ["TELEGRAM_SOURCE_ALLOWED_CHATS", "-100123"],
+    ["RADAR_SOURCE_INGEST_SECRET", "ingest-secret"]
+  ]);
+  const blocked = sourceConnectorReadiness((key) => env.get(key)).find((item) => item.id === "telegram_authorized_channels");
+  assert.equal(blocked.status, "CONFIG_REQUIRED");
+  assert.deepEqual(blocked.missing_configuration, ["RADAR_SOURCE_SIGNAL_INGEST_ENABLED=true"]);
+  env.set("RADAR_SOURCE_SIGNAL_INGEST_ENABLED", "true");
+  const ready = sourceConnectorReadiness((key) => env.get(key)).find((item) => item.id === "telegram_authorized_channels");
+  assert.equal(ready.status, "CONFIG_READY");
+  assert.equal(JSON.stringify(ready).includes("bot-secret"), false);
+});
+
+test("X cannot report runtime ready before its separately approved adapter exists", () => {
+  const env = (key) => ({ RADAR_X_SEARCH_ENABLED:"true", X_API_BEARER_TOKEN:"x-secret" })[key] || "";
+  const result = sourceConnectorReadiness(env).find((item) => item.id === "x_official");
+  assert.equal(result.status, "CONFIG_REQUIRED");
+  assert.deepEqual(result.missing_configuration, ["OFFICIAL_SOURCE_ADAPTER_NOT_IMPLEMENTED"]);
 });
 
 test("invalid WIDE V3 plans and signal domains fail validation", () => {

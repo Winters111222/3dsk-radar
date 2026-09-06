@@ -10,6 +10,17 @@ const SOURCE_ORDER = Object.freeze([
   "mastodon_official"
 ]);
 
+function requestedSourceOrder(sourceIds = SOURCE_ORDER) {
+  if (!Array.isArray(sourceIds) || !sourceIds.length) {
+    throw Object.assign(new Error("OFFICIAL_SOURCE_SCOPE_INVALID"), { code:"OFFICIAL_SOURCE_SCOPE_INVALID" });
+  }
+  const requested = new Set(sourceIds);
+  if (requested.size !== sourceIds.length || sourceIds.some((sourceId) => !SOURCE_ORDER.includes(sourceId))) {
+    throw Object.assign(new Error("OFFICIAL_SOURCE_SCOPE_INVALID"), { code:"OFFICIAL_SOURCE_SCOPE_INVALID" });
+  }
+  return SOURCE_ORDER.filter((sourceId) => requested.has(sourceId));
+}
+
 const QUERY_BY_SOURCE = Object.freeze({
   upwork_official:'("3D character" OR photogrammetry OR "scan cleanup" OR "digital human" OR "R3DS Wrap") AND (contract OR project OR vendor OR freelance)',
   reddit_official:'(hiring OR paid) ("3D character" OR photogrammetry OR "scan cleanup" OR "digital human" OR "character artist")',
@@ -40,9 +51,9 @@ function configForSource(sourceId, getEnv) {
   return {};
 }
 
-export function officialSourceRunPlan(getEnv = (key) => process.env[key]) {
+export function officialSourceRunPlan(getEnv = (key) => process.env[key], { sourceIds = SOURCE_ORDER } = {}) {
   const readiness = new Map(sourceConnectorReadiness(getEnv).map((item) => [item.id, item]));
-  return SOURCE_ORDER.filter((sourceId) => readiness.get(sourceId)?.status === "CONFIG_READY")
+  return requestedSourceOrder(sourceIds).filter((sourceId) => readiness.get(sourceId)?.status === "CONFIG_READY")
     .slice(0, OFFICIAL_SOURCE_MAX_REQUESTS)
     .map((sourceId) => ({
       source_id:sourceId,
@@ -66,8 +77,9 @@ function dedupeHints(items) {
   });
 }
 
-export async function runOfficialWideDiscovery({ getEnv = (key) => process.env[key], fetchImpl = fetch, limitPerSource = 10 } = {}) {
-  const plan = officialSourceRunPlan(getEnv);
+export async function runOfficialWideDiscovery({ getEnv = (key) => process.env[key], fetchImpl = fetch, limitPerSource = 10, sourceIds = SOURCE_ORDER } = {}) {
+  const requested = requestedSourceOrder(sourceIds);
+  const plan = officialSourceRunPlan(getEnv, { sourceIds:requested });
   if (!plan.length) return {
     provider:"OFFICIAL_APIS",
     status:"LOCKED",
