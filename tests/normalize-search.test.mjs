@@ -177,3 +177,36 @@ test("estimated buyer budget needs numeric bounds and preserves ESTIMATED", () =
     assert.equal(invalid.budget_estimated_min,null);
   }
 });
+
+test("index discovery rejects verified URLs outside narrow Tier A opportunity paths", () => {
+  const outside = normalizeUrl(PRIMARY);
+  const rejected = normalizeCandidate(candidate(), new Set([outside]), NOW, {indexDiscovery:true});
+  assert.equal(rejected.opportunity, null);
+  assert.equal(rejected.rejection, "source_not_allowed_for_index_discovery");
+
+  const upwork = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+  const accepted = normalizeCandidate(candidate({source_url:upwork,apply_url:upwork,source_evidence:[{type:"PRIMARY_SOURCE",url:upwork,note:"Indexed detail"}]}), new Set([upwork]), NOW, {indexDiscovery:true});
+  assert.equal(accepted.rejection, null);
+  assert.equal(accepted.opportunity.discovery_source_id, "upwork");
+  assert.equal(accepted.opportunity.manual_verification_status, "REQUIRED_BEFORE_CONTACT");
+  assert.equal(accepted.opportunity.direct_source_requests, 0);
+});
+
+test("index discovery strips outside-domain evidence even when it appears in hosted sources", () => {
+  const upwork = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+  const outside = "https://outside.example/contact";
+  const input = candidate({
+    source_url:upwork,
+    apply_url:outside,
+    contact_email:"person@outside.example",
+    contact_email_source:outside,
+    source_evidence:[
+      {type:"PRIMARY_SOURCE",url:upwork,note:"Indexed detail"},
+      {type:"CONTACT_SOURCE",url:outside,note:"Must not survive"}
+    ]
+  });
+  const normalized = normalizeCandidate(input, new Set([upwork,outside]), NOW, {indexDiscovery:true}).opportunity;
+  assert.equal(normalized.apply_url, upwork);
+  assert.equal(normalized.contact_email, null);
+  assert.equal(normalized.source_evidence.some((item) => item.url === outside), false);
+});

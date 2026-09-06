@@ -123,7 +123,7 @@ export default async function handler(request, context) {
     const merge = await repo.mergeSearchResultsWithStats(result.opportunities, nowIso);
     const opportunities = merge.opportunities;
     const counters = {
-      collector_mode:"HOSTED_WEB_SEARCH_V0",
+      collector_mode:result.discovery_mode,
       source_services_planned:null,
       source_services_completed:null,
       source_services_blocked:null,
@@ -133,6 +133,7 @@ export default async function handler(request, context) {
       detail_pages_fetched:null,
       ...result.counters,
       source_requests:0,
+      direct_source_requests:result.direct_source_requests,
       openai_requests:1,
       retries:0,
       new_opportunities:merge.new_count,
@@ -140,12 +141,14 @@ export default async function handler(request, context) {
       workspace_total:merge.workspace_total
     };
     const run = {
-      mode:"LIVE_SEARCH",
+      mode:result.discovery_mode,
       completed_at:nowIso,
       model:result.model,
       response_id:result.response_id,
       attempts:result.attempts,
       verified_source_count:result.verified_source_count,
+      allowed_domains:result.allowed_domains,
+      direct_source_requests:result.direct_source_requests,
       rejected_candidate_count:result.rejections.length,
       returned_count:opportunities.length,
       counters,

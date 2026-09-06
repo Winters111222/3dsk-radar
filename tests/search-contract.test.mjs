@@ -2,13 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { buildOpenAIRequest, buildSearchOutputSchema, OPPORTUNITY_CATEGORIES, SEARCH_INTENTS } from "../src/server/search-contract.mjs";
+import { INDEX_DISCOVERY_ALLOWED_DOMAINS } from "../src/server/index-discovery.mjs";
 
 const profile = JSON.parse(await readFile(new URL("../config/company-profile.public.json", import.meta.url), "utf8"));
 
 test("search contract uses current Responses web search + strict schema and cost-sensitive default", () => {
   const body = buildOpenAIRequest({ profile, nowIso:"2026-09-05T10:00:00.000Z", maxResults:12 });
   assert.equal(body.model, "gpt-5.6-luna");
-  assert.deepEqual(body.tools, [{ type:"web_search", search_context_size:"medium" }]);
+  assert.deepEqual(body.tools, [{
+    type:"web_search",
+    search_context_size:"medium",
+    filters:{ allowed_domains:[...INDEX_DISCOVERY_ALLOWED_DOMAINS] }
+  }]);
   assert.equal(body.max_tool_calls, 3);
   assert.equal(body.max_output_tokens, 8000);
   assert.equal(body.tool_choice, "required");
@@ -29,6 +34,9 @@ test("search contract uses current Responses web search + strict schema and cost
     assert.ok(candidate.required.includes(field), field);
   }
   assert.ok(body.instructions.includes("Freshness is mandatory"));
+  assert.ok(body.instructions.includes("INDEX_DISCOVERY_MANUAL_VERIFY"));
+  assert.ok(body.instructions.includes("requires a person to open the original source"));
+  assert.ok(body.instructions.includes("Do not sign in, use cookies or sessions"));
 });
 
 test("search schema clamps result count and covers required opportunity kinds", () => {

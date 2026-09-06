@@ -1,6 +1,7 @@
 import { buildOpenAIRequest } from "./search-contract.mjs";
 import { normalizeSearchResponse } from "./normalize.mjs";
 import { addUsage, countWebSearchCalls } from "./search-cost.mjs";
+import { INDEX_DISCOVERY_ALLOWED_DOMAINS, INDEX_DISCOVERY_MODE } from "./index-discovery.mjs";
 
 export const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 
@@ -64,9 +65,12 @@ export async function runOpportunitySearch({
     aggregateUsage = addUsage(aggregateUsage, raw?.usage);
     webSearchCallCount += countWebSearchCalls(raw);
     try {
-      const normalized = normalizeSearchResponse(raw, { nowIso, maxResults });
+      const normalized = normalizeSearchResponse(raw, { nowIso, maxResults, indexDiscovery:true });
       return {
         ...normalized,
+        discovery_mode:INDEX_DISCOVERY_MODE,
+        allowed_domains:[...INDEX_DISCOVERY_ALLOWED_DOMAINS],
+        direct_source_requests:0,
         model: raw?.model || model,
         response_id: raw?.id || null,
         usage: aggregateUsage,

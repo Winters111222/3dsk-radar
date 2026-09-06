@@ -62,4 +62,6 @@ Runtime endpointy navíc načítají stejný kvalifikační artefakt a vracejí 
 
 ## Praktický další krok
 
-Nejrozumnější další fáze není WIDE crawl. Nejdřív je nutné získat oprávněnou datovou cestu alespoň pro jeden Tier A zdroj. Teprve nad ní lze sestavit náhodný či chronologický vzorek nejméně 30 kandidátů a ručně změřit source-specific precision. Kurátorované pozitivní historické příklady se do tohoto benchmarku nesmějí vydávat za reprezentativní vzorek.
+Nejrozumnější další fáze není WIDE crawl. Pro veřejně indexované odkazy je připraven oddělený [`INDEX_DISCOVERY_MANUAL_VERIFY`](INDEX_DISCOVERY_MANUAL_VERIFY_CZ.md): hosted web search s pětidoménovým allowlistem, serverovou kontrolou detail URL, nulovým počtem přímých source requestů a povinným ručním otevřením originálu před kontaktem. Tento režim nemění `runtime_eligible:false` a nenahrazuje schválené API ani písemné povolení platformy.
+
+Pro skutečný source adapter je stále nutné získat oprávněnou datovou cestu alespoň pro jeden Tier A zdroj. Teprve nad ní lze sestavit náhodný či chronologický vzorek nejméně 30 kandidátů a ručně změřit source-specific precision. Kurátorované pozitivní historické příklady se do tohoto benchmarku nesmějí vydávat za reprezentativní vzorek.

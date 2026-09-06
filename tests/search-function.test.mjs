@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import handler from "../netlify/functions/search.mjs";
 import { memoryPaidCoordinator } from "./helpers/memory-paid-coordinator.mjs";
 
-const SOURCE = "https://buyer.example/vendor-request";
+const SOURCE = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
 const PREVIEW_CONTEXT = { deploy:{ context:"deploy-preview" } };
 
 function candidate() {
@@ -106,11 +106,12 @@ test("authorized search function normalizes a mocked hosted-search response end 
     RADAR_SEARCH_COOLDOWN_SECONDS:"0"
   });
   globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator();
-  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResultsWithStats: async (items) => ({opportunities:items,new_count:1,updated_count:0,workspace_total:1}), saveSearchRun: async (run) => { assert.equal(run.mode,"LIVE_SEARCH"); } };
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResultsWithStats: async (items) => ({opportunities:items,new_count:1,updated_count:0,workspace_total:1}), saveSearchRun: async (run) => { assert.equal(run.mode,"INDEX_DISCOVERY_MANUAL_VERIFY"); } };
   globalThis.fetch = async (_url, options) => {
     const request = JSON.parse(options.body);
     assert.equal(request.max_tool_calls, 3);
     assert.equal(request.max_output_tokens, 8000);
+    assert.deepEqual(request.tools[0].filters.allowed_domains, ["upwork.com","freelancer.com","reddit.com","forums.unrealengine.com","polycount.com"]);
     return new Response(JSON.stringify(mockOpenAIResponse()), {status:200,headers:{"content-type":"application/json"}});
   };
   try {
@@ -121,6 +122,8 @@ test("authorized search function normalizes a mocked hosted-search response end 
     assert.equal(payload.opportunities.length, 1);
     assert.equal(payload.opportunities[0].source_url, SOURCE);
     assert.equal(payload.opportunities[0].win_band, "HIGH");
+    assert.equal(payload.opportunities[0].manual_verification_status, "REQUIRED_BEFORE_CONTACT");
+    assert.equal(payload.opportunities[0].direct_source_requests, 0);
     assert.equal(payload.run.returned_count, 1);
     assert.equal(payload.run.persistence, "NETLIFY_BLOBS");
     assert.equal(payload.run.counters.candidates_seen, 1);
@@ -128,6 +131,9 @@ test("authorized search function normalizes a mocked hosted-search response end 
     assert.equal(payload.run.counters.new_opportunities, 1);
     assert.equal(payload.run.counters.workspace_total, 1);
     assert.equal(payload.run.attempts, 1);
+    assert.equal(payload.run.mode, "INDEX_DISCOVERY_MANUAL_VERIFY");
+    assert.equal(payload.run.counters.collector_mode, "INDEX_DISCOVERY_MANUAL_VERIFY");
+    assert.equal(payload.run.direct_source_requests, 0);
     assert.equal(payload.run.paid_acceptance.openai_requests, 1);
     assert.equal(payload.run.paid_acceptance.retries, 0);
   } finally {

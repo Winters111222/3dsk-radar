@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { bandForScore, validateOpportunity } from "../lib/domain.mjs";
 import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES, evaluateSourceTruth, normalizeSourceDate } from "../lib/source-truth.mjs";
 import { OPPORTUNITY_CATEGORIES, REMOTE_SCOPES } from "./search-contract.mjs";
+import { indexDiscoveryDomainPolicyForUrl, indexDiscoveryMetadata } from "./index-discovery.mjs";
 
 const TRACKING_PARAMS = new Set([
   "fbclid", "gclid", "mc_cid", "mc_eid", "ref", "referrer", "source"
@@ -163,9 +164,15 @@ function stableId(sourceUrl, company, title) {
   return `radar-${createHash("sha256").update(`${sourceUrl}|${fingerprint(company)}|${fingerprint(title)}`).digest("hex").slice(0, 16)}`;
 }
 
-export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
+export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { indexDiscovery = false } = {}) {
+  const usableSourceUrls = indexDiscovery
+    ? new Set([...verifiedSourceUrls].filter((url) => indexDiscoveryDomainPolicyForUrl(url)))
+    : verifiedSourceUrls;
   const sourceUrl = normalizeUrl(candidate?.source_url);
-  if (!sourceUrl || !verifiedSourceUrls.has(sourceUrl)) return { opportunity: null, rejection: "unverified_source_url" };
+  if (!sourceUrl) return { opportunity: null, rejection: "unverified_source_url" };
+  const discoveryMetadata = indexDiscovery ? indexDiscoveryMetadata(sourceUrl) : null;
+  if (indexDiscovery && !discoveryMetadata) return { opportunity:null, rejection:"source_not_allowed_for_index_discovery" };
+  if (!usableSourceUrls.has(sourceUrl)) return { opportunity: null, rejection: "unverified_source_url" };
 
   const title = safeString(candidate.title);
   const company = safeString(candidate.company);
@@ -185,7 +192,7 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
   const acceptanceSourceUrl = normalizeUrl(candidate.acceptance_source_url);
   const acceptanceEvidenceRecorded = (Array.isArray(candidate.source_evidence) ? candidate.source_evidence : []).some((item) =>
     normalizeUrl(item?.url) === acceptanceSourceUrl && Boolean(safeString(item?.note)));
-  const acceptanceVerified = noticeStatus === "OPEN" && Boolean(acceptanceSourceUrl && verifiedSourceUrls.has(acceptanceSourceUrl) && acceptanceEvidenceRecorded);
+  const acceptanceVerified = noticeStatus === "OPEN" && Boolean(acceptanceSourceUrl && usableSourceUrls.has(acceptanceSourceUrl) && acceptanceEvidenceRecorded);
   const truth = evaluateSourceTruth({
     requestedKind,
     commercialRole,
@@ -210,21 +217,22 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
 
   const fitScore = safeScore(candidate.fit_score);
   const winScore = safeScore(candidate.win_score);
-  const budget = normalizeBudget(candidate, verifiedSourceUrls);
+  const budget = normalizeBudget(candidate, usableSourceUrls);
 
   let contactEmail = isValidEmail(candidate.contact_email) ? candidate.contact_email.trim() : null;
   let contactEmailSource = normalizeUrl(candidate.contact_email_source);
-  if (!contactEmailSource || !verifiedSourceUrls.has(contactEmailSource)) {
+  if (!contactEmailSource || !usableSourceUrls.has(contactEmailSource)) {
     contactEmail = null;
     contactEmailSource = null;
   }
 
   let applyUrl = normalizeUrl(candidate.apply_url);
-  if (!applyUrl || !verifiedSourceUrls.has(applyUrl)) applyUrl = sourceUrl;
+  if (!applyUrl || !usableSourceUrls.has(applyUrl)) applyUrl = sourceUrl;
+  if (indexDiscovery && !indexDiscoveryMetadata(applyUrl)) applyUrl = sourceUrl;
 
   const evidence = (Array.isArray(candidate.source_evidence) ? candidate.source_evidence : []).map((item) => {
     const url = normalizeUrl(item?.url);
-    if (!url || !verifiedSourceUrls.has(url)) return null;
+    if (!url || !usableSourceUrls.has(url)) return null;
     return {
       type: ["PRIMARY_SOURCE", "SECONDARY_SOURCE", "CONTACT_SOURCE", "SIGNAL_SOURCE"].includes(item.type)
         ? item.type
@@ -286,7 +294,8 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso) {
     why_it_fits: safeList(candidate.why_it_fits),
     risks: safeList(candidate.risks),
     missing_requirements: safeList(candidate.missing_requirements),
-    source_evidence: evidence.slice(0, 8)
+    source_evidence: evidence.slice(0, 8),
+    ...(discoveryMetadata || {})
   };
 
   const validation = validateOpportunity(opportunity);
@@ -312,8 +321,11 @@ export function dedupeOpportunities(items) {
   return [...byFingerprint.values()].sort((a, b) => b.win_score - a.win_score || b.fit_score - a.fit_score);
 }
 
-export function normalizeSearchResponse(response, { nowIso, maxResults = 12 } = {}) {
-  const verifiedSourceUrls = extractWebSourceUrls(response);
+export function normalizeSearchResponse(response, { nowIso, maxResults = 12, indexDiscovery = false } = {}) {
+  const extractedSourceUrls = extractWebSourceUrls(response);
+  const verifiedSourceUrls = indexDiscovery
+    ? new Set([...extractedSourceUrls].filter((url) => indexDiscoveryDomainPolicyForUrl(url)))
+    : extractedSourceUrls;
   if (!verifiedSourceUrls.size) throw new Error("Hosted web search returned no verifiable source URLs");
 
   const parsed = parseStructuredSearchResponse(response);
@@ -321,7 +333,7 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12 } = 
   const rejections = [];
   const candidates = parsed.opportunities.slice(0, Math.max(1, Math.min(20, maxResults)));
   for (const candidate of candidates) {
-    const normalized = normalizeCandidate(candidate, verifiedSourceUrls, nowIso);
+    const normalized = normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { indexDiscovery });
     if (normalized.opportunity) opportunities.push(normalized.opportunity);
     else rejections.push(normalized.rejection);
   }

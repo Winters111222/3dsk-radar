@@ -16,7 +16,9 @@ const requiredUi = [
   "COPY SUBJECT",
   "COPY RESPONSE",
   "Search truth counters",
-  "Studio eligibility"
+  "Studio eligibility",
+  "MANUAL SOURCE CHECK REQUIRED",
+  "OPEN ORIGINAL SOURCE"
 ];
 
 test("pre-live UI contains the complete V0.1 decision and response flow", () => {

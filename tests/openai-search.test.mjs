@@ -5,7 +5,7 @@ import { callOpenAIResponses, runOpportunitySearch } from "../src/server/openai-
 
 const profile = JSON.parse(await readFile(new URL("../config/company-profile.public.json", import.meta.url), "utf8"));
 const NOW = "2026-09-05T10:00:00.000Z";
-const SOURCE = "https://buyer.example/vendor-request";
+const SOURCE = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
 
 function validCandidate() {
   return {
@@ -94,4 +94,8 @@ test("valid first response does not retry", async () => {
   const result = await runOpportunitySearch({apiKey:"fake",model:"gpt-5.6-luna",profile,nowIso:NOW,fetchImpl:fakeFetch});
   assert.equal(calls, 1);
   assert.equal(result.attempts, 1);
+  assert.equal(result.discovery_mode, "INDEX_DISCOVERY_MANUAL_VERIFY");
+  assert.equal(result.direct_source_requests, 0);
+  assert.equal(result.opportunities[0].manual_verification_status, "REQUIRED_BEFORE_CONTACT");
+  assert.equal(result.opportunities[0].discovery_source_id, "upwork");
 });

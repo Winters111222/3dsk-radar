@@ -71,5 +71,12 @@ export function validateOpportunity(opportunity) {
   const budget = validateBudgetProvenance(opportunity);
   if (!budget.ok) errors.push(`invalid:budget:${budget.reason}`);
   if (opportunity.contact_email && !isHttpUrl(opportunity.contact_email_source)) errors.push("invalid:contact_email_without_source");
+  if ("discovery_mode" in opportunity) {
+    if (opportunity.discovery_mode !== "INDEX_DISCOVERY_MANUAL_VERIFY") errors.push("invalid:discovery_mode");
+    if (opportunity.source_access_method !== "OPENAI_HOSTED_WEB_SEARCH") errors.push("invalid:source_access_method");
+    if (opportunity.manual_verification_status !== "REQUIRED_BEFORE_CONTACT") errors.push("invalid:manual_verification_status");
+    if (opportunity.manual_verified_at !== null) errors.push("invalid:manual_verified_at");
+    if (opportunity.direct_source_requests !== 0) errors.push("invalid:direct_source_requests");
+  }
   return { ok: errors.length === 0, errors };
 }

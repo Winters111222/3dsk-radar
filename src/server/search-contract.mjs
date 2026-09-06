@@ -1,4 +1,5 @@
 import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES } from "../lib/source-truth.mjs";
+import { INDEX_DISCOVERY_ALLOWED_DOMAINS, INDEX_DISCOVERY_MODE, indexDiscoveryPolicySummary } from "./index-discovery.mjs";
 
 export const SEARCH_INTENTS = [
   "game studio seeking external character art vendor RFP",
@@ -150,7 +151,12 @@ export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retr
     "You are the discovery and scoring engine for the internal 3D.SK Opportunity Radar.",
     `Current server timestamp: ${nowIso}.`,
     `Return at most ${maxResults} normalized opportunities.`,
+    `Discovery mode: ${INDEX_DISCOVERY_MODE}.`,
     "You MUST use web search. Prefer original primary sources over aggregators.",
+    `Search only these allowlisted opportunity sources and paths: ${indexDiscoveryPolicySummary()}.`,
+    "Return only an exact public opportunity/detail URL matching one of those paths. Never return a home page, profile, category, tag, feed or search-results page.",
+    "Do not sign in, use cookies or sessions, automate a browser, solve access controls, or claim that hosted discovery grants API, crawling or content-reuse permission.",
+    "Every returned item requires a person to open the original source and verify that it is still active before any contact or response generation.",
     "Prioritize explicit current B2B/vendor/outsourcing/contract/freelance opportunities worldwide, especially the last 24h, then 7 days, then 30 days.",
     "Search buyer-side demand first: studios seeking vendors, RFPs, supplier applications and production overflow requests. Generic supplier catalogs and service pages are not buyer demand. Include a supplier as POTENTIAL_LEAD only with a concrete public partnership or subcontracting signal; capability overlap alone is insufficient. Return fewer results or an empty list when evidence is weak.",
     "Do not treat a normal employee job as a studio/vendor opportunity unless the source explicitly permits contract/vendor/external development. If relevant only as a business signal, classify it POTENTIAL_LEAD.",
@@ -191,7 +197,11 @@ export function buildOpenAIRequest({
     model,
     store: false,
     reasoning: { effort: "low" },
-    tools: [{ type: "web_search", search_context_size: "medium" }],
+    tools: [{
+      type: "web_search",
+      search_context_size: "medium",
+      filters: { allowed_domains:[...INDEX_DISCOVERY_ALLOWED_DOMAINS] }
+    }],
     tool_choice: "required",
     max_tool_calls: Math.max(1, Math.min(3, Number(maxToolCalls) || 3)),
     include: ["web_search_call.action.sources"],
