@@ -48,6 +48,16 @@ WIDE_INDEX nepřihlašuje cloudový browser, nepoužívá cookies, neřeší CAP
 
 Hosted web search není důkaz kompletního procházení každé stránky dané platformy. Nový režim garantuje provedení všech pěti vyhledávacích okruhů a měří jejich výtěžnost; negarantuje indexovou úplnost třetí strany ani pevný počet kvalitních zakázek.
 
+## Competitor a source-platform gate
+
+Každý ověřený kandidát prochází před sales truth gate serverovou klasifikací
+`SALES_OPPORTUNITY | COMPETITOR | SOURCE_PLATFORM`. Generic seller/service
+page se uloží nanejvýš jako competitor intelligence; agregátor nebo ATS
+identita jako source-platform provenance. Ani jeden druh nezabírá strop 24
+sales výsledků, nevstupuje do sales summary a nemůže odemknout reply nebo
+outreach. Originální employer/ATS detail s doloženým buyer signálem zůstává
+sales kandidát.
+
 ## Aktivace a ověření
 
 Před produkční aktivací:

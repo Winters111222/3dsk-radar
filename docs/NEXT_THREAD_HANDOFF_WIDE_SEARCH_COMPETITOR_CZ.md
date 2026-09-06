@@ -1,5 +1,13 @@
 # Předání pro nové vlákno — WIDE_INDEX a competitor classification
 
+> Aktualizace 6. 9. 2026: competitor/source-platform balík níže byl
+> implementován v commitu `221562f12dff7d61984d845efd9f5b30c2127aaf`.
+> Nejdřív načti
+> `docs/CHECKPOINT_COMPETITOR_CLASSIFICATION_IMPLEMENTED_20260906_CZ.md`.
+> Produkční audit sedmi records stále čeká na autorizovaný read-only snapshot;
+> produkční reclassification write, placený Search, env změna a merge nebyly
+> provedeny.
+
 Navazuj na projekt **3D.SK Opportunity Radar** v PUBLIC repozitáři:
 
 <https://github.com/Winters111222/3dsk-radar>
@@ -142,4 +150,3 @@ Implementuj do stejného Draft PR #30:
 - Sales summary neobsahuje konkurenty ani platformy.
 - Kontakt, reply a outreach jsou pro oba nesales druhy fail-closed.
 - Staré údaje a company memory nejsou ztraceny.
-
