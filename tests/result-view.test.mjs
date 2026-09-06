@@ -26,3 +26,8 @@ assert.equal(visibleResults(items,{view:'BOOKMARKED',categories:['PHOTOGRAMMETRY
 assert.deepEqual(visibleResults(items,{view:'BOOKMARKED',categories:[]}).map(x=>x.id),['a']);
 assert.equal(visibleResults(items,{categories:[]}).length,3);
 });
+test('default sales views exclude intelligence and competitor view excludes source platforms',()=>{
+const mixed=[...items,{id:'d',record_kind:'COMPETITOR',company:'Seller',fit_score:99,win_score:0,categories:['FULL_PIPELINE'],status:'NEW'},{id:'e',record_kind:'SOURCE_PLATFORM',company:'Jobs Index',fit_score:100,win_score:0,categories:['OTHER_RELEVANT'],status:'NEW'}];
+assert.deepEqual(visibleResults(mixed,{view:'ALL'}).map(x=>x.id),['b','a','c']);
+assert.deepEqual(visibleResults(mixed,{view:'COMPETITORS'}).map(x=>x.id),['d']);
+});

@@ -14,6 +14,7 @@
     "accept:deployed:paid": "node scripts/deployed-paid-acceptance.mjs",
     "measure:collector:live": "node scripts/collector-yield-measurement.mjs",
     "report:sources:readiness": "node scripts/source-readiness-report.mjs",
+    "report:competitors": "node scripts/competitor-audit-report.mjs",
     "accept:http": "node scripts/http-smoke.mjs",
     "sources:check": "node scripts/check-source-catalog.mjs"
   },

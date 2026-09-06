@@ -1,6 +1,7 @@
 import { companyKey, emptyCompanyState, setCompanyBookmark, markEmailSent, undoLastEmailSent } from "./company-memory.mjs";
 import { mergeOpportunityHistory, opportunityFingerprint } from "./history.mjs";
 import { normalizeBudget, normalizeUrl } from "./normalize.mjs";
+import { isSalesOpportunityRecord, recordKindOf } from "./record-classification.mjs";
 import { createHash } from "node:crypto";
 
 const OP_PREFIX = "opportunities/";
@@ -28,7 +29,29 @@ function dedupeIndexKey(runId, value) {
 function safeSavedOpportunity(item) {
   if (!item) return item;
   const sources = new Set((item.source_evidence || []).map(x => normalizeUrl(x.url)).filter(Boolean));
-  return { ...item, ...normalizeBudget(item, sources) };
+  const safe = { ...item, record_kind:recordKindOf(item), ...normalizeBudget(item, sources) };
+  if (isSalesOpportunityRecord(safe)) return { ...safe, outreach_locked:false };
+  return {
+    ...safe,
+    contact_name:null,
+    contact_role:null,
+    contact_email:null,
+    contact_email_source:null,
+    reply_to:null,
+    reply_subject:null,
+    reply_body:null,
+    reply_generated_at:null,
+    reply_model:null,
+    reply_response_id:null,
+    outreach_locked:true
+  };
+}
+
+function nonSalesActionError() {
+  const error = new Error("Sales actions are locked for competitor and source-platform records.");
+  error.code = "RECORD_NOT_SALES_OPPORTUNITY";
+  error.status = 409;
+  return error;
 }
 
 async function listJSON(store, prefix) {
@@ -48,6 +71,18 @@ async function writeOpportunitySnapshot(store, opportunities) {
   await store.setJSON(OP_SNAPSHOT_KEY, opportunities);
 }
 
+async function readStoredOpportunities(store) {
+  const snapshot = await readOpportunitySnapshot(store);
+  const items = snapshot ?? await listJSON(store, OP_PREFIX);
+  return items.filter(Boolean);
+}
+
+async function readStoredOpportunity(store, id) {
+  const direct = await store.get(`${OP_PREFIX}${id}`, { type:"json" });
+  if (direct) return direct;
+  return (await readStoredOpportunities(store)).find((item) => item?.id === id) || null;
+}
+
 function upsertOpportunity(items, next) {
   const index = items.findIndex((item) => item?.id === next.id);
   if (index === -1) return [...items, next];
@@ -57,9 +92,7 @@ function upsertOpportunity(items, next) {
 export function createStateRepository(store) {
   return {
     async listOpportunities() {
-      const snapshot = await readOpportunitySnapshot(store);
-      const items = snapshot ?? await listJSON(store, OP_PREFIX);
-      return items.filter(Boolean).map(safeSavedOpportunity);
+      return (await readStoredOpportunities(store)).map(safeSavedOpportunity);
     },
 
     async listCompanies() {
@@ -82,6 +115,10 @@ export function createStateRepository(store) {
     },
 
     async markEmailSent(company, payload) {
+      if (payload.opportunityId) {
+        const opportunity = await readStoredOpportunity(store, payload.opportunityId);
+        if (!opportunity || !isSalesOpportunityRecord(opportunity)) throw nonSalesActionError();
+      }
       const current = await this.getCompany(company);
       const next = markEmailSent(current, payload);
       await this.saveCompany(next);
@@ -95,27 +132,28 @@ export function createStateRepository(store) {
     },
 
     async getOpportunity(id) {
-      return safeSavedOpportunity(await store.get(`${OP_PREFIX}${id}`, { type: "json" }));
+      return safeSavedOpportunity(await readStoredOpportunity(store, id));
     },
 
     async saveOpportunity(item) {
-      const existing = await this.listOpportunities();
+      const existing = await readStoredOpportunities(store);
       await store.setJSON(`${OP_PREFIX}${item.id}`, item);
       await writeOpportunitySnapshot(store, upsertOpportunity(existing, item));
       return item;
     },
 
     async setOpportunityStatus(id, status, nowIso) {
-      const current = await this.getOpportunity(id);
+      const current = await readStoredOpportunity(store, id);
       if (!current) return null;
       const next = { ...current, status, updated_at: nowIso };
       await this.saveOpportunity(next);
-      return next;
+      return safeSavedOpportunity(next);
     },
 
     async verifyOpportunitySource(id, confirmedSourceUrl, nowIso) {
-      const current = await this.getOpportunity(id);
+      const current = await readStoredOpportunity(store, id);
       if (!current) return null;
+      if (!isSalesOpportunityRecord(current)) throw nonSalesActionError();
       if (current.discovery_mode !== "INDEX_DISCOVERY_MANUAL_VERIFY") {
         const error = new Error("Source verification is not required for this opportunity.");
         error.code = "SOURCE_VERIFICATION_NOT_REQUIRED";
@@ -139,15 +177,16 @@ export function createStateRepository(store) {
         updated_at:nowIso
       };
       await this.saveOpportunity(next);
-      return next;
+      return safeSavedOpportunity(next);
     },
 
     async saveReply(id, reply, nowIso) {
-      const current = await this.getOpportunity(id);
+      const current = await readStoredOpportunity(store, id);
       if (!current) return null;
+      if (!isSalesOpportunityRecord(current)) throw nonSalesActionError();
       const next = { ...current, reply_to: reply.to || null, reply_subject: reply.subject, reply_body: reply.body, reply_generated_at: nowIso, reply_model: reply.model || null, reply_response_id: reply.response_id || null, updated_at: nowIso };
       await this.saveOpportunity(next);
-      return next;
+      return safeSavedOpportunity(next);
     },
 
     async mergeSearchResults(incoming, nowIso) {
@@ -155,7 +194,7 @@ export function createStateRepository(store) {
     },
 
     async mergeSearchResultsWithStats(incoming, nowIso) {
-      const existing = await this.listOpportunities();
+      const existing = await readStoredOpportunities(store);
       const companies = await this.listCompanies();
       const byKey = Object.fromEntries(companies.map((item) => [item.company_key, item]));
       const merged = mergeOpportunityHistory(existing, incoming, byKey, nowIso);
@@ -173,12 +212,21 @@ export function createStateRepository(store) {
       if (!persisted || !merged.every((item) => persisted.some((saved) => saved?.id === item.id))) {
         throw new Error("STATE_WRITE_VERIFICATION_FAILED");
       }
-      const workspaceFingerprints = new Set(workspace.map(opportunityFingerprint));
+      const mergedSales = merged.filter(isSalesOpportunityRecord);
+      const workspaceSales = workspace.filter(isSalesOpportunityRecord);
+      const workspaceCompetitors = workspace.filter((item) => recordKindOf(item) === "COMPETITOR");
+      const workspacePlatforms = workspace.filter((item) => recordKindOf(item) === "SOURCE_PLATFORM");
+      const workspaceFingerprints = new Set(workspaceSales.map(opportunityFingerprint));
       return {
         opportunities: merged,
-        new_count: merged.filter((item) => item.is_new).length,
-        updated_count: merged.filter((item) => !item.is_new).length,
-        workspace_total: workspaceFingerprints.size
+        new_count: mergedSales.filter((item) => item.is_new).length,
+        updated_count: mergedSales.filter((item) => !item.is_new).length,
+        competitor_count:merged.filter((item) => recordKindOf(item) === "COMPETITOR").length,
+        source_platform_count:merged.filter((item) => recordKindOf(item) === "SOURCE_PLATFORM").length,
+        workspace_total: workspaceFingerprints.size,
+        workspace_record_total:workspace.length,
+        workspace_competitor_total:workspaceCompetitors.length,
+        workspace_source_platform_total:workspacePlatforms.length
       };
     },
 
@@ -261,12 +309,23 @@ export function createStateRepository(store) {
       const opportunities = await this.listOpportunities();
       const companies = await this.listCompanies();
       const byKey = Object.fromEntries(companies.map((item) => [item.company_key, item]));
+      const hydrated = opportunities.map((item) => {
+        const company = byKey[companyKey(item.company)] || emptyCompanyState(item.company);
+        return { ...item, company_key: company.company_key, company_bookmarked: company.bookmarked, company_last_contacted_at: company.last_contacted_at, company_contact_count: company.contact_count };
+      });
+      const sales = hydrated.filter(isSalesOpportunityRecord);
       return {
         last_search: await this.lastSearchRun(),
-        opportunities: opportunities.map((item) => {
-          const company = byKey[companyKey(item.company)] || emptyCompanyState(item.company);
-          return { ...item, company_key: company.company_key, company_bookmarked: company.bookmarked, company_last_contacted_at: company.last_contacted_at, company_contact_count: company.contact_count };
-        }),
+        summary:{
+          opportunities:sales.length,
+          companies:new Set(sales.map((item) => companyKey(item.company))).size,
+          high_fit:sales.filter((item) => item.fit_score >= 80).length,
+          competitors:hydrated.filter((item) => item.record_kind === "COMPETITOR").length,
+          source_platforms:hydrated.filter((item) => item.record_kind === "SOURCE_PLATFORM").length
+        },
+        records:hydrated,
+        // Backward-compatible alias for clients created before record_kind existed.
+        opportunities: hydrated,
         companies
       };
     }

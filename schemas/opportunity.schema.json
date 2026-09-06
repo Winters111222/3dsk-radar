@@ -4,10 +4,14 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "id","canonical_url","source_url","source_domain","title","company","summary","opportunity_kind","commercial_role","notice_status","studio_eligibility","eligibility_reason","scope_fit","categories","location","remote_scope","published_date","source_updated_date","freshness_basis","acceptance_source_url","acceptance_verified_at","first_seen","last_seen","is_new","status","fit_score","win_score","win_band","budget_type","budget_published","budget_estimated_min","budget_estimated_max","budget_currency","budget_confidence","budget_reason","contact_name","contact_role","contact_email","contact_email_source","apply_url","why_it_fits","risks","missing_requirements","source_evidence"
+    "id","record_kind","canonical_url","source_url","source_domain","title","company","summary","opportunity_kind","commercial_role","notice_status","studio_eligibility","eligibility_reason","scope_fit","categories","location","remote_scope","published_date","source_updated_date","freshness_basis","acceptance_source_url","acceptance_verified_at","first_seen","last_seen","is_new","status","fit_score","win_score","win_band","budget_type","budget_published","budget_estimated_min","budget_estimated_max","budget_currency","budget_confidence","budget_reason","contact_name","contact_role","contact_email","contact_email_source","apply_url","why_it_fits","risks","missing_requirements","source_evidence"
   ],
   "properties": {
     "id":{"type":"string","minLength":1},
+    "record_kind":{"enum":["SALES_OPPORTUNITY","COMPETITOR","SOURCE_PLATFORM"]},
+    "record_kind_reason":{"type":"string"},
+    "classified_at":{"type":"string"},
+    "classification_history":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["changed_at","from_record_kind","to_record_kind","previous_opportunity_kind","reason"],"properties":{"changed_at":{"type":"string"},"from_record_kind":{"enum":["SALES_OPPORTUNITY","COMPETITOR","SOURCE_PLATFORM"]},"to_record_kind":{"enum":["SALES_OPPORTUNITY","COMPETITOR","SOURCE_PLATFORM"]},"previous_opportunity_kind":{"enum":["OPEN_OPPORTUNITY","POTENTIAL_LEAD",null]},"reason":{"type":"string"}}}},
     "is_fixture":{"type":"boolean"},
     "canonical_url":{"type":"string","format":"uri"},
     "source_url":{"type":"string","format":"uri"},
@@ -15,7 +19,7 @@
     "title":{"type":"string","minLength":1},
     "company":{"type":"string","minLength":1},
     "summary":{"type":"string","minLength":1},
-    "opportunity_kind":{"enum":["OPEN_OPPORTUNITY","POTENTIAL_LEAD"]},
+    "opportunity_kind":{"enum":["OPEN_OPPORTUNITY","POTENTIAL_LEAD",null]},
     "commercial_role":{"enum":["BUYER","EMPLOYER","SELLER","PARTNER","UNKNOWN"]},
     "notice_status":{"enum":["OPEN","UPCOMING","CLOSED","AWARDED","CANCELLED","UNKNOWN"]},
     "studio_eligibility":{"enum":["YES","NO","UNKNOWN"]},
@@ -26,7 +30,7 @@
     "remote_scope":{"enum":["WORLDWIDE_VENDOR","GLOBAL_REMOTE","REMOTE_REGION","LOCATION_RESTRICTED","ONSITE","NOT_STATED"]},
     "published_date":{"type":["string","null"]},
     "source_updated_date":{"type":["string","null"]},
-    "freshness_basis":{"enum":["PUBLISHED_DATE","SOURCE_UPDATED_DATE","ACTIVE_ACCEPTANCE_EVIDENCE"]},
+    "freshness_basis":{"enum":["PUBLISHED_DATE","SOURCE_UPDATED_DATE","ACTIVE_ACCEPTANCE_EVIDENCE",null]},
     "acceptance_source_url":{"type":["string","null"]},
     "acceptance_verified_at":{"type":["string","null"]},
     "first_seen":{"type":"string"},

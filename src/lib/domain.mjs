@@ -1,4 +1,5 @@
 import { COMMERCIAL_ROLES, FRESHNESS_BASES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES } from "./source-truth.mjs";
+import { RECORD_KINDS, isSalesOpportunityRecord, recordKindOf } from "../server/record-classification.mjs";
 
 export const STATUS_VALUES = ["NEW", "INTERESTING", "CONTACTED", "IGNORE"];
 export const OPPORTUNITY_KINDS = ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"];
@@ -6,7 +7,7 @@ export const BUDGET_TYPES = ["PUBLISHED", "ESTIMATED", "UNKNOWN"];
 export const MANUAL_VERIFICATION_STATUSES = ["REQUIRED_BEFORE_CONTACT", "VERIFIED_BEFORE_CONTACT"];
 
 export const REQUIRED_OPPORTUNITY_FIELDS = [
-  "id","canonical_url","source_url","source_domain","title","company","summary","opportunity_kind","commercial_role","notice_status","studio_eligibility","eligibility_reason","scope_fit","categories","location","remote_scope","published_date","source_updated_date","freshness_basis","acceptance_source_url","acceptance_verified_at","first_seen","last_seen","is_new","status","fit_score","win_score","win_band","budget_type","budget_published","budget_estimated_min","budget_estimated_max","budget_currency","budget_confidence","budget_reason","contact_name","contact_role","contact_email","contact_email_source","apply_url","why_it_fits","risks","missing_requirements","source_evidence"
+  "id","record_kind","canonical_url","source_url","source_domain","title","company","summary","opportunity_kind","commercial_role","notice_status","studio_eligibility","eligibility_reason","scope_fit","categories","location","remote_scope","published_date","source_updated_date","freshness_basis","acceptance_source_url","acceptance_verified_at","first_seen","last_seen","is_new","status","fit_score","win_score","win_band","budget_type","budget_published","budget_estimated_min","budget_estimated_max","budget_currency","budget_confidence","budget_reason","contact_name","contact_role","contact_email","contact_email_source","apply_url","why_it_fits","risks","missing_requirements","source_evidence"
 ];
 
 export function bandForScore(score) {
@@ -55,6 +56,7 @@ function isIsoTimestamp(value) {
 }
 
 export function sourceVerificationSatisfied(opportunity) {
+  if (!isSalesOpportunityRecord(opportunity)) return false;
   if (opportunity?.discovery_mode !== "INDEX_DISCOVERY_MANUAL_VERIFY") return true;
   return opportunity.manual_verification_status === "VERIFIED_BEFORE_CONTACT"
     && isIsoTimestamp(opportunity.manual_verified_at)
@@ -64,12 +66,16 @@ export function sourceVerificationSatisfied(opportunity) {
 export function validateOpportunity(opportunity) {
   const missing = REQUIRED_OPPORTUNITY_FIELDS.filter((key) => !(key in opportunity));
   const errors = missing.map((key) => `missing:${key}`);
-  if (!OPPORTUNITY_KINDS.includes(opportunity.opportunity_kind)) errors.push("invalid:opportunity_kind");
+  const recordKind = recordKindOf(opportunity);
+  if (!RECORD_KINDS.includes(opportunity.record_kind)) errors.push("invalid:record_kind");
+  if (recordKind === "SALES_OPPORTUNITY" && !OPPORTUNITY_KINDS.includes(opportunity.opportunity_kind)) errors.push("invalid:opportunity_kind");
+  if (recordKind !== "SALES_OPPORTUNITY" && opportunity.opportunity_kind !== null) errors.push("invalid:non_sales_opportunity_kind");
   if (!COMMERCIAL_ROLES.includes(opportunity.commercial_role)) errors.push("invalid:commercial_role");
   if (!NOTICE_STATUSES.includes(opportunity.notice_status)) errors.push("invalid:notice_status");
   if (!STUDIO_ELIGIBILITY_VALUES.includes(opportunity.studio_eligibility)) errors.push("invalid:studio_eligibility");
   if (!SCOPE_FITS.includes(opportunity.scope_fit)) errors.push("invalid:scope_fit");
-  if (!FRESHNESS_BASES.includes(opportunity.freshness_basis)) errors.push("invalid:freshness_basis");
+  if (recordKind === "SALES_OPPORTUNITY" && !FRESHNESS_BASES.includes(opportunity.freshness_basis)) errors.push("invalid:freshness_basis");
+  if (recordKind !== "SALES_OPPORTUNITY" && opportunity.freshness_basis !== null && !FRESHNESS_BASES.includes(opportunity.freshness_basis)) errors.push("invalid:freshness_basis");
   if (opportunity.acceptance_verified_at && !isHttpUrl(opportunity.acceptance_source_url)) errors.push("invalid:acceptance_without_source");
   if (!Array.isArray(opportunity.categories) || opportunity.categories.length === 0) errors.push("invalid:categories");
   if (!isHttpUrl(opportunity.canonical_url)) errors.push("invalid:canonical_url");

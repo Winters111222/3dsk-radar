@@ -23,6 +23,12 @@ test("fixture set proves OPEN_OPPORTUNITY is distinct from POTENTIAL_LEAD", () =
   assert.ok(fixtures.some((x) => x.opportunity_kind === "POTENTIAL_LEAD"));
 });
 
+test("opportunity_kind is reserved for sales records", () => {
+  const competitor = fixtures.find((item) => item.record_kind === "COMPETITOR");
+  assert.equal(competitor.opportunity_kind, null);
+  assert.equal(validateOpportunity({...competitor,opportunity_kind:"POTENTIAL_LEAD"}).errors.includes("invalid:non_sales_opportunity_kind"), true);
+});
+
 test("budget provenance fails closed", () => {
   assert.equal(validateBudgetProvenance({ budget_type:"PUBLISHED", budget_published:null }).ok, false);
   assert.equal(validateBudgetProvenance({ budget_type:"ESTIMATED", budget_estimated_min:1, budget_estimated_max:2, budget_reason:"fixture" }).ok, true);

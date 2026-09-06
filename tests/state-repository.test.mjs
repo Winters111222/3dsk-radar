@@ -86,3 +86,24 @@ test("manual source verification is URL-bound, idempotent and survives a repeat 
  assert.equal(changed.manual_verified_at,null);
  assert.equal(changed.manual_verified_source_url,null);
 });
+
+test("sales summary excludes competitors and source platforms",async()=>{
+ const repo=createStateRepository(memoryStore());
+ await repo.saveOpportunity(opportunity({record_kind:"SALES_OPPORTUNITY"}));
+ await repo.saveOpportunity(opportunity({id:"competitor",record_kind:"COMPETITOR",canonical_url:"https://seller.example/services",company:"Seller",fit_score:99}));
+ await repo.saveOpportunity(opportunity({id:"platform",record_kind:"SOURCE_PLATFORM",canonical_url:"https://index.example/archive",company:"Jobs Index",fit_score:100}));
+ const snapshot=await repo.snapshot();
+ assert.deepEqual(snapshot.summary,{opportunities:1,companies:1,high_fit:0,competitors:1,source_platforms:1});
+});
+
+test("competitor status update preserves hidden contact and reply history while sales actions fail closed",async()=>{
+ const store=memoryStore(),repo=createStateRepository(store);
+ await repo.saveOpportunity(opportunity({record_kind:"COMPETITOR",contact_email:"historic@seller.example",reply_subject:"Historic draft",reply_body:"Historic body"}));
+ const visible=await repo.getOpportunity("opp-1");
+ assert.equal(visible.contact_email,null);assert.equal(visible.reply_body,null);assert.equal(visible.outreach_locked,true);
+ await assert.rejects(()=>repo.markEmailSent("Example Games",{opportunityId:"opp-1",sentAt:"2026-09-06T10:00:00Z"}),error=>error.code==="RECORD_NOT_SALES_OPPORTUNITY");
+ await assert.rejects(()=>repo.saveReply("opp-1",{subject:"New",body:"New"},"2026-09-06T10:00:00Z"),error=>error.code==="RECORD_NOT_SALES_OPPORTUNITY");
+ await repo.setOpportunityStatus("opp-1","IGNORE","2026-09-06T10:00:00Z");
+ const stored=await store.get("opportunities/opp-1");
+ assert.equal(stored.contact_email,"historic@seller.example");assert.equal(stored.reply_body,"Historic body");assert.equal(stored.status,"IGNORE");
+});

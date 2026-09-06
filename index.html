@@ -69,11 +69,12 @@
       </section>
 
       <section class="toolbar panel">
-        <div class="segmented" role="group" aria-label="Opportunity view">
+        <div class="segmented" role="group" aria-label="Sales and intelligence view">
           <button class="segment is-active" data-view="ALL" type="button">ALL</button>
           <button class="segment" data-view="BOOKMARKED" type="button">★ BOOKMARKED</button>
           <button class="segment" data-view="OPEN_OPPORTUNITY" type="button">OPEN OPPORTUNITIES</button>
           <button class="segment" data-view="POTENTIAL_LEAD" type="button">POTENTIAL LEADS</button>
+          <button class="segment" data-view="COMPETITORS" type="button">COMPETITORS</button>
         </div>
         <div class="toolbar-controls">
           <label><span>Status</span><select id="status-filter"><option value="ALL">All</option><option value="NEW">New</option><option value="INTERESTING">Interesting</option><option value="CONTACTED">Contacted</option><option value="IGNORE">Ignore</option></select></label>
@@ -93,7 +94,7 @@
       </section>
       <section class="results-layout">
         <div class="panel table-panel">
-          <div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3>Ranked opportunities</h3></div><span id="result-count" class="result-count"></span></div>
+          <div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3>Sales opportunities & competitor intelligence</h3></div><span id="result-count" class="result-count"></span></div>
           <div class="table-scroll"><table><thead><tr>
             <th scope="col">Select</th><th scope="col"><button type="button" data-sort="company_bookmarked">★<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="fit_score">Fit<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="win_score">Win<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="title">Opportunity<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company">Company<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="opportunity_kind">Type<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="budget_type">Budget<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="published_date">Date<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="first_seen">Found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="last_seen">Last found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company_last_contacted_at">Outreach<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="contact_email">Contact<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="status">Status<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="source_url">Source<span aria-hidden="true"> ↕</span></button></th>
           </tr></thead><tbody id="opportunity-body"></tbody></table></div>

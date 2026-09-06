@@ -129,10 +129,13 @@ test("hard truth gates reject stale listings and accept old listings only with c
   assert.equal(active.opportunity.acceptance_verified_at, NOW);
 });
 
-test("normalizer rejects sellers and demotes employment signals to Potential Lead", () => {
+test("normalizer classifies sellers as competitors and demotes employment signals to Potential Lead", () => {
   const verified = new Set([normalizeUrl(PRIMARY)]);
-  assert.equal(normalizeCandidate(candidate({commercial_role:"SELLER"}), verified, NOW).rejection, "seller_not_opportunity");
+  const seller = normalizeCandidate(candidate({commercial_role:"SELLER"}), verified, NOW).opportunity;
+  assert.equal(seller.record_kind, "COMPETITOR");
+  assert.equal(seller.opportunity_kind, null);
   const employment = normalizeCandidate(candidate({commercial_role:"EMPLOYER",studio_eligibility:"UNKNOWN"}), verified, NOW).opportunity;
+  assert.equal(employment.record_kind, "SALES_OPPORTUNITY");
   assert.equal(employment.opportunity_kind, "POTENTIAL_LEAD");
 });
 
@@ -143,7 +146,31 @@ test("normalization reports measured rejection and duplicate counters", () => {
     candidate({company:"Seller",source_url:CONTACT,apply_url:CONTACT,commercial_role:"SELLER",source_evidence:[{type:"SIGNAL_SOURCE",url:CONTACT,note:"Seller"}]})
   ]);
   const normalized = normalizeSearchResponse(payload,{nowIso:NOW,maxResults:12});
-  assert.deepEqual(normalized.counters,{candidates_seen:3,candidates_verified:1,candidates_rejected:1,duplicates_removed:1,rejection_reasons:{seller_not_opportunity:1}});
+  assert.deepEqual(normalized.counters,{candidates_seen:3,candidates_verified:1,competitors_classified:1,source_platforms_classified:0,candidates_rejected:0,duplicates_removed:1,rejection_reasons:{}});
+  assert.equal(normalized.records.length,2);
+  assert.equal(normalized.competitors[0].company,"Seller");
+});
+
+test("non-sales records never consume the configured sales-result limit", () => {
+  const sellerUrl="https://seller.example/services/game-art",secondBuyer="https://buyer-two.example/rfp";
+  const normalized=normalizeSearchResponse(response([
+    candidate({source_url:sellerUrl,apply_url:sellerUrl,company:"Seller Studio",commercial_role:"SELLER",source_evidence:[{type:"SIGNAL_SOURCE",url:sellerUrl,note:"Seller page"}]}),
+    candidate(),
+    candidate({source_url:secondBuyer,apply_url:secondBuyer,company:"Second Buyer",title:"Second buyer brief",source_evidence:[{type:"PRIMARY_SOURCE",url:secondBuyer,note:"Buyer brief"}]})
+  ],[sellerUrl,PRIMARY,secondBuyer]),{nowIso:NOW,maxResults:1});
+  assert.equal(normalized.opportunities.length,1);
+  assert.equal(normalized.competitors.length,1);
+  assert.equal(normalized.records.length,2);
+  assert.equal(normalized.counters.candidates_verified,1);
+});
+
+test("source-platform description is retained only as diagnostics/intelligence record", () => {
+  const platform="https://jobs-index.example/archive";
+  const normalized=normalizeSearchResponse(response([candidate({source_url:platform,apply_url:platform,company:"Synthetic Jobs Index",commercial_role:"UNKNOWN",summary:"Archived job aggregator and ATS dataset.",source_evidence:[{type:"SIGNAL_SOURCE",url:platform,note:"Archive"}]})],[platform]),{nowIso:NOW,maxResults:6});
+  assert.equal(normalized.opportunities.length,0);
+  assert.equal(normalized.source_platforms.length,1);
+  assert.equal(normalized.records[0].opportunity_kind,null);
+  assert.equal(normalized.records[0].contact_email,null);
 });
 
 test("seller license and missing buyer provenance never become an opportunity budget", () => {
@@ -225,9 +252,9 @@ test("index discovery reports privacy-safe source yield and rejection diagnostic
   assert.equal(normalized.diagnostics.schema_version, 1);
   assert.equal(normalized.diagnostics.privacy, "AGGREGATED_COUNTS_ONLY");
   assert.equal(normalized.diagnostics.zero_result_reason, null);
-  assert.deepEqual(normalized.diagnostics.rejection_reasons,{seller_not_opportunity:1});
-  assert.deepEqual(bySource.upwork,{source_id:"upwork",source_label:"Upwork",consulted_urls:1,eligible_detail_urls:1,candidates_seen:2,candidates_accepted:2,candidates_rejected:0,duplicates_removed:1,returned:1});
-  assert.deepEqual(bySource.freelancer,{source_id:"freelancer",source_label:"Freelancer",consulted_urls:1,eligible_detail_urls:1,candidates_seen:1,candidates_accepted:0,candidates_rejected:1,duplicates_removed:0,returned:0});
+  assert.deepEqual(normalized.diagnostics.rejection_reasons,{});
+  assert.deepEqual(bySource.upwork,{source_id:"upwork",source_label:"Upwork",consulted_urls:1,eligible_detail_urls:1,candidates_seen:2,candidates_accepted:2,competitors_detected:0,source_platforms_detected:0,candidates_rejected:0,duplicates_removed:1,returned:1});
+  assert.deepEqual(bySource.freelancer,{source_id:"freelancer",source_label:"Freelancer",consulted_urls:1,eligible_detail_urls:1,candidates_seen:1,candidates_accepted:0,competitors_detected:1,source_platforms_detected:0,candidates_rejected:0,duplicates_removed:0,returned:0});
   assert.equal(bySource.reddit_gamedevclassifieds.consulted_urls,1);
   assert.equal(bySource.reddit_gamedevclassifieds.candidates_seen,0);
   assert.doesNotMatch(JSON.stringify(normalized.diagnostics),/https?:\/\//);

@@ -157,7 +157,7 @@ export default async function handler(request, context) {
       reservation.fence_token
     );
     const repo = await getStateRepository(request, context);
-    const merge = await repo.mergeSearchResultsWithStats(result.opportunities, nowIso);
+    const merge = await repo.mergeSearchResultsWithStats(result.records || result.opportunities, nowIso);
     const opportunities = merge.opportunities;
     const counters = {
       collector_mode:result.discovery_mode,
@@ -173,9 +173,14 @@ export default async function handler(request, context) {
       direct_source_requests:result.direct_source_requests,
       openai_requests:result.openai_request_count,
       retries:0,
+      competitors_classified:result.counters.competitors_classified || 0,
+      source_platforms_classified:result.counters.source_platforms_classified || 0,
       new_opportunities:merge.new_count,
       updated_opportunities:merge.updated_count,
-      workspace_total:merge.workspace_total
+      workspace_total:merge.workspace_total,
+      workspace_record_total:merge.workspace_record_total ?? merge.workspace_total,
+      workspace_competitor_total:merge.workspace_competitor_total || 0,
+      workspace_source_platform_total:merge.workspace_source_platform_total || 0
     };
     const run = {
       mode:result.discovery_mode,
@@ -193,6 +198,8 @@ export default async function handler(request, context) {
       direct_source_requests:result.direct_source_requests,
       rejected_candidate_count:result.rejections.length,
       returned_count:result.opportunities.length,
+      competitor_count:result.competitors?.length || 0,
+      source_platform_count:result.source_platforms?.length || 0,
       counters,
       usage:result.usage,
       web_search_call_count:result.web_search_call_count,
@@ -215,7 +222,7 @@ export default async function handler(request, context) {
     if (execution.mode === "PAID_ACCEPTANCE") run.paid_acceptance = paidRecord;
     else run.paid_execution = { ...paidRecord, mode:execution.mode, window_utc:execution.window_utc };
     await repo.saveSearchRun(run);
-    const payload = { ok:true, opportunities, run, replayed:false };
+    const payload = { ok:true, records:opportunities, opportunities, sales_opportunities:result.opportunities, run, replayed:false };
     await coordinator.completeOperation(execution.run_id, execution.operation_id, payload, reservation.fence_token);
     return json(payload);
   } catch (error) {

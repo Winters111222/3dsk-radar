@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { bandForScore, validateOpportunity } from "../lib/domain.mjs";
-import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES, evaluateSourceTruth, normalizeSourceDate } from "../lib/source-truth.mjs";
+import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES, evaluateSourceTruth, isRecentSourceDate, normalizeSourceDate } from "../lib/source-truth.mjs";
 import { OPPORTUNITY_CATEGORIES, REMOTE_SCOPES } from "./search-contract.mjs";
 import {
   INDEX_DISCOVERY_SOURCE_POLICIES,
@@ -8,6 +8,7 @@ import {
   indexDiscoveryMetadata,
   indexDiscoveryPolicyForUrl
 } from "./index-discovery.mjs";
+import { classifyRecordCandidate, isSalesOpportunityRecord } from "./record-classification.mjs";
 
 const TRACKING_PARAMS = new Set([
   "fbclid", "gclid", "mc_cid", "mc_eid", "ref", "referrer", "source"
@@ -174,7 +175,7 @@ const DIAGNOSTIC_REJECTION_CODES = new Set([
   "source_not_allowed_for_index_discovery",
   "missing_core_identity",
   "invalid_opportunity_kind",
-  "seller_not_opportunity",
+  "partner_without_buyer_signal",
   "unknown_commercial_role",
   "inactive_notice",
   "studio_ineligible",
@@ -211,7 +212,10 @@ function buildIndexDiscoveryDiagnostics({ verifiedSourceUrls, outcomes, accepted
     (url) => indexDiscoveryPolicyForUrl(url)?.id || "unattributed"
   );
   const seenBySource = countBy(outcomes, (item) => item.source_id);
-  const acceptedBySource = countBy(accepted, (item) => item.discovery_source_id || "unattributed");
+  const acceptedSalesBySource = countBy(accepted.filter(isSalesOpportunityRecord), (item) => item.discovery_source_id || "unattributed");
+  const competitorsBySource = countBy(accepted.filter((item) => item.record_kind === "COMPETITOR"), (item) => item.discovery_source_id || "unattributed");
+  const platformsBySource = countBy(accepted.filter((item) => item.record_kind === "SOURCE_PLATFORM"), (item) => item.discovery_source_id || "unattributed");
+  const acceptedSales = accepted.filter(isSalesOpportunityRecord);
   const returnedBySource = countBy(returned, (item) => item.discovery_source_id || "unattributed");
   const rejectedBySource = countBy(outcomes.filter((item) => item.rejection), (item) => item.source_id);
   const rejectionReasons = countBy(outcomes.filter((item) => item.rejection), (item) => item.rejection);
@@ -230,10 +234,12 @@ function buildIndexDiscoveryDiagnostics({ verifiedSourceUrls, outcomes, accepted
         ? "NO_STRUCTURED_CANDIDATES"
         : accepted.length === 0
           ? "ALL_CANDIDATES_REJECTED"
-          : "ALL_ACCEPTED_CANDIDATES_DEDUPLICATED",
+          : acceptedSales.length === 0
+            ? "NO_SALES_RECORDS_AFTER_CLASSIFICATION"
+            : "ALL_ACCEPTED_CANDIDATES_DEDUPLICATED",
     rejection_reasons:Object.fromEntries([...rejectionReasons.entries()].sort(([a], [b]) => a.localeCompare(b))),
     source_yield:sourceIds.map((sourceId) => {
-      const acceptedCount = acceptedBySource.get(sourceId) || 0;
+      const acceptedCount = acceptedSalesBySource.get(sourceId) || 0;
       const returnedCount = returnedBySource.get(sourceId) || 0;
       return {
         source_id:sourceId,
@@ -242,6 +248,8 @@ function buildIndexDiscoveryDiagnostics({ verifiedSourceUrls, outcomes, accepted
         eligible_detail_urls:detailBySource.get(sourceId) || 0,
         candidates_seen:seenBySource.get(sourceId) || 0,
         candidates_accepted:acceptedCount,
+        competitors_detected:competitorsBySource.get(sourceId) || 0,
+        source_platforms_detected:platformsBySource.get(sourceId) || 0,
         candidates_rejected:rejectedBySource.get(sourceId) || 0,
         duplicates_removed:Math.max(0, acceptedCount - returnedCount),
         returned:returnedCount
@@ -269,7 +277,11 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
     : candidate.opportunity_kind === "POTENTIAL_LEAD" ? "POTENTIAL_LEAD" : null;
   if (!requestedKind) return { opportunity: null, rejection: "invalid_opportunity_kind" };
 
-  const commercialRole = COMMERCIAL_ROLES.includes(candidate.commercial_role) ? candidate.commercial_role : "UNKNOWN";
+  const requestedCommercialRole = COMMERCIAL_ROLES.includes(candidate.commercial_role) ? candidate.commercial_role : "UNKNOWN";
+  const classification = classifyRecordCandidate({ ...candidate, source_url:sourceUrl, commercial_role:requestedCommercialRole });
+  if (!classification.record_kind) return { opportunity:null, rejection:classification.rejection || "other_validation_failure" };
+  const recordKind = classification.record_kind;
+  const commercialRole = classification.effective_commercial_role;
   const noticeStatus = NOTICE_STATUSES.includes(candidate.notice_status) ? candidate.notice_status : "UNKNOWN";
   const studioEligibility = STUDIO_ELIGIBILITY_VALUES.includes(candidate.studio_eligibility) ? candidate.studio_eligibility : "UNKNOWN";
   const scopeFit = SCOPE_FITS.includes(candidate.scope_fit) ? candidate.scope_fit : "OUT_OF_SCOPE";
@@ -279,19 +291,28 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
   const acceptanceEvidenceRecorded = (Array.isArray(candidate.source_evidence) ? candidate.source_evidence : []).some((item) =>
     normalizeUrl(item?.url) === acceptanceSourceUrl && Boolean(safeString(item?.note)));
   const acceptanceVerified = noticeStatus === "OPEN" && Boolean(acceptanceSourceUrl && usableSourceUrls.has(acceptanceSourceUrl) && acceptanceEvidenceRecorded);
-  const truth = evaluateSourceTruth({
-    requestedKind,
-    commercialRole,
-    noticeStatus,
-    studioEligibility,
-    scopeFit,
-    publishedDate,
-    sourceUpdatedDate,
-    acceptanceVerified,
-    nowIso
-  });
-  if (!truth.ok) return { opportunity:null, rejection:truth.rejection };
-  const opportunityKind = truth.opportunityKind;
+  let opportunityKind = null;
+  let freshnessBasis = null;
+  if (recordKind === "SALES_OPPORTUNITY") {
+    const truth = evaluateSourceTruth({
+      requestedKind,
+      commercialRole,
+      noticeStatus,
+      studioEligibility,
+      scopeFit,
+      publishedDate,
+      sourceUpdatedDate,
+      acceptanceVerified,
+      nowIso
+    });
+    if (!truth.ok) return { opportunity:null, rejection:truth.rejection };
+    opportunityKind = truth.opportunityKind;
+    freshnessBasis = truth.freshnessBasis;
+  } else if (isRecentSourceDate(publishedDate, nowIso)) {
+    freshnessBasis = "PUBLISHED_DATE";
+  } else if (isRecentSourceDate(sourceUpdatedDate, nowIso)) {
+    freshnessBasis = "SOURCE_UPDATED_DATE";
+  }
 
   const rawCategories = Array.isArray(candidate.categories) ? candidate.categories : [];
   const categories = [...new Set(rawCategories
@@ -303,10 +324,12 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
 
   const fitScore = safeScore(candidate.fit_score);
   const winScore = safeScore(candidate.win_score);
-  const budget = normalizeBudget(candidate, usableSourceUrls);
+  const budget = recordKind === "SALES_OPPORTUNITY"
+    ? normalizeBudget(candidate, usableSourceUrls)
+    : normalizeBudget({ budget_type:"UNKNOWN", budget_reason:"Not applicable to a non-sales intelligence record." }, usableSourceUrls);
 
-  let contactEmail = isValidEmail(candidate.contact_email) ? candidate.contact_email.trim() : null;
-  let contactEmailSource = normalizeUrl(candidate.contact_email_source);
+  let contactEmail = recordKind === "SALES_OPPORTUNITY" && isValidEmail(candidate.contact_email) ? candidate.contact_email.trim() : null;
+  let contactEmailSource = recordKind === "SALES_OPPORTUNITY" ? normalizeUrl(candidate.contact_email_source) : null;
   if (!contactEmailSource || !usableSourceUrls.has(contactEmailSource)) {
     contactEmail = null;
     contactEmailSource = null;
@@ -322,7 +345,7 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
     return {
       type: ["PRIMARY_SOURCE", "SECONDARY_SOURCE", "CONTACT_SOURCE", "SIGNAL_SOURCE"].includes(item.type)
         ? item.type
-        : opportunityKind === "OPEN_OPPORTUNITY" ? "PRIMARY_SOURCE" : "SIGNAL_SOURCE",
+        : recordKind === "SALES_OPPORTUNITY" && opportunityKind === "OPEN_OPPORTUNITY" ? "PRIMARY_SOURCE" : "SIGNAL_SOURCE",
       url,
       note: safeString(item.note) || "Verified source returned by hosted web search."
     };
@@ -330,7 +353,7 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
 
   if (!evidence.some((item) => item.url === sourceUrl)) {
     evidence.unshift({
-      type: opportunityKind === "OPEN_OPPORTUNITY" ? "PRIMARY_SOURCE" : "SIGNAL_SOURCE",
+      type: recordKind === "SALES_OPPORTUNITY" && opportunityKind === "OPEN_OPPORTUNITY" ? "PRIMARY_SOURCE" : "SIGNAL_SOURCE",
       url: sourceUrl,
       note: "Primary source URL verified against hosted web-search sources."
     });
@@ -343,6 +366,10 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
   const sourceDomain = new URL(sourceUrl).hostname.replace(/^www\./, "");
   const opportunity = {
     id: stableId(sourceUrl, company, title),
+    record_kind: recordKind,
+    record_kind_reason: classification.reason,
+    classified_at: nowIso,
+    classification_history: [],
     is_fixture: false,
     canonical_url: sourceUrl,
     source_url: sourceUrl,
@@ -361,9 +388,9 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
     remote_scope: REMOTE_SCOPES.includes(candidate.remote_scope) ? candidate.remote_scope : "NOT_STATED",
     published_date: publishedDate,
     source_updated_date: sourceUpdatedDate,
-    freshness_basis: truth.freshnessBasis,
-    acceptance_source_url: acceptanceVerified ? acceptanceSourceUrl : null,
-    acceptance_verified_at: acceptanceVerified ? nowIso : null,
+    freshness_basis: freshnessBasis,
+    acceptance_source_url: recordKind === "SALES_OPPORTUNITY" && acceptanceVerified ? acceptanceSourceUrl : null,
+    acceptance_verified_at: recordKind === "SALES_OPPORTUNITY" && acceptanceVerified ? nowIso : null,
     first_seen: nowIso,
     last_seen: nowIso,
     is_new: true,
@@ -372,8 +399,8 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
     win_score: winScore,
     win_band: bandForScore(winScore),
     ...budget,
-    contact_name: safeString(candidate.contact_name),
-    contact_role: safeString(candidate.contact_role),
+    contact_name: recordKind === "SALES_OPPORTUNITY" ? safeString(candidate.contact_name) : null,
+    contact_role: recordKind === "SALES_OPPORTUNITY" ? safeString(candidate.contact_role) : null,
     contact_email: contactEmail,
     contact_email_source: contactEmailSource,
     apply_url: applyUrl,
@@ -415,15 +442,15 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12, ind
   if (!verifiedSourceUrls.size) throw new Error("Hosted web search returned no verifiable source URLs");
 
   const parsed = parseStructuredSearchResponse(response);
-  const opportunities = [];
+  const acceptedRecords = [];
   const rejections = [];
   const outcomes = [];
-  const candidates = parsed.opportunities.slice(0, Math.max(1, Math.min(30, maxResults)));
+  const candidates = parsed.opportunities.slice(0, 30);
   for (const candidate of candidates) {
     const normalized = normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { indexDiscovery });
     if (normalized.opportunity) {
-      opportunities.push(normalized.opportunity);
-      outcomes.push({ source_id:normalized.opportunity.discovery_source_id || sourceIdForCandidate(candidate), rejection:null });
+      acceptedRecords.push(normalized.opportunity);
+      outcomes.push({ source_id:normalized.opportunity.discovery_source_id || sourceIdForCandidate(candidate), record_kind:normalized.opportunity.record_kind, rejection:null });
     } else {
       const rejection = diagnosticRejectionCode(normalized.rejection);
       rejections.push(rejection);
@@ -431,18 +458,29 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12, ind
     }
   }
 
-  const deduped = dedupeOpportunities(opportunities);
+  const dedupedRecords = dedupeOpportunities(acceptedRecords);
+  const acceptedSales = acceptedRecords.filter(isSalesOpportunityRecord);
+  const dedupedSales = dedupedRecords.filter(isSalesOpportunityRecord);
+  const opportunities = dedupedSales.slice(0, Math.max(1, Math.min(24, maxResults)));
+  const competitors = dedupedRecords.filter((item) => item.record_kind === "COMPETITOR");
+  const sourcePlatforms = dedupedRecords.filter((item) => item.record_kind === "SOURCE_PLATFORM");
+  const records = [...opportunities, ...competitors, ...sourcePlatforms];
   const rejection_reasons = Object.fromEntries([...new Set(rejections)].sort().map((reason) => [reason, rejections.filter((item) => item === reason).length]));
   return {
-    opportunities: deduped,
+    records,
+    opportunities,
+    competitors,
+    source_platforms:sourcePlatforms,
     rejections,
     verified_source_count: verifiedSourceUrls.size,
-    ...(indexDiscovery ? { diagnostics:buildIndexDiscoveryDiagnostics({ verifiedSourceUrls, outcomes, accepted:opportunities, returned:deduped }) } : {}),
+    ...(indexDiscovery ? { diagnostics:buildIndexDiscoveryDiagnostics({ verifiedSourceUrls, outcomes, accepted:acceptedRecords, returned:opportunities }) } : {}),
     counters: {
       candidates_seen: candidates.length,
-      candidates_verified: deduped.length,
+      candidates_verified: opportunities.length,
+      competitors_classified: competitors.length,
+      source_platforms_classified: sourcePlatforms.length,
       candidates_rejected: rejections.length,
-      duplicates_removed: opportunities.length - deduped.length,
+      duplicates_removed: acceptedSales.length - dedupedSales.length,
       rejection_reasons
     }
   };

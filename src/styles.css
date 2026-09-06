@@ -65,7 +65,7 @@ a { color:inherit; }
 .source-run-candidates a { flex-shrink:0; color:#d5dce4; font-size:10px; font-weight:850; text-decoration:none; border-bottom:1px solid #546273; }
 .raw-candidate-badge { color:#f1d78f; font-size:9px; font-weight:900; letter-spacing:.06em; }
 .source-run-candidates .source-candidate-empty { color:#778493; justify-content:flex-start; }
-.summary-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin:14px 0; }
+.summary-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin:14px 0; }
 .summary-card { padding:20px 22px; border:1px solid var(--line); background:#101419; border-radius:15px; min-width:0; }
 .summary-card .label { color:#8693a2; font-size:11px; font-weight:800; letter-spacing:.11em; }
 .summary-card .value { display:block; font-size:27px; font-weight:850; letter-spacing:-.035em; margin-top:8px; overflow:hidden; text-overflow:ellipsis; }
@@ -110,6 +110,10 @@ tr[data-id]:hover td, tr.is-selected td { background:#171d24; }
 .kind-badge { padding:5px 8px; font-size:9px; }
 .kind-badge.open { color:#b6d3ff; border-color:#294667; background:#111b27; }
 .kind-badge.lead { color:#f4cf74; border-color:#5c4a20; background:#211b0e; }
+.kind-badge.competitor { color:#d7b6ff; border-color:#563d72; background:#1c1426; }
+.intelligence-lock { margin-bottom:16px; padding:14px; display:grid; gap:6px; border:1px solid #563d72; border-radius:12px; background:#1c1426; }
+.intelligence-lock strong { color:#d7b6ff; font-size:10px; letter-spacing:.1em; }
+.intelligence-lock span { color:#bca7d2; font-size:12px; line-height:1.5; }
 .manual-verify-badge { display:inline-flex; margin:6px 0 0; padding:4px 7px; border:1px solid #665126; border-radius:999px; color:#f1d78f; background:#211b0e; font-size:8px; font-weight:900; letter-spacing:.07em; }
 .manual-verify-badge.verified { color:#aee3be; border-color:#294936; background:#102018; }
 .budget-cell { min-width:145px; }
