@@ -9,7 +9,8 @@
     "required_access_status": "AUTOMATION_APPROVED",
     "required_yield_status": "SOURCE_SPECIFIC_PRECISION_PASSED",
     "minimum_precision": 0.8,
-    "minimum_reviewed_accepted_hits": 30,
+    "minimum_reviewed_candidates": 30,
+    "precision_definition": "accepted_relevant_hits / reviewed_candidates",
     "note_cz": "Tier A dokládá obsahovou relevanci, nikoli oprávnění nebo připravenost crawleru. Aktivace vyžaduje samostatné schválení přístupu a měření výtěžnosti."
   },
   "tier_definitions": {
@@ -26,9 +27,18 @@
       "action": "HOLD_ACCESS_BLOCKED",
       "runtime_eligible": false,
       "positive_evidence_urls": [
-        "https://polycount.com/discussion/239037/paid-freelance-stylized-game-artist-s-characters-animation-environment-art"
+        "https://polycount.com/discussion/239037/paid-freelance-stylized-game-artist-s-characters-animation-environment-art",
+        "https://polycount.com/discussion/238763/paid-real-time-character-hair-artist-mens-hairstyles-for-ios-ar-app-usdz-glb"
       ],
-      "rationale_cz": "Doložena placená poptávka po character art; konkrétní příklad je však USA-only a automatizovaný přístup není schválen."
+      "access_status": "COMMERCIAL_PERMISSION_UNCONFIRMED",
+      "access_evidence_urls": [
+        "https://polycount.com/discussion/193727/terms-of-service"
+      ],
+      "yield_status": "NOT_MEASURED",
+      "reviewed_candidates": 0,
+      "accepted_relevant_hits": 0,
+      "measured_precision": null,
+      "rationale_cz": "Doloženy dvě placené character zakázky včetně opakované sady 20+ real-time účesů. Uživatelský obsah je však licencovaný NonCommercial a komerční automatizovaný reuse není potvrzen."
     },
     {
       "source_id": "unreal_job_offerings",
@@ -37,9 +47,18 @@
       "action": "HOLD_ACCESS_BLOCKED",
       "runtime_eligible": false,
       "positive_evidence_urls": [
-        "https://forums.unrealengine.com/t/paid-metahuman-expert-needed-for-character-assembly-and-wardrobe-setup/2734270"
+        "https://forums.unrealengine.com/t/paid-metahuman-expert-needed-for-character-assembly-and-wardrobe-setup/2734270",
+        "https://forums.unrealengine.com/t/low-poly-character-modeller-needed/43032"
       ],
-      "rationale_cz": "Doložena placená MetaHuman assembly a wardrobe oprava; automatizovaný přístup zůstává blokovaný access review."
+      "access_status": "BLOCKED_BY_ROBOTS",
+      "access_evidence_urls": [
+        "https://forums.unrealengine.com/robots.txt"
+      ],
+      "yield_status": "NOT_MEASURED",
+      "reviewed_candidates": 0,
+      "accepted_relevant_hits": 0,
+      "measured_precision": null,
+      "rationale_cz": "Doloženy placené MetaHuman a character-modeling nabídky. Robots pravidla blokují interní search i topic/category RSS cesty, takže navržený crawler nemá schválenou vstupní cestu."
     },
     {
       "source_id": "blender_paid",
@@ -57,20 +76,38 @@
       "action": "HOLD_FOR_APPROVED_API",
       "runtime_eligible": false,
       "positive_evidence_urls": [
-        "https://www.upwork.com/freelance-jobs/apply/Scan-Cleanup-Full-Body-Human-Photogrammetry-Ongoing_~022093482015133487827/"
+        "https://www.upwork.com/freelance-jobs/apply/Scan-Cleanup-Full-Body-Human-Photogrammetry-Ongoing_~022093482015133487827/",
+        "https://www.upwork.com/freelance-jobs/apply/Unreal-Engine-MetaHuman-Technical-Artist_~022095854476309693425/"
       ],
-      "rationale_cz": "Silný core důkaz: full-body human scan cleanup, opakované dávky a dotaz na týmovou kapacitu; automatizace jen přes schválený use case."
+      "access_status": "APPROVED_API_REQUIRED",
+      "access_evidence_urls": [
+        "https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly"
+      ],
+      "yield_status": "NOT_MEASURED",
+      "reviewed_candidates": 0,
+      "accepted_relevant_hits": 0,
+      "measured_precision": null,
+      "rationale_cz": "Silné core důkazy: opakovaný full-body scan cleanup a placený MetaHuman setup. Automatizace smí použít jen schválený API use case; HTML scraping zůstává zakázaný."
     },
     {
       "source_id": "freelancer_3d",
       "tier": "A",
       "historical_status": "PROVEN_DIRECT_BUYER",
-      "action": "HOLD_FOR_APPROVED_API",
+      "action": "HOLD_FOR_WRITTEN_API_PERMISSION",
       "runtime_eligible": false,
       "positive_evidence_urls": [
-        "https://www.freelancer.com/projects/3d-modelling/Character-Texture-Artist"
+        "https://www.freelancer.com/projects/3d-modelling/Character-Texture-Artist",
+        "https://www.freelancer.com/projects/photoshop/provide-human-body-scan-model"
       ],
-      "rationale_cz": "Doložena historická poptávka po photogrammetry heads a 3D athlete characters; nabídka je stará a uzavřená, slouží pouze jako důkaz relevance zdroje."
+      "access_status": "WRITTEN_PERMISSION_REQUIRED",
+      "access_evidence_urls": [
+        "https://www.freelancer.com/about/terms"
+      ],
+      "yield_status": "NOT_MEASURED",
+      "reviewed_candidates": 0,
+      "accepted_relevant_hits": 0,
+      "measured_precision": null,
+      "rationale_cz": "Doloženy photogrammetry heads, 3D athlete characters a full-body scan cleanup. Oficiální API existuje, ale agregace s nabídkami jiných webů vyžaduje výslovné písemné povolení."
     },
     {
       "source_id": "peopleperhour_3d",
@@ -179,13 +216,21 @@
       "source_id": "reddit_gamedevclassifieds",
       "tier": "A",
       "historical_status": "PROVEN_DIRECT_BUYER",
-      "action": "HOLD_FOR_APPROVED_API",
+      "action": "HOLD_FOR_COMMERCIAL_API_AGREEMENT",
       "runtime_eligible": false,
       "positive_evidence_urls": [
         "https://www.reddit.com/r/gameDevClassifieds/comments/1kktbal/hiring_3d_character_artist_webcomic_in_development/",
         "https://www.reddit.com/r/gameDevClassifieds/comments/1fyhewr/paid_indie_developer_looking_for_3d_character/"
       ],
-      "rationale_cz": "Doloženy dvě placené character poptávky, ale board míchá HIRING/FOR HIRE a automatizace vyžaduje schválenou datovou cestu."
+      "access_status": "COMMERCIAL_API_AGREEMENT_REQUIRED",
+      "access_evidence_urls": [
+        "https://www.redditinc.com/policies/data-api-terms"
+      ],
+      "yield_status": "NOT_MEASURED",
+      "reviewed_candidates": 0,
+      "accepted_relevant_hits": 0,
+      "measured_precision": null,
+      "rationale_cz": "Doloženy dvě placené character poptávky, ale board míchá HIRING/FOR HIRE. Komerční Data API použití vyžaduje OAuth a samostatnou dohodu s Reddit."
     },
     {
       "source_id": "contra_opportunities",
