@@ -1,6 +1,7 @@
 import { envValue, paidAcceptanceContextAllowed, sourceCollectionEnabled } from "../../src/server/runtime.mjs";
 import { productionSearchConfiguration, productionSearchState } from "../../src/server/production-search-policy.mjs";
 import { productionReplyState } from "../../src/server/production-reply-policy.mjs";
+import { sourceConnectorReadiness } from "../../src/server/wide-v3-source-plan.mjs";
 
 export default async (_request, context) => {
   const liveAIEnabled = envValue("RADAR_LIVE_AI_ENABLED").toLowerCase() === "true";
@@ -25,6 +26,9 @@ export default async (_request, context) => {
     cloud_browser: productionSearchConfig?.firecrawl_enabled ? "FIRECRAWL_READY" : "LOCKED",
     cloud_browser_request_limit: productionSearchConfig?.firecrawl_request_limit || 0,
     cloud_browser_credit_cap: productionSearchConfig?.firecrawl_credit_cap || 0,
+    official_source_discovery: productionSearchConfig?.official_sources_enabled ? "READY" : "LOCKED",
+    official_source_request_limit: productionSearchConfig?.official_source_request_limit || 0,
+    source_signal_ingest: envValue("RADAR_SOURCE_SIGNAL_INGEST_ENABLED").toLowerCase() === "true" ? "ENABLED" : "LOCKED",
     production_reply: controlledProductionReply,
     paid_acceptance: paidAcceptanceEnabled ? (paidAcceptancePreview ? "ARMED" : "CONTEXT_BLOCKED") : "LOCKED",
     deploy_context: context?.deploy?.context || "unknown",
@@ -33,6 +37,13 @@ export default async (_request, context) => {
     search_backend: "IMPLEMENTED",
     source_collection: sourceCollectionEnabled() ? "ENABLED" : "LOCKED",
     source_collectors: { ted:"IMPLEMENTED_API_VERIFIED", find_tender:"IMPLEMENTED_API_VERIFIED", contracts_finder:"IMPLEMENTED_API_VERIFIED", community:"BLOCKED_ACCESS_REVIEW" },
+    source_connectors_v3:sourceConnectorReadiness(envValue).map((item) => ({
+      id:item.id,
+      access_method:item.access_method,
+      paid:item.paid,
+      status:item.status,
+      missing_configuration:item.missing_configuration
+    })),
     source_run_engine: sourceCollectionEnabled() ? "IMPLEMENTED_ENABLED" : "IMPLEMENTED_LOCKED",
     persistence: "NETLIFY_BLOBS",
     response_generation: controlledProductionReply === "READY" ? "IMPLEMENTED_ENABLED" : "IMPLEMENTED_LOCKED"

@@ -3,6 +3,7 @@ import { authorizeRequest } from "../../src/server/auth.mjs";
 import { loadPublicCompanyProfile } from "../../src/server/profile.mjs";
 import { runOpportunitySearch, runWideOpportunitySearch } from "../../src/server/openai-search.mjs";
 import { runFirecrawlWideDiscovery } from "../../src/server/firecrawl-discovery.mjs";
+import { mergeStoredSourceSignals, runOfficialWideDiscovery } from "../../src/server/official-source-run.mjs";
 import { estimateSearchCost } from "../../src/server/search-cost.mjs";
 import { getStateRepository } from "../../src/server/netlify-state.mjs";
 import { paidCoordinatorReadiness } from "../../src/server/paid-run-coordinator-contract.mjs";
@@ -127,18 +128,28 @@ export default async function handler(request, context) {
   try {
     const profile = await loadPublicCompanyProfile();
     const nowIso = execution.now_iso;
+    const repo = await getStateRepository(request, context);
     dispatched = true;
     const preDiscovery = execution.firecrawl_enabled
       ? await runFirecrawlWideDiscovery({
         apiKey:firecrawlApiKey,
-        shards:execution.shards,
+        shards:execution.firecrawl_shards || execution.shards,
         fetchImpl:globalThis.__RADAR_TEST_FIRECRAWL_FETCH__ || fetch
       })
       : null;
     if (preDiscovery && (preDiscovery.requests > execution.firecrawl_request_limit || preDiscovery.credits_used > execution.firecrawl_credit_cap)) {
       throw new Error("FIRECRAWL_EXECUTION_BOUNDARY_EXCEEDED");
     }
-    const result = execution.search_profile === "WIDE_INDEX"
+    const officialDiscovery = execution.official_sources_enabled
+      ? mergeStoredSourceSignals(await runOfficialWideDiscovery({
+        getEnv:envValue,
+        fetchImpl:globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__ || fetch
+      }), typeof repo.listSourceSignals === "function" ? await repo.listSourceSignals() : [], nowIso)
+      : null;
+    if (officialDiscovery && officialDiscovery.requests > execution.official_source_request_limit) {
+      throw new Error("OFFICIAL_SOURCE_REQUEST_BOUNDARY_EXCEEDED");
+    }
+    const result = ["WIDE_INDEX", "WIDE_V3"].includes(execution.search_profile)
       ? await runWideOpportunitySearch({
         apiKey,
         model:execution.model,
@@ -149,7 +160,9 @@ export default async function handler(request, context) {
         maxResultsPerShard:6,
         maxToolCallsPerShard:execution.max_tool_calls_per_request,
         maxOutputTokensPerShard:execution.max_output_tokens,
-        preDiscovery
+        preDiscovery,
+        officialDiscovery,
+        searchProfile:execution.search_profile
       })
       : await runOpportunitySearch({
         apiKey,
@@ -172,7 +185,6 @@ export default async function handler(request, context) {
       Math.ceil(estimatedCost.total_usd * 1_000_000),
       reservation.fence_token
     );
-    const repo = await getStateRepository(request, context);
     const merge = await repo.mergeSearchResultsWithStats(result.records || result.opportunities, nowIso);
     const opportunities = merge.opportunities;
     const counters = {
@@ -185,11 +197,12 @@ export default async function handler(request, context) {
       list_pages_fetched:null,
       detail_pages_fetched:null,
       ...result.counters,
-      source_requests:result.cloud_browser_requests || 0,
+      source_requests:(result.cloud_browser_requests || 0) + (result.direct_source_requests || 0),
       direct_source_requests:result.direct_source_requests,
       cloud_browser_requests:result.cloud_browser_requests || 0,
       cloud_pages_rendered:result.cloud_pages_rendered || 0,
       firecrawl_credits_used:result.firecrawl_credits_used || 0,
+      official_source_requests:result.direct_source_requests || 0,
       openai_requests:result.openai_request_count,
       retries:0,
       competitors_classified:result.counters.competitors_classified || 0,
@@ -216,6 +229,7 @@ export default async function handler(request, context) {
       allowed_domains:result.allowed_domains,
       direct_source_requests:result.direct_source_requests,
       cloud_browser:result.cloud_browser || null,
+      official_source_discovery:result.official_source_discovery || null,
       cloud_browser_requests:result.cloud_browser_requests || 0,
       cloud_pages_rendered:result.cloud_pages_rendered || 0,
       firecrawl_credits_used:result.firecrawl_credits_used || 0,
@@ -239,7 +253,7 @@ export default async function handler(request, context) {
         fence_token:reservation.fence_token,
         coordinator:"NETLIFY_DATABASE",
         openai_requests:result.openai_request_count,
-        source_requests:result.cloud_browser_requests || 0,
+        source_requests:(result.cloud_browser_requests || 0) + (result.direct_source_requests || 0),
         firecrawl_credits_used:result.firecrawl_credits_used || 0,
         retries:0
     };

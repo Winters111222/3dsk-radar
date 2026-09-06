@@ -71,6 +71,7 @@ function clearWarmState() {
   delete globalThis.__RADAR_TEST_STATE_REPOSITORY__;
   delete globalThis.__RADAR_TEST_PAID_COORDINATOR__;
   delete globalThis.__RADAR_TEST_FIRECRAWL_FETCH__;
+  delete globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__;
 }
 
 test("search function rejects non-POST without touching paid path", async () => {
@@ -520,6 +521,86 @@ test("Firecrawl WIDE v2 performs exactly five bounded pre-discovery calls before
     assert.equal(payload.run.firecrawl_credits_used, 26);
     assert.equal(payload.run.paid_execution.source_requests, 5);
     assert.equal(payload.run.paid_execution.retries, 0);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("WIDE V3 performs one configured official-source request and eight Sol verification shards", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_V3",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"3.00",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"32",
+    RADAR_OFFICIAL_SOURCE_DISCOVERY_ENABLED:"true",
+    RADAR_OFFICIAL_SOURCE_MAX_REQUESTS:"4",
+    RADAR_BLUESKY_SEARCH_ENABLED:"true",
+    OPENAI_API_KEY:"fake-openai-key"
+  });
+  const sourceForFirstDomain = {
+    "upwork.com":SOURCE,
+    "reddit.com":"https://www.reddit.com/r/gameDevClassifieds/comments/abc123/hiring_character_artist/",
+    "workwithindies.com":"https://workwithindies.com/careers/example-studio-character-artist",
+    "greenhouse.io":"https://boards.greenhouse.io/example/jobs/123",
+    "ted.europa.eu":"https://ted.europa.eu/en/notice/-/detail/123456-2026",
+    "linkedin.com":"https://www.linkedin.com/jobs/view/123",
+    "een.ec.europa.eu":"https://een.ec.europa.eu/partnering-opportunities/example"
+  };
+  let officialRequests = 0;
+  let openaiRequests = 0;
+  const openaiBodies = [];
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator({capMicrousd:3_000_000});
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = {
+    mergeSearchResultsWithStats:async (items) => ({opportunities:items,new_count:items.length,updated_count:0,workspace_total:items.length}),
+    saveSearchRun:async () => {}
+  };
+  globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__ = async () => {
+    officialRequests += 1;
+    return new Response(JSON.stringify({ posts:[{
+      uri:"at://did:plc:buyer/app.bsky.feed.post/3signal",
+      author:{handle:"buyer.bsky.social"},
+      record:{text:"Need an external 3D character team",createdAt:"2026-09-06T12:00:00Z"}
+    }] }), {status:200});
+  };
+  globalThis.fetch = async (_url, options) => {
+    openaiRequests += 1;
+    const request = JSON.parse(options.body);
+    openaiBodies.push(request);
+    const firstDomain = request.tools[0].filters.allowed_domains[0];
+    const source = sourceForFirstDomain[firstDomain];
+    return new Response(JSON.stringify({
+      id:`resp-v3-${openaiRequests}`,
+      model:"gpt-5.6-sol",
+      usage:{input_tokens:60,output_tokens:20,total_tokens:80},
+      output:[
+        {type:"web_search_call",action:{sources:[{url:source,title:"source"}]}},
+        {type:"message",content:[{type:"output_text",text:JSON.stringify({opportunities:firstDomain === "upwork.com" ? [candidate()] : []})}]}
+      ]
+    }), {status:200});
+  };
+  try {
+    const response = await handler(new Request("https://radar.test/api/search", {
+      method:"POST",
+      headers:{authorization:"Bearer team-secret","content-type":"application/json"},
+      body:"{}"
+    }), {deploy:{context:"production"}});
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(officialRequests, 1);
+    assert.equal(openaiRequests, 8);
+    assert.equal(payload.run.search_profile, "WIDE_V3");
+    assert.equal(payload.run.model, "gpt-5.6-sol");
+    assert.equal(payload.run.direct_source_requests, 1);
+    assert.equal(payload.run.paid_execution.source_requests, 1);
+    assert.equal(payload.run.official_source_discovery.candidates_seen, 1);
+    assert.equal(JSON.stringify(payload.run.official_source_discovery).includes("external 3D character"), false);
+    assert.equal(openaiBodies.some((item) => item.input.includes("buyer.bsky.social")), true);
   } finally {
     globalThis.fetch = oldFetch;
     restore();

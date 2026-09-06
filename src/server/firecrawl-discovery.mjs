@@ -30,10 +30,14 @@ const QUERY_BY_SHARD = Object.freeze({
   artist_communities:'("3D character" OR photogrammetry OR "scan cleanup" OR "digital human") (paid OR hiring OR contract OR freelance)',
   contract_and_ats:'("character artist" OR "character outsourcing" OR photogrammetry OR "digital human" OR "external development") (contract OR freelance OR vendor OR outsourcing)',
   public_procurement:'(photogrammetry OR "3D scanning" OR "digital human" OR "character production" OR "facial capture") (tender OR RFP OR RFQ OR procurement)',
-  worldwide_multilingual:'("3D character" OR photogrammetry OR "digital human" OR "scan cleanup" OR fotogrammetrie OR digitaler Mensch OR personnage 3D OR escaneo 3D OR キャラクター) (contract OR freelance OR vendor OR outsourcing OR tender)'
+  worldwide_multilingual:'("3D character" OR photogrammetry OR "digital human" OR "scan cleanup" OR fotogrammetrie OR digitaler Mensch OR personnage 3D OR escaneo 3D OR キャラクター) (contract OR freelance OR vendor OR outsourcing OR tender)',
+  marketplaces_core:'("3D character" OR photogrammetry OR "scan cleanup" OR "digital human" OR "character outsourcing") (project OR contract OR freelance OR vendor)',
+  communities_paid:'("3D character" OR photogrammetry OR "scan cleanup" OR "digital human") (paid OR hiring OR contract OR freelance)',
+  contract_boards:'("character artist" OR "character outsourcing" OR photogrammetry OR "digital human" OR "external development") (contract OR freelance OR vendor OR outsourcing)',
+  procurement:'(photogrammetry OR "3D scanning" OR "digital human" OR "character production" OR "facial capture") (tender OR RFP OR RFQ OR procurement)'
 });
 
-const RENDER_SHARDS = new Set(["contract_and_ats", "public_procurement"]);
+const RENDER_SHARDS = new Set(["contract_and_ats", "public_procurement", "contract_boards", "procurement"]);
 const CHALLENGE_PATTERN = /verify you are human|checking your browser|captcha|automated traffic|access denied|sign in to continue|log in to continue/i;
 
 function hostnameMatches(hostname, domain) {

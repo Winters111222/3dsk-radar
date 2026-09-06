@@ -7,12 +7,12 @@ import { normalizedAcceptanceBaseUrl, runLockedDeployedAcceptance } from "../scr
 const BASE = "https://deploy-preview-20--3dsk-opportunity-radar.netlify.app";
 const COMMIT = "b".repeat(40);
 
-function transport({ commit = COMMIT, provenance = "CI_TESTED_SOURCE", live = false, source = "LOCKED" } = {}) {
+function transport({ commit = COMMIT, deployContext = "deploy-preview", provenance = "CI_TESTED_SOURCE", live = false, source = "LOCKED" } = {}) {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     const path = new URL(url).pathname;
-    if (path === "/build-metadata.json") return Response.json({ schema_version:2, service:"3dsk-opportunity-radar", commit_ref:commit, deploy_context:"deploy-preview", acceptance_profile:"LOCKED_ZERO_COST", artifact_provenance:provenance });
+    if (path === "/build-metadata.json") return Response.json({ schema_version:2, service:"3dsk-opportunity-radar", commit_ref:commit, deploy_context:deployContext, acceptance_profile:"LOCKED_ZERO_COST", artifact_provenance:provenance });
     if (path === "/api/health") return Response.json({ service:"3dsk-opportunity-radar", paid_ai_state:live ? "ENABLED" : "LOCKED", live_ai_enabled:live, source_collection:source, access_configured:true });
     const code = path === "/api/source-runs" ? "SOURCE_COLLECTION_LOCKED" : "LIVE_AI_LOCKED";
     return Response.json({ ok:false, error:{ code } }, { status:423 });
@@ -38,6 +38,14 @@ test("locked deployed acceptance verifies identity before three non-dispatching 
   assert.doesNotMatch(JSON.stringify(result), /secret-never-returned/);
 });
 
+test("locked deployed acceptance permits exact Netlify Git deploy-preview provenance", async () => {
+  const mock = transport({ provenance:"NETLIFY_GIT_DEPLOY" });
+  const result = await runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", fetchImpl:mock.fetchImpl });
+  assert.equal(result.ok, true);
+  assert.equal(result.deploy_context, "deploy-preview");
+  assert.equal(mock.calls.length, 5);
+});
+
 test("timeout reports the exact path and initiated request count without retry", async () => {
   const progress = [];
   const fetchImpl = async () => { throw new DOMException("timed out", "TimeoutError"); };
@@ -59,6 +67,10 @@ test("identity or unlocked health fails before any protected POST", async () => 
   const unsealed = transport({ provenance:"DIRECT_BUILD" });
   await assert.rejects(() => runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", fetchImpl:unsealed.fetchImpl }), /ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH/);
   assert.equal(unsealed.calls.length, 1);
+
+  const wrongContext = transport({ deployContext:"branch-deploy" });
+  await assert.rejects(() => runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", fetchImpl:wrongContext.fetchImpl }), /ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH/);
+  assert.equal(wrongContext.calls.length, 1);
 
   const unlocked = transport({ live:true });
   await assert.rejects(() => runLockedDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", fetchImpl:unlocked.fetchImpl }), /ACCEPTANCE_HEALTH_BOUNDARY_FAILED/);
