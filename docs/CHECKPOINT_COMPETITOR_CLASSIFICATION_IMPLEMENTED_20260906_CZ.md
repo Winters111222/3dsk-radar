@@ -133,6 +133,29 @@ Opakovaný read-only audit pak vrátil:
 Chráněný produkční snapshot ani nově zjištěné neveřejné detaily nejsou v tomto
 PUBLIC repozitáři zveřejněny. Produkční reclassification write nebyl proveden.
 
+### Připravený exact produkční migrační kontrakt
+
+Po schválení vlastníka byl do stejného Draft PR připraven kompletní migrační
+mechanismus. Nejde o obecný admin endpoint:
+
+- funguje pouze v Netlify `production` contextu,
+- vyžaduje platný team kód,
+- vyžaduje přesný migration id, confirmation string a SHA-256 preflight digest,
+- digest je odvozen jen z klasifikačně a historicky významných polí všech
+  sedmi records; jakýkoli mezitímní drift migraci zastaví před write,
+- před write musí plán přesně odpovídat 3 sales, 3 competitors,
+  1 source platform, 0 manual review a 4 transitions,
+- zapisují se pouze čtyři změněné record blobs a jeden autoritativní workspace
+  snapshot; nic se nemaže,
+- po zápisu se provede strong-consistency readback,
+- opakování již aplikované migrace vrátí `ALREADY_APPLIED` a 0 writes,
+- odpověď endpointu obsahuje jen agregované counters, ne chráněné records.
+
+Aktuální produkční deploy při přípravě stále běžel na base SHA
+`015d28ac2e0673db1fe1d182e4619a447ccc5750`, takže nový production-only endpoint
+není v produkci dostupný. Nebyl proveden produkční deploy, merge, env změna ani
+reclassification write.
+
 Čistá `reclassifyStoredRecord()` funkce a mock test dokazují, že budoucí
 jednorázová migrace:
 
@@ -142,7 +165,8 @@ jednorázová migrace:
 - zachová `first_seen`, `last_seen`, status, bookmark metadata, contact history
   a staré reply pole.
 
-Žádný produkční migrační endpoint ani automatický write nebyl přidán.
+Migrační endpoint je dostupný pouze ve zdrojovém kódu Draft PR a bez přesného
+kontraktu nic nezapisuje. V produkci nasazen nebyl.
 
 ## Sanitizované regresní fixtures
 
@@ -161,7 +185,7 @@ Fixtures nekopírují cizí text z Kabum ani Outscal.
 
 Na implementačním stromu:
 
-- `npm test` → **240/240 PASS**,
+- `npm test` → **248/248 PASS**,
 - `npm run build` → PASS,
 - `npm run accept:fixture` → PASS, `cost_usd: 0`,
 - `npm run accept:http` → PASS, 7 HTTP paths a 6 fixture records,
@@ -174,7 +198,10 @@ Na implementačním stromu:
 ## Co následuje
 
 1. Ověřit GitHub CI a automatický Netlify Deploy Preview nového exact PR HEADu.
-2. Teprve po samostatném explicitním souhlasu připravit přesně omezenou,
-   idempotentní produkční reclassification migraci s readbackem a bez mazání.
-3. WIDE_INDEX paid run, produkční env změna a merge PR #30 zůstávají mimo tento
+2. Migrační kód je připraven; před aplikací je nutný samostatně schválený
+   produkční deploy exact PR HEADu, protože current production SHA endpoint
+   neobsahuje.
+3. Po shodě production `COMMIT_REF`, snapshot digestu a všech counters provést
+   přesně jeden apply a okamžitý readback; při neshodě nic nezapisovat.
+4. WIDE_INDEX paid run, produkční env změna a merge PR #30 zůstávají mimo tento
    checkpoint.

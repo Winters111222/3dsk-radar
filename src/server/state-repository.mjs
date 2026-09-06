@@ -2,6 +2,7 @@ import { companyKey, emptyCompanyState, setCompanyBookmark, markEmailSent, undoL
 import { mergeOpportunityHistory, opportunityFingerprint } from "./history.mjs";
 import { normalizeBudget, normalizeUrl } from "./normalize.mjs";
 import { isSalesOpportunityRecord, recordKindOf } from "./record-classification.mjs";
+import { applyRecordReclassification, PRODUCTION_RECORD_RECLASSIFICATION, verifyRecordReclassificationReadback } from "./record-reclassification.mjs";
 import { createHash } from "node:crypto";
 
 const OP_PREFIX = "opportunities/";
@@ -140,6 +141,42 @@ export function createStateRepository(store) {
       await store.setJSON(`${OP_PREFIX}${item.id}`, item);
       await writeOpportunitySnapshot(store, upsertOpportunity(existing, item));
       return item;
+    },
+
+    async runRecordReclassification({ nowIso, contract = PRODUCTION_RECORD_RECLASSIFICATION } = {}) {
+      const current = await readStoredOpportunities(store);
+      const migration = applyRecordReclassification(current, nowIso, contract);
+      if (migration.mode === "ALREADY_APPLIED") {
+        return {
+          migration_id:contract.migration_id,
+          mode:migration.mode,
+          input_record_count:current.length,
+          records_written:0,
+          snapshot_writes:0,
+          readback_verified:verifyRecordReclassificationReadback(current, contract),
+          counts:migration.plan.proposed_counts
+        };
+      }
+      for (const record of migration.changed_records) {
+        await store.setJSON(`${OP_PREFIX}${record.id}`, record);
+      }
+      await writeOpportunitySnapshot(store, migration.records);
+      const readback = await readOpportunitySnapshot(store);
+      if (!readback || !verifyRecordReclassificationReadback(readback, contract)) {
+        const error = new Error("Record reclassification could not be verified after writing the authoritative snapshot.");
+        error.code = "RECLASSIFICATION_READBACK_FAILED";
+        error.status = 500;
+        throw error;
+      }
+      return {
+        migration_id:contract.migration_id,
+        mode:migration.mode,
+        input_record_count:current.length,
+        records_written:migration.changed_records.length,
+        snapshot_writes:1,
+        readback_verified:true,
+        counts:migration.plan.proposed_counts
+      };
     },
 
     async setOpportunityStatus(id, status, nowIso) {

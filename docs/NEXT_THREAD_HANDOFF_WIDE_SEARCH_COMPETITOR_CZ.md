@@ -6,8 +6,10 @@
 > `docs/CHECKPOINT_COMPETITOR_CLASSIFICATION_IMPLEMENTED_20260906_CZ.md`.
 > Produkční audit sedmi records byl po autorizovaném read-only načtení dokončen:
 > 3 sales, 3 competitors, 1 source platform, 0 manual review a 0 writes.
-> Následná obecná legacy-regression oprava má 240/240 testů. Produkční
-> reclassification write, placený Search, env změna a merge nebyly provedeny.
+> Následná obecná legacy-regression oprava má 248/248 testů. Produkční
+> reclassification mechanismus je připravený jako production-only, exact
+> snapshot-bound a idempotentní. Produkční deploy/write, placený Search, env
+> změna a merge nebyly provedeny.
 
 Navazuj na projekt **3D.SK Opportunity Radar** v PUBLIC repozitáři:
 
@@ -130,11 +132,13 @@ Implementuj do stejného Draft PR #30:
    historie, bookmarků, `first_seen` a `last_seen`.
 9. Spusť `npm test`, `npm run build` a `git diff --check`; aktualizuj PR body.
 
-Tento balík je nyní včetně read-only produkčního auditu dokončen. Další krok je
-pouze samostatně schválená, přesně omezená idempotentní reclassification
-migrace tří competitor records a jednoho source-platform recordu s okamžitým
-readbackem a zachováním historie. Bez takového souhlasu zůstanou produkční data
-beze změny.
+Tento balík je nyní včetně read-only produkčního auditu a migračního kódu
+dokončen. Current production deploy je stále base
+`015d28ac2e0673db1fe1d182e4619a447ccc5750` a nový endpoint neobsahuje. Další
+krok proto vyžaduje samostatně schválený produkční deploy exact PR HEADu a až
+poté přesně jeden idempotentní apply tří competitor records a jednoho
+source-platform recordu s okamžitým readbackem a zachováním historie. Bez
+takového deploy souhlasu zůstanou produkční data beze změny.
 
 ## Co nedělat
 
