@@ -103,6 +103,10 @@ export async function runPaidDeployedAcceptance({
   if (search.payload?.replayed !== false || search.payload?.run?.model !== "gpt-5.6-luna" || search.payload?.run?.attempts !== 1 || paid?.openai_requests !== 1 || paid?.source_requests !== 0 || paid?.retries !== 0 || search.payload?.run?.web_search_call_count > 3 || Number(search.payload?.run?.estimated_cost_usd) > PAID_ACCEPTANCE_MAX_USD) {
     throw new Error("PAID_ACCEPTANCE_RESULT_BOUNDARY_FAILED");
   }
+  const diagnostics = search.payload?.run?.diagnostics;
+  if (diagnostics?.schema_version !== 1 || diagnostics?.privacy !== "AGGREGATED_COUNTS_ONLY" || !Array.isArray(diagnostics?.source_yield) || diagnostics.source_yield.length < 5 || !diagnostics.source_yield.every((item) => typeof item?.source_id === "string" && Number.isInteger(item?.consulted_urls) && Number.isInteger(item?.candidates_seen) && Number.isInteger(item?.candidates_rejected) && Number.isInteger(item?.returned))) {
+    throw new Error("PAID_ACCEPTANCE_DIAGNOSTICS_MISSING");
+  }
 
   return {
     ok:true,
@@ -119,6 +123,7 @@ export async function runPaidDeployedAcceptance({
     estimated_cost_usd:search.payload.run.estimated_cost_usd,
     returned_count:search.payload.run.returned_count,
     verified_source_count:search.payload.run.verified_source_count,
+    diagnostics,
     opportunities:search.payload.opportunities.map((item) => ({
       title:item.title,
       company:item.company,

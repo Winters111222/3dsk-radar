@@ -38,3 +38,12 @@ test("operator controls have responsive layouts and the collection lock is accep
   assert.match(app, /SOURCE_COLLECTION_LOCKED/);
   assert.match(app, /prelive_lock_check/);
 });
+
+test("paid search diagnostics expose per-source yield and aggregate rejection reasons", () => {
+  for (const marker of ["Search yield diagnostics","source-yield-grid","search-rejection-summary","ZERO RESULT"]) {
+    assert.match(`${html}\n${app}`,new RegExp(marker));
+  }
+  assert.match(app,/diagnostics\.source_yield/);
+  assert.match(app,/diagnostics\.rejection_reasons/);
+  assert.match(html,/AGGREGATED COUNTS ONLY/);
+});

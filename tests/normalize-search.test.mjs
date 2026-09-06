@@ -210,3 +210,34 @@ test("index discovery strips outside-domain evidence even when it appears in hos
   assert.equal(normalized.contact_email, null);
   assert.equal(normalized.source_evidence.some((item) => item.url === outside), false);
 });
+
+test("index discovery reports privacy-safe source yield and rejection diagnostics", () => {
+  const upwork = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+  const freelancer = "https://www.freelancer.com/projects/3d-modelling/realistic-character-cleanup";
+  const reddit = "https://www.reddit.com/r/gameDevClassifieds/comments/abc123/paid_character_vendor_needed";
+  const payload = response([
+    candidate({source_url:upwork,apply_url:upwork,source_evidence:[{type:"PRIMARY_SOURCE",url:upwork,note:"Indexed detail"}]}),
+    candidate({source_url:upwork,apply_url:upwork,win_score:90,source_evidence:[{type:"PRIMARY_SOURCE",url:upwork,note:"Duplicate indexed detail"}]}),
+    candidate({company:"Seller",source_url:freelancer,apply_url:freelancer,commercial_role:"SELLER",source_evidence:[{type:"SIGNAL_SOURCE",url:freelancer,note:"Seller"}]})
+  ], [upwork, freelancer, reddit]);
+  const normalized = normalizeSearchResponse(payload,{nowIso:NOW,maxResults:12,indexDiscovery:true});
+  const bySource = Object.fromEntries(normalized.diagnostics.source_yield.map((item) => [item.source_id,item]));
+  assert.equal(normalized.diagnostics.schema_version, 1);
+  assert.equal(normalized.diagnostics.privacy, "AGGREGATED_COUNTS_ONLY");
+  assert.equal(normalized.diagnostics.zero_result_reason, null);
+  assert.deepEqual(normalized.diagnostics.rejection_reasons,{seller_not_opportunity:1});
+  assert.deepEqual(bySource.upwork,{source_id:"upwork",source_label:"Upwork",consulted_urls:1,eligible_detail_urls:1,candidates_seen:2,candidates_accepted:2,candidates_rejected:0,duplicates_removed:1,returned:1});
+  assert.deepEqual(bySource.freelancer,{source_id:"freelancer",source_label:"Freelancer",consulted_urls:1,eligible_detail_urls:1,candidates_seen:1,candidates_accepted:0,candidates_rejected:1,duplicates_removed:0,returned:0});
+  assert.equal(bySource.reddit_gamedevclassifieds.consulted_urls,1);
+  assert.equal(bySource.reddit_gamedevclassifieds.candidates_seen,0);
+  assert.doesNotMatch(JSON.stringify(normalized.diagnostics),/https?:\/\//);
+  assert.doesNotMatch(JSON.stringify(normalized.diagnostics),/Human Scan Cleanup|Seller/);
+});
+
+test("index discovery explains a zero result with no structured candidates", () => {
+  const upwork = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+  const normalized = normalizeSearchResponse(response([], [upwork]),{nowIso:NOW,maxResults:12,indexDiscovery:true});
+  assert.equal(normalized.opportunities.length,0);
+  assert.equal(normalized.diagnostics.zero_result_reason,"NO_STRUCTURED_CANDIDATES");
+  assert.deepEqual(normalized.diagnostics.rejection_reasons,{});
+});

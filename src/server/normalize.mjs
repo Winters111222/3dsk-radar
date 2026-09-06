@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 import { bandForScore, validateOpportunity } from "../lib/domain.mjs";
 import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES, evaluateSourceTruth, normalizeSourceDate } from "../lib/source-truth.mjs";
 import { OPPORTUNITY_CATEGORIES, REMOTE_SCOPES } from "./search-contract.mjs";
-import { indexDiscoveryDomainPolicyForUrl, indexDiscoveryMetadata } from "./index-discovery.mjs";
+import {
+  INDEX_DISCOVERY_SOURCE_POLICIES,
+  indexDiscoveryDomainPolicyForUrl,
+  indexDiscoveryMetadata,
+  indexDiscoveryPolicyForUrl
+} from "./index-discovery.mjs";
 
 const TRACKING_PARAMS = new Set([
   "fbclid", "gclid", "mc_cid", "mc_eid", "ref", "referrer", "source"
@@ -162,6 +167,87 @@ function fingerprint(value) {
 
 function stableId(sourceUrl, company, title) {
   return `radar-${createHash("sha256").update(`${sourceUrl}|${fingerprint(company)}|${fingerprint(title)}`).digest("hex").slice(0, 16)}`;
+}
+
+const DIAGNOSTIC_REJECTION_CODES = new Set([
+  "unverified_source_url",
+  "source_not_allowed_for_index_discovery",
+  "missing_core_identity",
+  "invalid_opportunity_kind",
+  "seller_not_opportunity",
+  "unknown_commercial_role",
+  "inactive_notice",
+  "studio_ineligible",
+  "out_of_scope",
+  "stale_or_unverified",
+  "excluded_search_category"
+]);
+
+function diagnosticRejectionCode(value) {
+  const code = String(value || "");
+  if (DIAGNOSTIC_REJECTION_CODES.has(code)) return code;
+  if (code.startsWith("normalized_contract:")) return "normalized_contract";
+  return "other_validation_failure";
+}
+
+function countBy(items, keyForItem) {
+  const counts = new Map();
+  for (const item of items) {
+    const key = keyForItem(item);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return counts;
+}
+
+function sourceIdForCandidate(candidate) {
+  const sourceUrl = normalizeUrl(candidate?.source_url);
+  return indexDiscoveryDomainPolicyForUrl(sourceUrl)?.id || "unattributed";
+}
+
+function buildIndexDiscoveryDiagnostics({ verifiedSourceUrls, outcomes, accepted, returned }) {
+  const consultedBySource = countBy(verifiedSourceUrls, (url) => indexDiscoveryDomainPolicyForUrl(url)?.id || "unattributed");
+  const detailBySource = countBy(
+    [...verifiedSourceUrls].filter((url) => indexDiscoveryPolicyForUrl(url)),
+    (url) => indexDiscoveryPolicyForUrl(url)?.id || "unattributed"
+  );
+  const seenBySource = countBy(outcomes, (item) => item.source_id);
+  const acceptedBySource = countBy(accepted, (item) => item.discovery_source_id || "unattributed");
+  const returnedBySource = countBy(returned, (item) => item.discovery_source_id || "unattributed");
+  const rejectedBySource = countBy(outcomes.filter((item) => item.rejection), (item) => item.source_id);
+  const rejectionReasons = countBy(outcomes.filter((item) => item.rejection), (item) => item.rejection);
+  const sourceIds = [
+    ...INDEX_DISCOVERY_SOURCE_POLICIES.map((policy) => policy.id),
+    ...(seenBySource.has("unattributed") || consultedBySource.has("unattributed") ? ["unattributed"] : [])
+  ];
+  const labels = new Map(INDEX_DISCOVERY_SOURCE_POLICIES.map((policy) => [policy.id, policy.label]));
+
+  return {
+    schema_version:1,
+    privacy:"AGGREGATED_COUNTS_ONLY",
+    zero_result_reason:returned.length
+      ? null
+      : outcomes.length === 0
+        ? "NO_STRUCTURED_CANDIDATES"
+        : accepted.length === 0
+          ? "ALL_CANDIDATES_REJECTED"
+          : "ALL_ACCEPTED_CANDIDATES_DEDUPLICATED",
+    rejection_reasons:Object.fromEntries([...rejectionReasons.entries()].sort(([a], [b]) => a.localeCompare(b))),
+    source_yield:sourceIds.map((sourceId) => {
+      const acceptedCount = acceptedBySource.get(sourceId) || 0;
+      const returnedCount = returnedBySource.get(sourceId) || 0;
+      return {
+        source_id:sourceId,
+        source_label:labels.get(sourceId) || "Unattributed",
+        consulted_urls:consultedBySource.get(sourceId) || 0,
+        eligible_detail_urls:detailBySource.get(sourceId) || 0,
+        candidates_seen:seenBySource.get(sourceId) || 0,
+        candidates_accepted:acceptedCount,
+        candidates_rejected:rejectedBySource.get(sourceId) || 0,
+        duplicates_removed:Math.max(0, acceptedCount - returnedCount),
+        returned:returnedCount
+      };
+    })
+  };
 }
 
 export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { indexDiscovery = false } = {}) {
@@ -331,11 +417,18 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12, ind
   const parsed = parseStructuredSearchResponse(response);
   const opportunities = [];
   const rejections = [];
+  const outcomes = [];
   const candidates = parsed.opportunities.slice(0, Math.max(1, Math.min(20, maxResults)));
   for (const candidate of candidates) {
     const normalized = normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { indexDiscovery });
-    if (normalized.opportunity) opportunities.push(normalized.opportunity);
-    else rejections.push(normalized.rejection);
+    if (normalized.opportunity) {
+      opportunities.push(normalized.opportunity);
+      outcomes.push({ source_id:normalized.opportunity.discovery_source_id || sourceIdForCandidate(candidate), rejection:null });
+    } else {
+      const rejection = diagnosticRejectionCode(normalized.rejection);
+      rejections.push(rejection);
+      outcomes.push({ source_id:sourceIdForCandidate(candidate), rejection });
+    }
   }
 
   const deduped = dedupeOpportunities(opportunities);
@@ -344,6 +437,7 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12, ind
     opportunities: deduped,
     rejections,
     verified_source_count: verifiedSourceUrls.size,
+    ...(indexDiscovery ? { diagnostics:buildIndexDiscoveryDiagnostics({ verifiedSourceUrls, outcomes, accepted:opportunities, returned:deduped }) } : {}),
     counters: {
       candidates_seen: candidates.length,
       candidates_verified: deduped.length,

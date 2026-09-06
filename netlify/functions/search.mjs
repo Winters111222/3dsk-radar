@@ -142,6 +142,7 @@ export default async function handler(request, context) {
     };
     const run = {
       mode:result.discovery_mode,
+      diagnostics:result.diagnostics,
       completed_at:nowIso,
       model:result.model,
       response_id:result.response_id,

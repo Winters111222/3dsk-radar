@@ -26,6 +26,13 @@ function transport({ commit = COMMIT, deployContext = "deploy-preview" } = {}) {
         estimated_cost_usd:0.02,
         returned_count:1,
         verified_source_count:1,
+        diagnostics:{
+          schema_version:1,
+          privacy:"AGGREGATED_COUNTS_ONLY",
+          zero_result_reason:null,
+          rejection_reasons:{},
+          source_yield:["upwork","freelancer","reddit_gamedevclassifieds","unreal_job_offerings","polycount_paid"].map((source_id,index)=>({source_id,source_label:source_id,consulted_urls:index===0?1:0,eligible_detail_urls:index===0?1:0,candidates_seen:index===0?1:0,candidates_accepted:index===0?1:0,candidates_rejected:0,duplicates_removed:0,returned:index===0?1:0}))
+        },
         paid_acceptance:{ openai_requests:1, source_requests:0, retries:0 }
       }
     });
@@ -51,6 +58,8 @@ test("paid deployed acceptance makes exactly four bounded requests and returns n
   assert.equal(result.hosted_web_search_calls, 1);
   assert.equal(result.direct_source_requests, 0);
   assert.equal(result.retries, 0);
+  assert.equal(result.diagnostics.privacy,"AGGREGATED_COUNTS_ONLY");
+  assert.equal(result.diagnostics.source_yield.find((item)=>item.source_id==="upwork").returned,1);
   assert.equal(mock.calls.length, 4);
   assert.equal(progress.filter((event) => event.state === "started").length, 4);
   assert.ok(mock.calls.slice(2).every((call) => call.options.headers.authorization === "Bearer secret-never-returned"));

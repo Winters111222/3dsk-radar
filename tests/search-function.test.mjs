@@ -106,7 +106,8 @@ test("authorized search function normalizes a mocked hosted-search response end 
     RADAR_SEARCH_COOLDOWN_SECONDS:"0"
   });
   globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator();
-  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResultsWithStats: async (items) => ({opportunities:items,new_count:1,updated_count:0,workspace_total:1}), saveSearchRun: async (run) => { assert.equal(run.mode,"INDEX_DISCOVERY_MANUAL_VERIFY"); } };
+  let savedRun;
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = { mergeSearchResultsWithStats: async (items) => ({opportunities:items,new_count:1,updated_count:0,workspace_total:1}), saveSearchRun: async (run) => { savedRun=run; } };
   globalThis.fetch = async (_url, options) => {
     const request = JSON.parse(options.body);
     assert.equal(request.max_tool_calls, 3);
@@ -130,6 +131,9 @@ test("authorized search function normalizes a mocked hosted-search response end 
     assert.equal(payload.run.counters.candidates_verified, 1);
     assert.equal(payload.run.counters.new_opportunities, 1);
     assert.equal(payload.run.counters.workspace_total, 1);
+    assert.equal(payload.run.diagnostics.privacy,"AGGREGATED_COUNTS_ONLY");
+    assert.equal(payload.run.diagnostics.source_yield.find((item)=>item.source_id==="upwork").returned,1);
+    assert.deepEqual(savedRun.diagnostics,payload.run.diagnostics);
     assert.equal(payload.run.attempts, 1);
     assert.equal(payload.run.mode, "INDEX_DISCOVERY_MANUAL_VERIFY");
     assert.equal(payload.run.counters.collector_mode, "INDEX_DISCOVERY_MANUAL_VERIFY");
