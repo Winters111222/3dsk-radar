@@ -71,7 +71,16 @@ Před produkční aktivací:
 2. bez placeného requestu ověřit build metadata, health a UI,
 3. nastavit pouze produkční profil a přesné hranice výše,
 4. vytvořit jeden Git-backed production redeploy stejného commitu,
-5. teprve po `production_search=READY` a `production_search_profile=WIDE_INDEX` spustit jeden ruční placený Search,
-6. ověřit pět coverage karet, náklad, persistence přes `GET /api/opportunities` a UI refresh.
+5. teprve po `production_search=READY` a `production_search_profile=WIDE_INDEX`
+   spustit jeden ruční placený Search; browser použije `/api/search-background`
+   a dostane okamžité HTTP 202,
+6. pollovat read-only `/api/search-status` do `COMPLETED` nebo `UNCERTAIN`,
+7. po `COMPLETED` ověřit pět coverage karet, náklad, persistence přes
+   `GET /api/opportunities` a UI refresh,
+8. ihned vrátit produkční profil na FOCUSED a nasadit exact Git-backed commit.
 
-Po request dispatchi se nesmí automaticky retryovat. Nejisté přerušení přejde přes existující atomický coordinator do `UNCERTAIN`.
+Po request dispatchi se nesmí automaticky retryovat. Nejisté přerušení přejde
+přes existující atomický coordinator do `UNCERTAIN`. Stav, který po maximálním
+15minutovém background okně zůstane bez dokončení, UI po 16 minutách rovněž
+vyhodnotí jako `UNCERTAIN`; status endpoint je read-only a sám nic
+neredispatchuje.

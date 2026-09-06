@@ -56,6 +56,45 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
   return {
     capabilities,
 
+    async readOperation(runId, operationId) {
+      validId(runId);
+      validId(operationId);
+      const client = await pool.connect();
+      try {
+        const run = first(await client.query(
+          `SELECT run_id, status, version, fence_token, cap_microusd,
+                  reserved_microusd, settled_microusd, updated_at
+           FROM radar_paid_runs
+           WHERE run_id = $1`,
+          [runId]
+        ));
+        if (!run) return null;
+        const operation = first(await client.query(
+          `SELECT operation_id, status, version, fence_token, error_code,
+                  completed_at
+           FROM radar_paid_operations
+           WHERE run_id = $1 AND operation_id = $2`,
+          [runId, operationId]
+        ));
+        return {
+          run_id:runId,
+          operation_id:operationId,
+          run_status:run.status,
+          operation_status:operation?.status || null,
+          version:Number(run.version),
+          fence_token:Number(run.fence_token),
+          cap_microusd:Number(run.cap_microusd),
+          reserved_microusd:Number(run.reserved_microusd),
+          settled_microusd:Number(run.settled_microusd),
+          error_code:operation?.error_code || null,
+          updated_at:run.updated_at ? new Date(run.updated_at).toISOString() : null,
+          completed_at:operation?.completed_at ? new Date(operation.completed_at).toISOString() : null
+        };
+      } finally {
+        client.release();
+      }
+    },
+
     async claimOperation(runId, operationId, expectedVersion) {
       validId(runId);
       validId(operationId);

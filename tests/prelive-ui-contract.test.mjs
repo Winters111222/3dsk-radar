@@ -53,3 +53,10 @@ test("browser enables paid controls only from their dedicated health states", ()
   assert.match(app, /one paid run per UTC day/);
   assert.match(app, /Today's search loaded without a second charge/);
 });
+
+test("wide search uses a background function and polls durable coordinator state", () => {
+  assert.match(app, /state\.searchProfile==="WIDE_INDEX"/);
+  assert.match(app, /\/api\/search-background/);
+  assert.match(app, /\/api\/search-status/);
+  assert.match(app, /No automatic retry was attempted/);
+});

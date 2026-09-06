@@ -17,6 +17,27 @@ test("Netlify Database coordinator advertises the complete contract before any q
   assert.equal(readiness.ready, true);
   assert.equal(typeof provider.completeOperation, "function");
   assert.equal(typeof provider.markUncertain, "function");
+  assert.equal(typeof provider.readOperation, "function");
+});
+
+test("Netlify Database coordinator exposes read-only operation state without a transaction", async () => {
+  const queries = [];
+  const client = {
+    async query(sql) {
+      queries.push(sql);
+      if (sql.includes("FROM radar_paid_runs")) return { rows:[{ run_id:"prod-wide-index-search-20260906", status:"RESERVED", version:2, fence_token:1, cap_microusd:2_000_000, reserved_microusd:2_000_000, settled_microusd:0, updated_at:"2026-09-06T14:00:00.000Z" }] };
+      if (sql.includes("FROM radar_paid_operations")) return { rows:[{ operation_id:"daily-wide-index-search", status:"CLAIMED", version:1, fence_token:1, error_code:null, completed_at:null }] };
+      return { rows:[] };
+    },
+    release() {}
+  };
+  const provider = createPostgresPaidCoordinator({ pool:{ async connect() { return client; } }, capMicrousd:2_000_000 });
+  const state = await provider.readOperation("prod-wide-index-search-20260906", "daily-wide-index-search");
+  assert.equal(state.run_status, "RESERVED");
+  assert.equal(state.operation_status, "CLAIMED");
+  assert.equal(state.reserved_microusd, 2_000_000);
+  assert.equal(state.updated_at, "2026-09-06T14:00:00.000Z");
+  assert.ok(!queries.includes("BEGIN ISOLATION LEVEL SERIALIZABLE"));
 });
 
 test("Netlify Database coordinator can replay an existing paid operation without mutation", async () => {

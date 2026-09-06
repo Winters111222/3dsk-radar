@@ -1,5 +1,14 @@
 # Předání pro nové vlákno — WIDE_INDEX a competitor classification
 
+> Nejnovější stav 6. 9. 2026: načti nejdřív
+> `docs/CHECKPOINT_WIDE_INDEX_PRODUCTION_20260906_CZ.md`. Produkční
+> reklasifikace je hotová a readback potvrdil 3 sales / 3 competitors /
+> 1 source platform. První skutečný WIDE request skončil na synchronous gateway
+> timeoutu 504; náklad/stav je UNCERTAIN, nebyl retry a workspace se nezměnil.
+> Produkce je zpět v FOCUSED 0,50 USD / 6. Navazující změna přesouvá WIDE na
+> Netlify Background Function se stavovým pollingem. PR #30 zůstává Draft,
+> otevřený a bez merge do `main`.
+
 > Aktualizace 6. 9. 2026: competitor/source-platform balík níže byl
 > implementován v commitu `221562f12dff7d61984d845efd9f5b30c2127aaf`.
 > Nejdřív načti
@@ -9,7 +18,8 @@
 > Následná obecná legacy-regression oprava má 248/248 testů. Produkční
 > reclassification mechanismus je připravený jako production-only, exact
 > snapshot-bound a idempotentní. Produkční deploy/write, placený Search, env
-> změna a merge nebyly provedeny.
+> změna a merge nebyly v okamžiku této starší aktualizace provedeny. Aktuální
+> výsledek je v checkpointu uvedeném výše.
 
 Navazuj na projekt **3D.SK Opportunity Radar** v PUBLIC repozitáři:
 
@@ -72,7 +82,8 @@ RADAR_PRODUCTION_SEARCH_MAX_USD=2.00
 RADAR_PRODUCTION_SEARCH_MAX_RESULTS=24
 ```
 
-Tento environment zatím nenastavuj.
+Po každém omezeném WIDE ověření se environment vrací na FOCUSED. Neodesílej
+další placený request ve stejném UTC dni po nejistém/timeoutovaném dispatchi.
 
 ## Nový ruční nález vlastníka
 

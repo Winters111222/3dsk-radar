@@ -176,7 +176,27 @@ async function loadTeamState(){
   catch(error){showToast(error.message);els.scanNote.textContent=`Saved results could not be loaded: ${error.message}`;}
   finally{els.connect.disabled=false;}
 }
-async function runLiveSearch(){ if(!state.searchEnabled){showToast("Production search is still paid-locked.");return;}if(!accessCode()){showToast("Enter team access code first.");return;} sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode()); const old=els.find.textContent;els.find.disabled=true;els.find.textContent="SEARCHING…";try{const payload=await api("/api/search",{method:"POST",body:"{}"});state.opportunities=payload.opportunities;state.datasetMode="TEAM";state.lastRun=payload.run;await loadTeamState();els.scanNote.textContent=payload.replayed?`Today's UTC search already completed · saved result loaded · $0 new cost`:`Live search complete · ${payload.run.returned_count} records`;showToast(payload.replayed?"Today's search loaded without a second charge":"Live search complete");}catch(error){els.scanNote.textContent=`Search not run · ${error.message}`;showToast(error.message);}finally{els.find.disabled=!state.searchEnabled;els.find.textContent=old;} }
+async function waitForWideSearch(){
+  const startedAt=Date.now(),deadline=startedAt+16*60*1000;
+  while(Date.now()<deadline){
+    const status=await api("/api/search-status");
+    if(status.status==="COMPLETED")return status;
+    if(status.status==="UNCERTAIN"){const error=new Error("Wide search ended in an uncertain state. It will not retry automatically.");error.code=status.error_code||"PAID_DISPATCH_UNCERTAIN";throw error;}
+    if(status.status==="NOT_STARTED"&&Date.now()-startedAt>30_000)throw new Error("Wide search did not start. No automatic retry was attempted.");
+    els.scanNote.textContent=status.status==="NOT_STARTED"?"Worldwide search queued…":"Worldwide search running in the background…";
+    await new Promise(resolve=>setTimeout(resolve,Math.max(1,Number(status.poll_after_seconds)||2)*1000));
+  }
+  throw new Error("Wide search status timed out. No automatic retry was attempted.");
+}
+async function runWideSearchInBackground(){
+  const response=await fetch("/api/search-background",{method:"POST",headers:authHeaders(),body:"{}"});
+  if(response.status!==202){const payload=await response.json().catch(()=>({}));const error=new Error(payload?.error?.message||`Background search failed (${response.status})`);error.code=payload?.error?.code||"BACKGROUND_SEARCH_FAILED";throw error;}
+  await waitForWideSearch();
+  await loadTeamState();
+  els.scanNote.textContent=`Worldwide search complete · ${state.lastRun?.returned_count||0} records`;
+  showToast("Worldwide search complete");
+}
+async function runLiveSearch(){ if(!state.searchEnabled){showToast("Production search is still paid-locked.");return;}if(!accessCode()){showToast("Enter team access code first.");return;} sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode()); const old=els.find.textContent;els.find.disabled=true;els.find.textContent=state.searchProfile==="WIDE_INDEX"?"SEARCHING WORLDWIDE…":"SEARCHING…";try{if(state.searchProfile==="WIDE_INDEX"){await runWideSearchInBackground();return;}const payload=await api("/api/search",{method:"POST",body:"{}"});state.opportunities=payload.opportunities;state.datasetMode="TEAM";state.lastRun=payload.run;await loadTeamState();els.scanNote.textContent=payload.replayed?`Today's UTC search already completed · saved result loaded · $0 new cost`:`Live search complete · ${payload.run.returned_count} records`;showToast(payload.replayed?"Today's search loaded without a second charge":"Live search complete");}catch(error){els.scanNote.textContent=`Search not run · ${error.message}`;showToast(error.message);}finally{els.find.disabled=!state.searchEnabled;els.find.textContent=old;} }
 
 els.body.addEventListener("click",(event)=>{const star=event.target.closest("[data-bookmark-company]");if(star){event.stopPropagation();toggleBookmark(star.dataset.bookmarkCompany);return;}if(event.target.closest("select,a,button,input"))return;const row=event.target.closest("tr[data-id]");if(row)selectOpportunity(row.dataset.id);});
 els.body.addEventListener("change",(event)=>{if(event.target.matches(".status-select"))setStatus(event.target.dataset.statusId,event.target.value);if(event.target.matches(".select-radio"))selectOpportunity(event.target.closest("tr").dataset.id);});

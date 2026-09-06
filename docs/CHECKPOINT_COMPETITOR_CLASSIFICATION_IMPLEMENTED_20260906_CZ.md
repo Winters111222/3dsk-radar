@@ -2,6 +2,12 @@
 
 Datum: 2026-09-06
 
+> Produkční aktualizace: exact Git-backed deploy a jednorázová reklasifikace byly
+> později autorizovaně dokončeny. Readback potvrdil 3 sales, 3 competitors a
+> 1 source platform; čtyři změněné records, jeden snapshot, žádné mazání a
+> zachovanou historii. PR #30 zůstává Draft a nebyl mergnut. Aktuální provozní
+> checkpoint je v `docs/CHECKPOINT_WIDE_INDEX_PRODUCTION_20260906_CZ.md`.
+
 ## Autorita
 
 - Draft PR: <https://github.com/Winters111222/3dsk-radar/pull/30>
@@ -10,9 +16,9 @@ Datum: 2026-09-06
 - implementační commit: `221562f12dff7d61984d845efd9f5b30c2127aaf`
 - PR zůstává Draft a nebyl sloučen
 
-Tento checkpoint popisuje pouze code/mock změny. Nebyl změněn Netlify
-environment, produkční Blobs ani produkční Search profil a nebylo provedeno
-žádné placené OpenAI volání.
+Následující implementační popis zachycuje stav před pozdějším autorizovaným
+produkčním deployem a apply. Aktuálnější provozní výsledek je uveden v
+produkčním checkpointu odkazovaném výše.
 
 ## Implementovaný výsledek
 

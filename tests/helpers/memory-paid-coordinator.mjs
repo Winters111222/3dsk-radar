@@ -19,6 +19,27 @@ export function memoryPaidCoordinator({ capMicrousd = 500_000 } = {}) {
   return {
     capabilities,
     runs,
+    readOperation(runId, operationId) {
+      return serial(() => {
+        const run = runs.get(runId);
+        if (!run) return null;
+        const operation = run.operations.get(operationId);
+        return {
+          run_id:runId,
+          operation_id:operationId,
+          run_status:run.status,
+          operation_status:operation?.status || null,
+          version:run.version,
+          fence_token:run.fence,
+          cap_microusd:capMicrousd,
+          reserved_microusd:run.reserved,
+          settled_microusd:run.settled,
+          error_code:operation?.error_code || null,
+          updated_at:run.updated_at || new Date().toISOString(),
+          completed_at:operation?.status === "COMPLETED" ? new Date().toISOString() : null
+        };
+      });
+    },
     claimOperation(runId, operationId, expectedVersion) {
       return serial(() => {
         const run = runs.get(runId) || { version:0, fence:0, status:"READY", reserved:0, settled:0, operations:new Map(), reservations:new Map() };
