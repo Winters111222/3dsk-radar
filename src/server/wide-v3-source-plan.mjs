@@ -5,6 +5,8 @@ const connector = (id, label, accessMethod, gate, requiredEnv, options = {}) => 
   gate,
   required_env:Object.freeze(requiredEnv),
   paid:Boolean(options.paid),
+  runtime_available:options.runtimeAvailable !== false,
+  required_gates:Object.freeze(options.requiredGates || []),
   stores_raw_content:Boolean(options.storesRawContent),
   retention_hours:options.retentionHours ?? null,
   notes:options.notes || null
@@ -52,23 +54,23 @@ export const WIDE_V3_SOURCE_CONNECTORS = Object.freeze([
     "USER_AUTHORIZED_ALERT_OR_PUBLIC_INDEX",
     "RADAR_LINKEDIN_SIGNAL_ENABLED",
     ["RADAR_SOURCE_INGEST_SECRET"],
-    { notes:"No LinkedIn browser scraping. A LinkedIn URL is a discovery signal and must resolve to an original employer, ATS or buyer source." }
+    { requiredGates:["RADAR_SOURCE_SIGNAL_INGEST_ENABLED"], notes:"No LinkedIn browser scraping. A LinkedIn URL is a discovery signal and must resolve to an original employer, ATS or buyer source." }
   ),
   connector(
     "telegram_authorized_channels",
     "Telegram authorized channels",
     "OFFICIAL_BOT_WEBHOOK",
     "RADAR_TELEGRAM_SOURCE_ENABLED",
-    ["TELEGRAM_SOURCE_BOT_TOKEN", "TELEGRAM_SOURCE_ALLOWED_CHATS"],
-    { notes:"Receives only posts visible to a bot explicitly added to allowlisted channels or groups." }
+    ["RADAR_SOURCE_INGEST_SECRET", "TELEGRAM_SOURCE_BOT_TOKEN", "TELEGRAM_SOURCE_ALLOWED_CHATS"],
+    { requiredGates:["RADAR_SOURCE_SIGNAL_INGEST_ENABLED"], notes:"Receives only posts visible to a bot explicitly added to allowlisted channels or groups." }
   ),
   connector(
     "discord_authorized_channels",
     "Discord authorized channels",
     "OFFICIAL_BOT_EVENTS",
     "RADAR_DISCORD_SOURCE_ENABLED",
-    ["DISCORD_SOURCE_BOT_TOKEN", "DISCORD_SOURCE_ALLOWED_CHANNELS"],
-    { notes:"Receives only events from allowlisted servers/channels where the bot was invited." }
+    ["RADAR_SOURCE_INGEST_SECRET", "DISCORD_SOURCE_BOT_TOKEN", "DISCORD_SOURCE_ALLOWED_CHANNELS"],
+    { requiredGates:["RADAR_SOURCE_SIGNAL_INGEST_ENABLED"], notes:"Receives only events from allowlisted servers/channels where the bot was invited." }
   ),
   connector(
     "x_official",
@@ -76,7 +78,7 @@ export const WIDE_V3_SOURCE_CONNECTORS = Object.freeze([
     "OFFICIAL_X_SEARCH_API",
     "RADAR_X_SEARCH_ENABLED",
     ["X_API_BEARER_TOKEN"],
-    { paid:true, notes:"Consumption-billed official API only; excluded unless separately enabled and budgeted." }
+    { paid:true, runtimeAvailable:false, notes:"Consumption-billed official API only; the runtime adapter is intentionally not implemented until separately approved and budgeted." }
   )
 ]);
 
@@ -86,11 +88,14 @@ export function sourceConnectorReadiness(getEnv = (key) => process.env[key]) {
   return WIDE_V3_SOURCE_CONNECTORS.map((item) => {
     const enabled = truthy(getEnv(item.gate));
     const missing = item.required_env.filter((key) => !String(getEnv(key) || "").trim());
+    missing.push(...item.required_gates.filter((key) => !truthy(getEnv(key))).map((key) => `${key}=true`));
+    if (!item.runtime_available) missing.push("OFFICIAL_SOURCE_ADAPTER_NOT_IMPLEMENTED");
     return {
       id:item.id,
       label:item.label,
       access_method:item.access_method,
       paid:item.paid,
+      runtime_available:item.runtime_available,
       status:enabled ? (missing.length ? "CONFIG_REQUIRED" : "CONFIG_READY") : "LOCKED",
       missing_configuration:enabled ? missing : [],
       retention_hours:item.retention_hours,

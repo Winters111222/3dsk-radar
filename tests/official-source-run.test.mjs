@@ -59,6 +59,22 @@ test("official discovery is a zero-request locked result without configured conn
   assert.equal(result.requests, 0);
 });
 
+test("official discovery canary scope calls only the explicitly selected free adapter", async () => {
+  let calls = 0;
+  const result = await runOfficialWideDiscovery({
+    getEnv:enabledEnv,
+    sourceIds:["bluesky_public"],
+    fetchImpl:async () => {
+      calls += 1;
+      return new Response(JSON.stringify({ posts:[] }), { status:200 });
+    }
+  });
+  assert.equal(calls, 1);
+  assert.equal(result.requests, 1);
+  assert.deepEqual(result.sources.map((item) => item.source_id), ["bluesky_public"]);
+  assert.throws(() => officialSourceRunPlan(enabledEnv, { sourceIds:["x_official"] }), /OFFICIAL_SOURCE_SCOPE_INVALID/);
+});
+
 test("recent signed social signals join only social shards and stale signals are ignored", () => {
   const discovery = mergeStoredSourceSignals(null, [{
     source_id:"linkedin_alert_bridge",

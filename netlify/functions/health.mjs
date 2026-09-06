@@ -2,6 +2,7 @@ import { envValue, paidAcceptanceContextAllowed, sourceCollectionEnabled } from 
 import { productionSearchConfiguration, productionSearchState } from "../../src/server/production-search-policy.mjs";
 import { productionReplyState } from "../../src/server/production-reply-policy.mjs";
 import { sourceConnectorReadiness } from "../../src/server/wide-v3-source-plan.mjs";
+import { officialSourceCanaryConfiguration } from "../../src/server/official-source-canary-policy.mjs";
 
 export default async (_request, context) => {
   const liveAIEnabled = envValue("RADAR_LIVE_AI_ENABLED").toLowerCase() === "true";
@@ -10,6 +11,7 @@ export default async (_request, context) => {
   const controlledProductionSearch = productionSearchState({ context });
   const productionSearchConfig = controlledProductionSearch === "READY" ? productionSearchConfiguration() : null;
   const controlledProductionReply = productionReplyState({ context });
+  const officialSourceCanary = officialSourceCanaryConfiguration({ context, getEnv:envValue });
   return Response.json({
     ok: true,
     service: "3dsk-opportunity-radar",
@@ -28,6 +30,8 @@ export default async (_request, context) => {
     cloud_browser_credit_cap: productionSearchConfig?.firecrawl_credit_cap || 0,
     official_source_discovery: productionSearchConfig?.official_sources_enabled ? "READY" : "LOCKED",
     official_source_request_limit: productionSearchConfig?.official_source_request_limit || 0,
+    official_source_canary: officialSourceCanary.ok ? "READY" : officialSourceCanary.code,
+    official_source_canary_request_limit: officialSourceCanary.ok ? officialSourceCanary.request_limit : 0,
     source_signal_ingest: envValue("RADAR_SOURCE_SIGNAL_INGEST_ENABLED").toLowerCase() === "true" ? "ENABLED" : "LOCKED",
     production_reply: controlledProductionReply,
     paid_acceptance: paidAcceptanceEnabled ? (paidAcceptancePreview ? "ARMED" : "CONTEXT_BLOCKED") : "LOCKED",
@@ -41,6 +45,7 @@ export default async (_request, context) => {
       id:item.id,
       access_method:item.access_method,
       paid:item.paid,
+      runtime_available:item.runtime_available,
       status:item.status,
       missing_configuration:item.missing_configuration
     })),
