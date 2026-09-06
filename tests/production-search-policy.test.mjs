@@ -52,11 +52,39 @@ test("wide-index profile has exact two-dollar and five-shard server-owned bounda
   assert.equal(config.max_tool_calls, 15);
   assert.equal(config.max_tool_calls_per_request, 3);
   assert.equal(config.shards.length, 5);
+  assert.equal(config.firecrawl_enabled, false);
   assert.equal(config.run_id, "prod-wide-index-search-20260907");
   assert.notEqual(config.run_id, productionSearchConfiguration({
     getEnv:configured(),
     nowIso:"2026-09-07T00:00:01.000Z"
   }).run_id);
+});
+
+test("Firecrawl WIDE v2 requires the exact 26-credit no-retry boundary", () => {
+  const config = productionSearchConfiguration({
+    getEnv:configured({
+      RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+      RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+      RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24",
+      RADAR_FIRECRAWL_WIDE_ENABLED:"true",
+      RADAR_FIRECRAWL_MAX_CREDITS:"26"
+    }),
+    nowIso:"2026-09-06T10:00:00.000Z"
+  });
+  assert.equal(config.ok, true);
+  assert.equal(config.firecrawl_enabled, true);
+  assert.equal(config.firecrawl_request_limit, 5);
+  assert.equal(config.firecrawl_credit_cap, 26);
+  assert.equal(productionSearchConfiguration({
+    getEnv:configured({
+      RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+      RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+      RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24",
+      RADAR_FIRECRAWL_WIDE_ENABLED:"true",
+      RADAR_FIRECRAWL_MAX_CREDITS:"27"
+    }),
+    nowIso:"2026-09-06T10:00:00.000Z"
+  }).ok, false);
 });
 
 test("explicit server-owned WIDE recovery slot has a distinct one-time coordinator identity", () => {

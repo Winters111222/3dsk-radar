@@ -175,3 +175,44 @@ test("wide search records a failed shard as partial without retrying it", async 
   assert.equal(result.openai_request_count, 2);
   assert.equal(result.attempts, 1);
 });
+
+test("wide search accepts an exact Firecrawl-rendered detail URL and preserves cloud provenance", async () => {
+  const shard = WIDE_SEARCH_SHARDS[2];
+  const source = "https://workwithindies.com/careers/example-studio-character-artist";
+  const firecrawlCandidate = {
+    ...validCandidate(),
+    source_url:source,
+    apply_url:source,
+    acceptance_source_url:null,
+    source_evidence:[{type:"PRIMARY_SOURCE",url:source,note:"Rendered public detail"}]
+  };
+  const fakeFetch = async () => new Response(JSON.stringify({
+    id:"resp_firecrawl_hint",
+    model:"gpt-5.6-luna",
+    usage:{input_tokens:100,output_tokens:50,total_tokens:150},
+    output:[
+      {type:"web_search_call",action:{sources:[{url:"https://jobs.lever.co/example/4d6d1713-f9d7-4d4f-96d2-827c5d140102",title:"secondary"}]}},
+      {type:"message",content:[{type:"output_text",text:JSON.stringify({opportunities:[firecrawlCandidate]})}]}
+    ]
+  }), {status:200});
+  const result = await runWideOpportunitySearch({
+    apiKey:"fake",
+    model:"gpt-5.6-luna",
+    profile,
+    nowIso:NOW,
+    shards:[shard],
+    fetchImpl:fakeFetch,
+    preDiscovery:{
+      requests:1,
+      credits_used:10,
+      rendered_pages:1,
+      verified_urls:[source],
+      shards:[{shard_id:shard.id,hints:[{url:source,title:"Character contract",description:"",excerpt:"Current contract",rendered:true}],verified_urls:[source]}]
+    }
+  });
+  assert.equal(result.opportunities.length, 1);
+  assert.equal(result.opportunities[0].source_access_method, "FIRECRAWL_SEARCH_PUBLIC_RENDER");
+  assert.equal(result.opportunities[0].discovery_mode, "HYBRID_WIDE_SEARCH");
+  assert.equal(result.cloud_browser_requests, 1);
+  assert.equal(result.firecrawl_credits_used, 10);
+});

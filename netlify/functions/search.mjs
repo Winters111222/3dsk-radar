@@ -2,6 +2,7 @@ import { envValue, paidAcceptanceContextAllowed, workspaceAllowed } from "../../
 import { authorizeRequest } from "../../src/server/auth.mjs";
 import { loadPublicCompanyProfile } from "../../src/server/profile.mjs";
 import { runOpportunitySearch, runWideOpportunitySearch } from "../../src/server/openai-search.mjs";
+import { runFirecrawlWideDiscovery } from "../../src/server/firecrawl-discovery.mjs";
 import { estimateSearchCost } from "../../src/server/search-cost.mjs";
 import { getStateRepository } from "../../src/server/netlify-state.mjs";
 import { paidCoordinatorReadiness } from "../../src/server/paid-run-coordinator-contract.mjs";
@@ -83,6 +84,10 @@ export default async function handler(request, context) {
 
   const apiKey = envValue("OPENAI_API_KEY");
   if (!apiKey) return json({ ok:false, error:{ code:"OPENAI_NOT_CONFIGURED", message:"OPENAI_API_KEY is not configured on the server." } }, 503);
+  const firecrawlApiKey = execution.firecrawl_enabled ? envValue("FIRECRAWL_API_KEY") : null;
+  if (execution.firecrawl_enabled && !firecrawlApiKey) {
+    return json({ ok:false, error:{ code:"FIRECRAWL_NOT_CONFIGURED", message:"FIRECRAWL_API_KEY is not configured on the server." } }, 503);
+  }
 
   let coordinator;
   try {
@@ -123,6 +128,16 @@ export default async function handler(request, context) {
     const profile = await loadPublicCompanyProfile();
     const nowIso = execution.now_iso;
     dispatched = true;
+    const preDiscovery = execution.firecrawl_enabled
+      ? await runFirecrawlWideDiscovery({
+        apiKey:firecrawlApiKey,
+        shards:execution.shards,
+        fetchImpl:globalThis.__RADAR_TEST_FIRECRAWL_FETCH__ || fetch
+      })
+      : null;
+    if (preDiscovery && (preDiscovery.requests > execution.firecrawl_request_limit || preDiscovery.credits_used > execution.firecrawl_credit_cap)) {
+      throw new Error("FIRECRAWL_EXECUTION_BOUNDARY_EXCEEDED");
+    }
     const result = execution.search_profile === "WIDE_INDEX"
       ? await runWideOpportunitySearch({
         apiKey,
@@ -133,7 +148,8 @@ export default async function handler(request, context) {
         maxResults:execution.max_results,
         maxResultsPerShard:6,
         maxToolCallsPerShard:execution.max_tool_calls_per_request,
-        maxOutputTokensPerShard:execution.max_output_tokens
+        maxOutputTokensPerShard:execution.max_output_tokens,
+        preDiscovery
       })
       : await runOpportunitySearch({
         apiKey,
@@ -169,8 +185,11 @@ export default async function handler(request, context) {
       list_pages_fetched:null,
       detail_pages_fetched:null,
       ...result.counters,
-      source_requests:0,
+      source_requests:result.cloud_browser_requests || 0,
       direct_source_requests:result.direct_source_requests,
+      cloud_browser_requests:result.cloud_browser_requests || 0,
+      cloud_pages_rendered:result.cloud_pages_rendered || 0,
+      firecrawl_credits_used:result.firecrawl_credits_used || 0,
       openai_requests:result.openai_request_count,
       retries:0,
       competitors_classified:result.counters.competitors_classified || 0,
@@ -196,6 +215,10 @@ export default async function handler(request, context) {
       verified_source_count:result.verified_source_count,
       allowed_domains:result.allowed_domains,
       direct_source_requests:result.direct_source_requests,
+      cloud_browser:result.cloud_browser || null,
+      cloud_browser_requests:result.cloud_browser_requests || 0,
+      cloud_pages_rendered:result.cloud_pages_rendered || 0,
+      firecrawl_credits_used:result.firecrawl_credits_used || 0,
       rejected_candidate_count:result.rejections.length,
       returned_count:result.opportunities.length,
       competitor_count:result.competitors?.length || 0,
@@ -216,7 +239,8 @@ export default async function handler(request, context) {
         fence_token:reservation.fence_token,
         coordinator:"NETLIFY_DATABASE",
         openai_requests:result.openai_request_count,
-        source_requests:0,
+        source_requests:result.cloud_browser_requests || 0,
+        firecrawl_credits_used:result.firecrawl_credits_used || 0,
         retries:0
     };
     if (execution.mode === "PAID_ACCEPTANCE") run.paid_acceptance = paidRecord;

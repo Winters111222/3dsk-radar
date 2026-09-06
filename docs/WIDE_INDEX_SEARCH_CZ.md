@@ -26,6 +26,13 @@ Výsledky se normalizují společně, projdou stávajícími truth/freshness/buy
 | Přímé HTTP crawl requesty | 0 | 0 |
 | Frekvence | 1 run za UTC den | 1 run za UTC den |
 
+Volitelný `WIDE v2` přidává před těchto pět OpenAI shardů přesně pět
+Firecrawl Search requestů. Dva shardy používají pouze veřejný index, dva smějí
+navíc renderovat nejvýše osm povolených veřejných detailů a vícejazyčný shard
+zůstává index-only. Tvrdý strop je 26 Firecrawl kreditů za run: vyhledání stojí
+2 kredity na nejvýše 10 výsledků a základní render 1 kredit za stránku. JSON
+extraction, screenshots, actions, formuláře, proxy volby a retry se neposílají.
+
 Profil je server-owned. Klient jej nemůže změnit requestem. Chybějící `RADAR_PRODUCTION_SEARCH_PROFILE` znamená `FOCUSED`, takže samotné sloučení kódu nemění běžící produkci. `WIDE_INDEX` je připraven teprve při přesné trojici:
 
 ```text
@@ -35,6 +42,20 @@ RADAR_PRODUCTION_SEARCH_MAX_RESULTS=24
 ```
 
 Jiná kombinace se uzamkne jako `CONFIG_BLOCKED`.
+
+Firecrawl vrstva je samostatně default-off. Aktivuje se pouze přes přesnou
+trojici a serverový secret:
+
+```text
+RADAR_FIRECRAWL_WIDE_ENABLED=true
+RADAR_FIRECRAWL_MAX_CREDITS=26
+FIRECRAWL_API_KEY=<server-side secret>
+```
+
+Chybějící secret ukončí požadavek před placeným dispatch. Jiný kreditní strop
+vede ke `CONFIG_BLOCKED`. Jeden atomický operation claim kryje Firecrawl i
+navazující OpenAI volání; po nejistém přerušení se stejná operace nespustí
+znovu.
 
 FOCUSED a WIDE_INDEX používají rozdílné denní `run_id`, `operation_id` i
 `reservation_id`. Již dokončený FOCUSED běh proto nemůže změnit budget cap ani
@@ -49,9 +70,19 @@ Allowlist domény není automatické přijetí výsledku. Home/search/profile/ca
 
 ## LinkedIn, Upwork a cloud browser
 
-WIDE_INDEX nepřihlašuje cloudový browser, nepoužívá cookies, neřeší CAPTCHA a neobchází ochrany. LinkedIn je z automatického allowlistu výslovně vynechán, protože jeho aktuální User Agreement zakazuje scraping/copy přes crawlers, browser plugins a podobnou automatizaci. Upwork a Reddit se hledají pouze zprostředkovaně přes veřejný webový index; nejde o přímý HTML scraper. Schválené oficiální API lze později přidat jako samostatný adapter po získání potřebného přístupu a vyřešení komerčních podmínek.
+WIDE_INDEX ani WIDE v2 nepřihlašuje cloudový browser, nepoužívá cookies,
+neřeší CAPTCHA a neobchází ochrany. LinkedIn je z automatického allowlistu
+výslovně vynechán. Upwork, Reddit a komunitní fóra jsou ve Firecrawl vrstvě
+striktně index-only; jejich obsah se nerenderuje. Render je povolen jen pro
+serverem vyjmenované veřejné contract/ATS a procurement domény. Výsledek je
+ověřený jen při přesné detail URL, HTTP 2xx/304, neprázdném obsahu a bez
+challenge/login stránky. Nevyhovující stránka se zahodí a nezkouší se jinou
+cestou. Schválené oficiální API má vždy přednost před browserovým transportem.
 
-Hosted web search není důkaz kompletního procházení každé stránky dané platformy. Nový režim garantuje provedení všech pěti vyhledávacích okruhů a měří jejich výtěžnost; negarantuje indexovou úplnost třetí strany ani pevný počet kvalitních zakázek.
+Hosted web search ani Firecrawl nejsou důkaz kompletního procházení každé
+stránky dané platformy. Nový režim garantuje provedení všech pěti
+vyhledávacích okruhů a měří jejich výtěžnost; negarantuje indexovou úplnost
+třetí strany ani pevný počet kvalitních zakázek.
 
 ## Competitor a source-platform gate
 
@@ -78,6 +109,11 @@ Před produkční aktivací:
 7. po `COMPLETED` ověřit pět coverage karet, náklad, persistence přes
    `GET /api/opportunities` a UI refresh,
 8. ihned vrátit produkční profil na FOCUSED a nasadit exact Git-backed commit.
+
+Při samostatně schváleném WIDE v2 acceptance se před bodem 5 ověří také
+`cloud_browser=FIRECRAWL_READY`, `cloud_browser_request_limit=5` a
+`cloud_browser_credit_cap=26`. Po doběhu musí run uvádět skutečné
+`cloud_browser_requests`, `cloud_pages_rendered` a `firecrawl_credits_used`.
 
 Po request dispatchi se nesmí automaticky retryovat. Nejisté přerušení přejde
 přes existující atomický coordinator do `UNCERTAIN`. Stav, který po maximálním

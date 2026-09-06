@@ -97,7 +97,26 @@ test("health exposes wide search profile and its server-owned limits without dis
   assert.equal(production.production_search_max_usd, 2);
   assert.equal(production.production_search_openai_request_limit, 5);
   assert.equal(production.production_search_web_call_limit, 15);
+  assert.equal(production.cloud_browser, "LOCKED");
   assert.equal(network.mock.callCount(), 0);
+});
+
+test("health exposes Firecrawl WIDE v2 only behind the exact server gate", async t => {
+  runtime(t, {
+    RADAR_INTERNAL_ACCESS_SECRET:"fixture-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24",
+    RADAR_FIRECRAWL_WIDE_ENABLED:"true",
+    RADAR_FIRECRAWL_MAX_CREDITS:"26"
+  });
+  const production = await (await health(undefined, {deploy:{context:"production"}})).json();
+  assert.equal(production.production_search, "READY");
+  assert.equal(production.cloud_browser, "FIRECRAWL_READY");
+  assert.equal(production.cloud_browser_request_limit, 5);
+  assert.equal(production.cloud_browser_credit_cap, 26);
 });
 
 test("real Blobs SDK keeps production data across deploy IDs and isolates preview/acceptance", async t => {

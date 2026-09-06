@@ -10,6 +10,7 @@ import {
   FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS,
   INDEX_DISCOVERY_MODE
 } from "./index-discovery.mjs";
+import { firecrawlHintsForShard, firecrawlVerifiedUrlsForShard } from "./firecrawl-discovery.mjs";
 
 export const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 
@@ -140,7 +141,8 @@ export async function runWideOpportunitySearch({
   maxToolCallsPerShard = 3,
   maxOutputTokensPerShard = 6000,
   fetchImpl = fetch,
-  timeoutMs = 45000
+  timeoutMs = 45000,
+  preDiscovery = null
 }) {
   if (!Array.isArray(shards) || !shards.length) {
     const error = new Error("Wide search plan is empty");
@@ -149,6 +151,8 @@ export async function runWideOpportunitySearch({
   }
 
   const settled = await Promise.all(shards.map(async (shard) => {
+    const discoveryHints = firecrawlHintsForShard(preDiscovery, shard.id);
+    const firecrawlVerifiedUrls = firecrawlVerifiedUrlsForShard(preDiscovery, shard.id);
     const requestBody = buildOpenAIRequest({
       profile,
       nowIso,
@@ -160,7 +164,8 @@ export async function runWideOpportunitySearch({
       allowedDomains:shard.allowed_domains,
       searchFocus:shard.focus,
       shardLabel:shard.label,
-      searchContextSize:"high"
+      searchContextSize:"high",
+      discoveryHints
     });
     let raw = null;
     try {
@@ -183,9 +188,10 @@ export async function runWideOpportunitySearch({
         error.code = "WIDE_SEARCH_DOMAIN_BOUNDARY_INVALID";
         throw error;
       }
+      const trustedUrls = new Set([...sourceUrls, ...firecrawlVerifiedUrls]);
       parsed.opportunities = parsed.opportunities.filter((candidate) => {
         const sourceUrl = normalizeUrl(candidate?.source_url);
-        return sourceUrl && sourceUrls.has(sourceUrl) && urlMatchesAllowedDomain(sourceUrl, shard.allowed_domains);
+        return sourceUrl && trustedUrls.has(sourceUrl) && urlMatchesAllowedDomain(sourceUrl, shard.allowed_domains);
       });
       return {
         ok:true,
@@ -193,7 +199,8 @@ export async function runWideOpportunitySearch({
         raw,
         parsed,
         web_calls:webCalls,
-        consulted_urls:sourceUrls.size
+        consulted_urls:new Set([...sourceUrls, ...discoveryHints.map((item) => item.url)]).size,
+        firecrawl_verified_urls:firecrawlVerifiedUrls.size
       };
     } catch (error) {
       return {
@@ -201,7 +208,8 @@ export async function runWideOpportunitySearch({
         shard,
         raw,
         web_calls:countWebSearchCalls(raw),
-        consulted_urls:extractWebSourceUrls(raw).size,
+        consulted_urls:new Set([...extractWebSourceUrls(raw), ...discoveryHints.map((item) => item.url)]).size,
+        firecrawl_verified_urls:firecrawlVerifiedUrls.size,
         error_code:failureCode(error)
       };
     }
@@ -216,7 +224,17 @@ export async function runWideOpportunitySearch({
   }
 
   const combined = syntheticResponse(successful, model);
-  const normalized = normalizeSearchResponse(combined, { nowIso, maxResults, indexDiscovery:true });
+  const firecrawlVerifiedUrls = new Set(preDiscovery?.verified_urls || []);
+  const normalized = normalizeSearchResponse(combined, { nowIso, maxResults, indexDiscovery:true, additionalVerifiedSourceUrls:[...firecrawlVerifiedUrls] });
+  normalized.records = normalized.records.map((record) => firecrawlVerifiedUrls.has(normalizeUrl(record.source_url)) ? {
+    ...record,
+    discovery_mode:"HYBRID_WIDE_SEARCH",
+    source_access_method:"FIRECRAWL_SEARCH_PUBLIC_RENDER",
+    cloud_browser_verified_at:nowIso
+  } : record);
+  normalized.opportunities = normalized.records.filter((record) => record.record_kind === "SALES_OPPORTUNITY");
+  normalized.competitors = normalized.records.filter((record) => record.record_kind === "COMPETITOR");
+  normalized.source_platforms = normalized.records.filter((record) => record.record_kind === "SOURCE_PLATFORM");
   const aggregateUsage = settled.reduce((usage, item) => addUsage(usage, item.raw?.usage), null);
   const aggregateWebSearchCalls = settled.reduce((sum, item) => sum + Number(item.web_calls || 0), 0);
   const allowedDomains = [...new Set(shards.flatMap((item) => item.allowed_domains))];
@@ -228,6 +246,7 @@ export async function runWideOpportunitySearch({
     consulted_urls:item.consulted_urls,
     candidates_seen:item.parsed.opportunities.length,
     web_search_calls:item.web_calls,
+    firecrawl_verified_urls:item.firecrawl_verified_urls,
     error_code:null
   } : {
     shard_id:item.shard.id,
@@ -237,6 +256,7 @@ export async function runWideOpportunitySearch({
     consulted_urls:item.consulted_urls,
     candidates_seen:0,
     web_search_calls:item.web_calls,
+    firecrawl_verified_urls:item.firecrawl_verified_urls,
     error_code:item.error_code
   });
 
@@ -248,6 +268,10 @@ export async function runWideOpportunitySearch({
     coverage,
     allowed_domains:allowedDomains,
     direct_source_requests:0,
+    cloud_browser:preDiscovery,
+    cloud_browser_requests:preDiscovery?.requests || 0,
+    cloud_pages_rendered:preDiscovery?.rendered_pages || 0,
+    firecrawl_credits_used:preDiscovery?.credits_used || 0,
     model:combined.model,
     response_id:null,
     response_ids:successful.map((item) => item.raw?.id).filter(Boolean),

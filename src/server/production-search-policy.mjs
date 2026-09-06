@@ -6,6 +6,7 @@ import {
   WIDE_SEARCH_SHARDS,
   validateWideSearchPlan
 } from "./wide-search-plan.mjs";
+import { FIRECRAWL_MAX_CREDITS, FIRECRAWL_MAX_REQUESTS } from "./firecrawl-discovery.mjs";
 
 export const PRODUCTION_SEARCH_MODEL = "gpt-5.6-luna";
 export const PRODUCTION_SEARCH_MAX_CAP_MICROUSD = 500_000;
@@ -33,6 +34,9 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
   if (!wide && requestedProfile !== "FOCUSED") return { ok:false };
   const recoverySlot = String(getEnv("RADAR_PRODUCTION_SEARCH_WIDE_RECOVERY_SLOT") || "").trim();
   const recovery = wide && recoverySlot === PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT;
+  const firecrawlEnabled = wide && enabled(getEnv("RADAR_FIRECRAWL_WIDE_ENABLED"));
+  const firecrawlCreditsText = String(getEnv("RADAR_FIRECRAWL_MAX_CREDITS") || "").trim();
+  const firecrawlCredits = Number(firecrawlCreditsText);
   const usdText = String(getEnv("RADAR_PRODUCTION_SEARCH_MAX_USD") || "").trim();
   const resultText = String(getEnv("RADAR_PRODUCTION_SEARCH_MAX_RESULTS") || "").trim();
   const usd = Number(usdText);
@@ -51,6 +55,7 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
     && Boolean(windowMatch)
     && Number.isFinite(Date.parse(nowIso))
     && (recoverySlot === "" || recovery)
+    && (!firecrawlEnabled || (firecrawlCreditsText !== "" && firecrawlCredits === FIRECRAWL_MAX_CREDITS))
     && (!wide || validateWideSearchPlan());
 
   if (!valid) return { ok:false };
@@ -74,6 +79,9 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
     max_tool_calls_per_request:wide ? WIDE_SEARCH_MAX_TOOL_CALLS_PER_SHARD : PRODUCTION_SEARCH_MAX_TOOL_CALLS,
     max_output_tokens:wide ? PRODUCTION_WIDE_SEARCH_MAX_OUTPUT_TOKENS_PER_SHARD : PRODUCTION_SEARCH_MAX_OUTPUT_TOKENS,
     shards:wide ? WIDE_SEARCH_SHARDS : null,
+    firecrawl_enabled:firecrawlEnabled,
+    firecrawl_request_limit:firecrawlEnabled ? FIRECRAWL_MAX_REQUESTS : 0,
+    firecrawl_credit_cap:firecrawlEnabled ? FIRECRAWL_MAX_CREDITS : 0,
     now_iso:nowIso
   };
 }

@@ -355,12 +355,12 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
     evidence.unshift({
       type: recordKind === "SALES_OPPORTUNITY" && opportunityKind === "OPEN_OPPORTUNITY" ? "PRIMARY_SOURCE" : "SIGNAL_SOURCE",
       url: sourceUrl,
-      note: "Primary source URL verified against hosted web-search sources."
+      note: "Primary source URL verified against server-approved discovery evidence."
     });
   }
 
   if (budget.budget_source_url && !evidence.some(item => item.url === budget.budget_source_url)) {
-    evidence.unshift({ type: "SIGNAL_SOURCE", url: budget.budget_source_url, note: "Buyer project budget or scope source returned by hosted web search." });
+    evidence.unshift({ type: "SIGNAL_SOURCE", url: budget.budget_source_url, note: "Buyer project budget or scope source returned by server-approved discovery." });
   }
 
   const sourceDomain = new URL(sourceUrl).hostname.replace(/^www\./, "");
@@ -434,12 +434,13 @@ export function dedupeOpportunities(items) {
   return [...byFingerprint.values()].sort((a, b) => b.win_score - a.win_score || b.fit_score - a.fit_score);
 }
 
-export function normalizeSearchResponse(response, { nowIso, maxResults = 12, indexDiscovery = false } = {}) {
+export function normalizeSearchResponse(response, { nowIso, maxResults = 12, indexDiscovery = false, additionalVerifiedSourceUrls = [] } = {}) {
   const extractedSourceUrls = extractWebSourceUrls(response);
+  const allSourceUrls = new Set([...extractedSourceUrls, ...additionalVerifiedSourceUrls].map(normalizeUrl).filter(Boolean));
   const verifiedSourceUrls = indexDiscovery
-    ? new Set([...extractedSourceUrls].filter((url) => indexDiscoveryDomainPolicyForUrl(url)))
-    : extractedSourceUrls;
-  if (!verifiedSourceUrls.size) throw new Error("Hosted web search returned no verifiable source URLs");
+    ? new Set([...allSourceUrls].filter((url) => indexDiscoveryDomainPolicyForUrl(url)))
+    : allSourceUrls;
+  if (!verifiedSourceUrls.size) throw new Error("Discovery returned no verifiable source URLs");
 
   const parsed = parseStructuredSearchResponse(response);
   const acceptedRecords = [];

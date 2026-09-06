@@ -70,6 +70,7 @@ function clearWarmState() {
   delete globalThis.__3DSK_RADAR_STAGE2_SEARCH_STATE__;
   delete globalThis.__RADAR_TEST_STATE_REPOSITORY__;
   delete globalThis.__RADAR_TEST_PAID_COORDINATOR__;
+  delete globalThis.__RADAR_TEST_FIRECRAWL_FETCH__;
 }
 
 test("search function rejects non-POST without touching paid path", async () => {
@@ -444,6 +445,81 @@ test("wide production search runs five bounded coverage shards and persists one 
     assert.equal(payload.run.web_search_call_count, 5);
     assert.equal(payload.run.returned_count, 1);
     assert.deepEqual(savedRun.coverage, payload.run.coverage);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("Firecrawl WIDE v2 performs exactly five bounded pre-discovery calls before OpenAI", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24",
+    RADAR_FIRECRAWL_WIDE_ENABLED:"true",
+    RADAR_FIRECRAWL_MAX_CREDITS:"26",
+    FIRECRAWL_API_KEY:"fake-firecrawl-key",
+    OPENAI_API_KEY:"fake-openai-key"
+  });
+  let firecrawlRequests = 0;
+  let openaiRequests = 0;
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator({capMicrousd:2_000_000});
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = {
+    mergeSearchResultsWithStats:async (items) => ({opportunities:items,new_count:items.length,updated_count:0,workspace_total:items.length}),
+    saveSearchRun:async () => {}
+  };
+  globalThis.__RADAR_TEST_FIRECRAWL_FETCH__ = async (_url, options) => {
+    firecrawlRequests += 1;
+    assert.equal(options.headers.authorization, "Bearer fake-firecrawl-key");
+    const request = JSON.parse(options.body);
+    const rendered = Boolean(request.scrapeOptions);
+    return new Response(JSON.stringify({
+      success:true,
+      id:`fc-${firecrawlRequests}`,
+      creditsUsed:rendered ? 10 : 2,
+      data:{web:[]}
+    }), {status:200});
+  };
+  const sourceForFirstDomain = {
+    "upwork.com":SOURCE,
+    "reddit.com":"https://www.reddit.com/r/gameDevClassifieds/comments/abc123/hiring_character_artist/",
+    "workwithindies.com":"https://workwithindies.com/careers/example-studio-character-artist",
+    "ted.europa.eu":"https://ted.europa.eu/en/notice/-/detail/123456-2026"
+  };
+  globalThis.fetch = async (_url, options) => {
+    openaiRequests += 1;
+    const request = JSON.parse(options.body);
+    const firstDomain = request.tools[0].filters.allowed_domains[0];
+    return new Response(JSON.stringify({
+      id:`resp-hybrid-${openaiRequests}`,
+      model:"gpt-5.6-luna",
+      usage:{input_tokens:50,output_tokens:25,total_tokens:75},
+      output:[
+        {type:"web_search_call",action:{sources:[{url:sourceForFirstDomain[firstDomain],title:"official"}]}},
+        {type:"message",content:[{type:"output_text",text:JSON.stringify({opportunities:firstDomain === "upwork.com" ? [candidate()] : []})}]}
+      ]
+    }), {status:200});
+  };
+  try {
+    const response = await handler(new Request("https://radar.test/api/search", {
+      method:"POST",
+      headers:{authorization:"Bearer team-secret","content-type":"application/json"},
+      body:"{}"
+    }), {deploy:{context:"production"}});
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(firecrawlRequests, 5);
+    assert.equal(openaiRequests, 5);
+    assert.equal(payload.run.cloud_browser_requests, 5);
+    assert.equal(payload.run.firecrawl_credits_used, 26);
+    assert.equal(payload.run.paid_execution.source_requests, 5);
+    assert.equal(payload.run.paid_execution.retries, 0);
   } finally {
     globalThis.fetch = oldFetch;
     restore();
