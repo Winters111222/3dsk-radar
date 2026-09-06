@@ -16,7 +16,7 @@ export const PRODUCTION_SEARCH_MAX_OUTPUT_TOKENS = 8000;
 export const PRODUCTION_WIDE_SEARCH_MAX_CAP_MICROUSD = 2_000_000;
 export const PRODUCTION_WIDE_SEARCH_MAX_RESULTS = 24;
 export const PRODUCTION_WIDE_SEARCH_MAX_OUTPUT_TOKENS_PER_SHARD = 6000;
-export const PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT = "1";
+export const PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT = "2";
 
 const enabled = (value) => String(value || "").toLowerCase() === "true";
 
@@ -65,10 +65,10 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
     mode:wide ? (recovery ? "PRODUCTION_APPROVED_WIDE_RECOVERY" : "PRODUCTION_DAILY_WIDE_INDEX") : "PRODUCTION_DAILY",
     search_profile:wide ? "WIDE_INDEX" : "FOCUSED",
     run_id:wide
-      ? `prod-wide-index-search-${windowUtc.replaceAll("-", "")}${recovery ? "-recovery-1" : ""}`
+      ? `prod-wide-index-search-${windowUtc.replaceAll("-", "")}${recovery ? `-recovery-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : ""}`
       : `prod-search-${windowUtc.replaceAll("-", "")}`,
-    operation_id:wide ? (recovery ? "approved-wide-recovery-1" : "daily-wide-index-search") : "daily-focused-search",
-    reservation_id:wide ? (recovery ? "approved-wide-recovery-budget-1" : "daily-wide-index-budget") : "daily-focused-budget",
+    operation_id:wide ? (recovery ? `approved-wide-recovery-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-search") : "daily-focused-search",
+    reservation_id:wide ? (recovery ? `approved-wide-recovery-budget-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-budget") : "daily-focused-budget",
     window_utc:windowUtc,
     cap_microusd:capMicrousd,
     max_results:maxResults,
