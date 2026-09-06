@@ -1,6 +1,6 @@
 # Audit historické relevance zdrojů
 
-**Rozhodnutí vlastníka · 5. září 2026**
+**Rozhodnutí vlastníka · 5. září 2026 · evidence a access review aktualizovány 6. září 2026**
 
 Radar nesmí plošně prohledávat obecné pracovní, procurement ani 3D weby jen proto, že jejich název vypadá relevantně. Zdroj se smí stát runtime kandidátem teprve po doložení konkrétních historických buyer nabídek odpovídajících schopnostem 3D.SK.
 
@@ -19,13 +19,15 @@ Strojově čitelným zdrojem pravdy je [`config/source-historical-qualification.
 
 ## Tier A — doložená buyer relevance
 
-| Zdroj | Historický důkaz | Co ještě blokuje runtime |
+| Zdroj | Dva historické buyer důkazy | Co ještě blokuje runtime |
 |---|---|---|
-| Upwork | [Ongoing full-body human photogrammetry scan cleanup](https://www.upwork.com/freelance-jobs/apply/Scan-Cleanup-Full-Body-Human-Photogrammetry-Ongoing_~022093482015133487827/) | Jen schválený API use case; žádný HTML scraper |
-| Freelancer | [Photogrammetry heads a 3D athlete characters](https://www.freelancer.com/projects/3d-modelling/Character-Texture-Artist) | Starý uzavřený důkaz; schválená datová cesta a aktuální yield chybí |
-| Unreal Job Offerings | [Placená MetaHuman assembly a wardrobe setup](https://forums.unrealengine.com/t/paid-metahuman-expert-needed-for-character-assembly-and-wardrobe-setup/2734270) | Access review blokuje automatizaci |
-| Polycount Paid | [Placený character-art projekt](https://polycount.com/discussion/239037/paid-freelance-stylized-game-artist-s-characters-animation-environment-art) | Access review; příklad je USA-only |
-| Reddit gameDevClassifieds | [Character artist](https://www.reddit.com/r/gameDevClassifieds/comments/1kktbal/hiring_3d_character_artist_webcomic_in_development/) a [character modelling/rigging/animation](https://www.reddit.com/r/gameDevClassifieds/comments/1fyhewr/paid_indie_developer_looking_for_3d_character/) | Směšuje HIRING/FOR HIRE; nutná schválená API cesta |
+| Upwork | [Ongoing full-body scan cleanup](https://www.upwork.com/freelance-jobs/apply/Scan-Cleanup-Full-Body-Human-Photogrammetry-Ongoing_~022093482015133487827/) · [MetaHuman technical artist](https://www.upwork.com/freelance-jobs/apply/Unreal-Engine-MetaHuman-Technical-Artist_~022095854476309693425/) | [Schválený API use case](https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly); žádný HTML scraper |
+| Freelancer | [Photogrammetry heads a 3D athlete characters](https://www.freelancer.com/projects/3d-modelling/Character-Texture-Artist) · [Full-body scan cleanup](https://www.freelancer.com/projects/photoshop/provide-human-body-scan-model) | [Výslovné písemné povolení](https://www.freelancer.com/about/terms) pro agregaci listings z více webů |
+| Unreal Job Offerings | [MetaHuman assembly a wardrobe setup](https://forums.unrealengine.com/t/paid-metahuman-expert-needed-for-character-assembly-and-wardrobe-setup/2734270) · [Placené low-poly characters](https://forums.unrealengine.com/t/low-poly-character-modeller-needed/43032) | [Robots pravidla](https://forums.unrealengine.com/robots.txt) blokují search a topic/category RSS |
+| Polycount Paid | [Placený character-art projekt](https://polycount.com/discussion/239037/paid-freelance-stylized-game-artist-s-characters-animation-environment-art) · [Placený test a sada 20+ real-time účesů](https://polycount.com/discussion/238763/paid-real-time-character-hair-artist-mens-hairstyles-for-ios-ar-app-usdz-glb) | [User content má NonCommercial licenci](https://polycount.com/discussion/193727/terms-of-service); komerční reuse není potvrzen |
+| Reddit gameDevClassifieds | [Character artist](https://www.reddit.com/r/gameDevClassifieds/comments/1kktbal/hiring_3d_character_artist_webcomic_in_development/) a [character modelling/rigging/animation](https://www.reddit.com/r/gameDevClassifieds/comments/1fyhewr/paid_indie_developer_looking_for_3d_character/) | Směšuje HIRING/FOR HIRE; [komerční Data API použití vyžaduje samostatnou dohodu](https://www.redditinc.com/policies/data-api-terms) |
+
+Všech pět Tier A zdrojů nyní splňuje pouze historickou část podmínky. Access review je zdrojově specifický: Upwork vyžaduje schválený API use case, Freelancer písemné povolení pro multi-site agregaci, Reddit samostatnou dohodu pro komerční API použití a Unreal/Polycount zatím nemají povolenou automatizační cestu. Tyto blokace jsou záměrně uložené ve stejném strojovém artefaktu jako evidence.
 
 ## Tier B — signál, nikoli přímá B2B objednávka
 
@@ -51,13 +53,13 @@ Zdroj lze navrhnout k runtime aktivaci pouze tehdy, když současně:
 1. je Tier A a má nejméně dva konkrétní pozitivní historické buyer příklady;
 2. má výslovně schválenou automatizační cestu (`AUTOMATION_APPROVED`);
 3. v odděleném source-specific benchmarku dosáhne precision alespoň 80 %;
-4. benchmark obsahuje nejméně 30 ručně zkontrolovaných přijatých hitů;
+4. benchmark obsahuje nejméně 30 ručně zkontrolovaných kandidátů z daného zdroje; precision se počítá jako `accepted_relevant_hits / reviewed_candidates`, takže se do jmenovatele započítají i nerelevantní výsledky;
 5. runtime změna projde samostatnou implementací, testy a schválením.
 
-Dokud všechny podmínky neplatí, `runtime_eligible` musí zůstat `false`. `npm run sources:check` kontroluje úplnost auditu, povolené hodnoty a tento fail-closed kontrakt bez sítě a bez OpenAI.
+Dokud všechny podmínky neplatí, `runtime_eligible` musí zůstat `false`. `npm run sources:check` kontroluje úplnost auditu, povolené hodnoty a tento fail-closed kontrakt bez sítě a bez OpenAI. `npm run report:sources:readiness` navíc vytiskne stav evidence, access a yieldu každého Tier A zdroje; také bez sítě a bez OpenAI.
 
 Runtime endpointy navíc načítají stejný kvalifikační artefakt a vracejí `SOURCE_RELEVANCE_LOCKED`, pokud zdroj není způsobilý. Samotné nastavení `RADAR_SOURCE_COLLECTION_ENABLED=true` tedy pojistku relevance neobejde.
 
 ## Praktický další krok
 
-Nejrozumnější další fáze není WIDE crawl. Je to levný source-specific benchmark Tier A cest, které lze používat legálně a technicky bezpečně. Každý zdroj se změří zvlášť, aby široký šum z procurementu nebo job boardů nemohl zakrýt nulovou výtěžnost.
+Nejrozumnější další fáze není WIDE crawl. Nejdřív je nutné získat oprávněnou datovou cestu alespoň pro jeden Tier A zdroj. Teprve nad ní lze sestavit náhodný či chronologický vzorek nejméně 30 kandidátů a ručně změřit source-specific precision. Kurátorované pozitivní historické příklady se do tohoto benchmarku nesmějí vydávat za reprezentativní vzorek.
