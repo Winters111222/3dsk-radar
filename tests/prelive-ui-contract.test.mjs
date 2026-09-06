@@ -14,7 +14,14 @@ const requiredUi = [
   "MARK EMAIL SENT",
   "GENERATE RESPONSE",
   "COPY SUBJECT",
-  "COPY RESPONSE"
+  "COPY RESPONSE",
+  "Search truth counters",
+  "Studio eligibility",
+  "MANUAL SOURCE CHECK REQUIRED",
+  "OPEN ORIGINAL SOURCE",
+  "I CHECKED IT · MARK VERIFIED",
+  "SOURCE MANUALLY VERIFIED",
+  "CONTACT LOCKED"
 ];
 
 test("pre-live UI contains the complete V0.1 decision and response flow", () => {
@@ -38,4 +45,18 @@ test("both paid API endpoints remain locked before key use", () => {
     assert.match(source, /LIVE_AI_LOCKED/);
     assert.ok(source.indexOf("LIVE_AI_LOCKED") < source.indexOf("OPENAI_API_KEY"));
   }
+});
+
+test("browser enables paid controls only from their dedicated health states", () => {
+  assert.match(app, /h\.production_search==="READY"/);
+  assert.match(app, /h\.production_reply==="READY"/);
+  assert.match(app, /one paid run per UTC day/);
+  assert.match(app, /Today's search loaded without a second charge/);
+});
+
+test("wide search uses a background function and polls durable coordinator state", () => {
+  assert.match(app, /state\.searchProfile==="WIDE_INDEX"/);
+  assert.match(app, /\/api\/search-background/);
+  assert.match(app, /\/api\/search-status/);
+  assert.match(app, /No automatic retry was attempted/);
 });

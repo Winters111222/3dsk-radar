@@ -32,21 +32,49 @@
         </div>
         <div class="hero-actions">
           <label class="access-control" for="access-code"><span>TEAM ACCESS CODE</span><input id="access-code" type="password" autocomplete="current-password" placeholder="Stored only for this browser session"></label>
-          <div class="hero-button-row"><button id="connect-button" class="secondary-button" type="button">LOAD TEAM STATE</button><button id="find-button" class="primary-button" type="button">FIND NEW OPPORTUNITIES</button></div>
+          <div class="hero-button-row"><button id="connect-button" class="secondary-button" type="button">LOAD TEAM STATE</button><button id="find-button" class="primary-button" type="button" disabled>FIND NEW OPPORTUNITIES · PAID LOCKED</button></div>
           <p id="last-search" class="microcopy">Connect to view saved search history</p><div class="hero-button-row"><button id="demo-button" class="action-button" type="button">EXPLORE DEMO · $0</button><button id="signout-button" class="action-button" type="button">DISCONNECT</button></div>
           <p id="scan-note" class="microcopy">Paid AI is server-locked until final acceptance.</p>
         </div>
       </section>
 
+      <section id="source-run-panel" class="panel source-run-panel" aria-label="Zero-cost source collection">
+        <div class="source-run-head">
+          <div><p class="eyebrow">PHASE C · PERSISTED · ZERO AI COST</p><h3>Source candidate collection</h3><p>Collect bounded first-party source records, preserve progress between page loads and review provenance before any record can become an opportunity.</p></div>
+          <span id="source-run-status" class="source-run-status" data-state="LOCKED">LOCKED</span>
+        </div>
+        <div class="source-run-controls">
+          <label for="source-run-profile"><span>RUN PROFILE</span><select id="source-run-profile"><option value="FOCUSED">Focused · 120 page / 45 candidate cap</option><option value="WIDE">Wide · 500 page / 180 candidate cap</option></select></label>
+          <button id="source-run-button" class="primary-button" type="button" disabled>START ZERO-COST SOURCE RUN</button>
+          <button id="source-run-cancel" class="action-button" type="button" disabled>CANCEL RUN</button>
+        </div>
+        <div id="source-run-progress" class="source-run-progress" aria-label="Source run progress"></div>
+        <p id="source-run-note" class="microcopy" aria-live="polite">Source collection status is loading.</p>
+        <details class="source-candidate-review"><summary>Candidate truth review <span>verified promotion only</span></summary><p class="microcopy">Every raw record is fetched through a fixed first-party detail adapter. Only records that pass Phase A buyer, status, studio eligibility, scope, freshness, provenance and dedupe gates become opportunities; all other records retain an explicit rejection reason.</p><ul id="source-run-candidates" class="source-run-candidates"></ul></details>
+      </section>
+
       <details id="prelive-tools" class="panel result-filters" hidden><summary>Pre-live system checks · isolated test workspace</summary><p>Test data are separate from real opportunities. Paid AI must remain locked.</p><button id="seed-test-button" class="action-button" type="button">LOAD SHARED TEST DATA</button><button id="check-locks-button" class="action-button" type="button">CHECK AI LOCKS · $0</button><pre id="system-check-result" style="white-space:pre-wrap;overflow-wrap:anywhere" aria-live="polite"></pre></details>
       <section id="summary-grid" class="summary-grid" aria-label="Opportunity summary"></section>
+      <section id="run-counters" class="panel run-counters" aria-label="Last search truth counters" hidden>
+        <div class="section-heading"><div><p class="eyebrow">LAST RUN · MEASURED</p><h3>Search truth counters</h3></div><span id="run-counter-mode" class="result-count"></span></div>
+        <div id="run-counter-grid" class="run-counter-grid"></div>
+        <p class="microcopy">A dash means the legacy hosted-search collector cannot measure that value yet. It is never silently reported as zero.</p>
+      </section>
+      <section id="search-diagnostics" class="panel run-counters" aria-label="Search yield diagnostics" hidden>
+        <div class="section-heading"><div><p class="eyebrow">LAST PAID SEARCH · AGGREGATED COUNTS ONLY</p><h3>Search yield diagnostics</h3></div><span id="search-diagnostic-state" class="result-count"></span></div>
+        <div id="search-coverage-grid" class="run-counter-grid" aria-label="Required search coverage"></div>
+        <div id="source-yield-grid" class="run-counter-grid"></div>
+        <p id="search-diagnostic-summary" class="diagnostic-summary"></p>
+        <p id="search-rejection-summary" class="microcopy"></p>
+      </section>
 
       <section class="toolbar panel">
-        <div class="segmented" role="group" aria-label="Opportunity view">
+        <div class="segmented" role="group" aria-label="Sales and intelligence view">
           <button class="segment is-active" data-view="ALL" type="button">ALL</button>
           <button class="segment" data-view="BOOKMARKED" type="button">★ BOOKMARKED</button>
           <button class="segment" data-view="OPEN_OPPORTUNITY" type="button">OPEN OPPORTUNITIES</button>
           <button class="segment" data-view="POTENTIAL_LEAD" type="button">POTENTIAL LEADS</button>
+          <button class="segment" data-view="COMPETITORS" type="button">COMPETITORS</button>
         </div>
         <div class="toolbar-controls">
           <label><span>Status</span><select id="status-filter"><option value="ALL">All</option><option value="NEW">New</option><option value="INTERESTING">Interesting</option><option value="CONTACTED">Contacted</option><option value="IGNORE">Ignore</option></select></label>
@@ -66,7 +94,7 @@
       </section>
       <section class="results-layout">
         <div class="panel table-panel">
-          <div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3>Ranked opportunities</h3></div><span id="result-count" class="result-count"></span></div>
+          <div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3>Sales opportunities & competitor intelligence</h3></div><span id="result-count" class="result-count"></span></div>
           <div class="table-scroll"><table><thead><tr>
             <th scope="col">Select</th><th scope="col"><button type="button" data-sort="company_bookmarked">★<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="fit_score">Fit<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="win_score">Win<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="title">Opportunity<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company">Company<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="opportunity_kind">Type<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="budget_type">Budget<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="published_date">Date<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="first_seen">Found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="last_seen">Last found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company_last_contacted_at">Outreach<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="contact_email">Contact<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="status">Status<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="source_url">Source<span aria-hidden="true"> ↕</span></button></th>
           </tr></thead><tbody id="opportunity-body"></tbody></table></div>
@@ -74,7 +102,7 @@
         <aside id="detail-panel" class="panel detail-panel" tabindex="-1" aria-label="Opportunity detail" aria-live="polite"></aside>
       </section>
 
-      <section class="panel safety-note"><div><p class="eyebrow">SAFETY CONTRACT</p><h3>Truth beats completion.</h3></div><p>No guessed email addresses. Potential leads are never presented as open requests. Published, estimated and unknown budgets remain distinct. Company-level contact history survives new opportunities so repeat outreach is visible before a second email is prepared.</p></section>
+      <section class="panel safety-note"><div><p class="eyebrow">SAFETY CONTRACT</p><h3>Truth beats completion.</h3></div><p>No guessed email addresses. Potential leads are never presented as open requests. New results must be current, active and usable by a studio; older than 30 days requires explicit current acceptance evidence. Published, estimated and unknown budgets remain distinct.</p></section>
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

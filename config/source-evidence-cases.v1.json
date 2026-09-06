@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "purpose": "Research-derived acceptance specifications; not live application results and not executed classifier tests.",
+  "cases": [
+    {
+      "id": "human_scan_batch",
+      "source_url": "https://www.upwork.com/freelance-jobs/apply/Scan-Cleanup-Full-Body-Human-Photogrammetry-Ongoing_~022093482015133487827/",
+      "observed_at": "2026-09-05",
+      "expected_role": "BUYER",
+      "expected_fit_lane": "CORE",
+      "expected_disposition": "RECENT_SOLICITATION_OBSERVED",
+      "expected_budget": "PUBLISHED_BUYER_HOURLY",
+      "note": "Human scan cleanup, recurring batches 20–50; team capacity explicitly asked. USD 12–30/h. Published label is relative: Posted last week. Aug 28 is account membership date, not a verified publication date. Platform contact only; reconfirm accepting before outreach."
+    },
+    {
+      "id": "metahuman_old",
+      "source_url": "https://forums.unrealengine.com/t/paid-metahuman-expert-needed-for-character-assembly-and-wardrobe-setup/2734270",
+      "observed_at": "2026-09-05",
+      "expected_role": "BUYER",
+      "expected_fit_lane": "CORE",
+      "expected_disposition": "OLDER_REQUIRES_REVALIDATION",
+      "expected_budget": "UNKNOWN",
+      "note": "July 8 2026 paid assembly/wardrobe brief. No visible price. Contact must come from original buyer post, not vendor replies."
+    },
+    {
+      "id": "polycount_us_only",
+      "source_url": "https://polycount.com/discussion/239037/paid-freelance-stylized-game-artist-s-characters-animation-environment-art",
+      "observed_at": "2026-09-05",
+      "expected_role": "BUYER",
+      "expected_fit_lane": "ADJACENT",
+      "expected_disposition": "GEOGRAPHICALLY_INELIGIBLE",
+      "expected_budget": "UNKNOWN",
+      "note": "Aug 22 2026 paid stylized characters/animation; USA-based only. Do not rank as an eligible Czech studio opportunity."
+    },
+    {
+      "id": "freelancer_bid",
+      "source_url": "https://www.freelancer.com/projects/unity/unity-realistic-character-animation",
+      "observed_at": "2026-09-05",
+      "expected_role": "BUYER",
+      "expected_fit_lane": "CORE",
+      "expected_disposition": "REVALIDATE_DETAIL",
+      "expected_budget": "UNKNOWN",
+      "note": "USD 114 is Average bid, not published buyer budget. Runtime detail access not tested; one repeat research read failed."
+    },
+    {
+      "id": "unfold_related_price",
+      "source_url": "https://remotegamejobs.com/jobs/unfold-games-3d-character-animator-humanoid-animation-remote-job",
+      "observed_at": "2026-09-05",
+      "expected_role": "EMPLOYER",
+      "expected_fit_lane": "CORE",
+      "expected_disposition": "INDIVIDUAL_CONTRACT_STUDIO_ELIGIBILITY_UNKNOWN",
+      "expected_budget": "UNKNOWN",
+      "note": "Humanoid animator contract. USD 55–70/h on this page belongs to a different Related Jobs employer; never assign it to Unfold."
+    },
+    {
+      "id": "kindred_closed",
+      "source_url": "https://www.workwithindies.com/careers/kindred-spirit-games-3d-character-artist",
+      "observed_at": "2026-09-05",
+      "expected_role": "EMPLOYER",
+      "expected_fit_lane": "CORE",
+      "expected_disposition": "CLOSED",
+      "expected_budget": "UNKNOWN",
+      "note": "Published Aug 14 2024; CLOSED and UK-only. Recent search-engine crawl does not make it a fresh opening."
+    },
+    {
+      "id": "gebiz_closed",
+      "source_url": "https://www.gebiz.gov.sg/ptn/opportunity/opportunityDetails.xhtml?OPPORTUNITY_ID=1000000000000523257&code=NHB000ETT26000003&origin=rss&status=RELEASED&type=TT",
+      "observed_at": "2026-09-05",
+      "expected_role": "BUYER",
+      "expected_fit_lane": "ADJACENT",
+      "expected_disposition": "CLOSED_PENDING_AWARD",
+      "expected_budget": "UNKNOWN",
+      "note": "NHB000ETT26000003 closed May 4 2026. Artefact photogrammetry/modeling/animation service scope; current detail status beats RELEASED URL parameter. No republication of tender documents."
+    },
+    {
+      "id": "ungm_sites",
+      "source_url": "https://www.ungm.org/Public/Notice/224847",
+      "observed_at": "2026-09-05",
+      "expected_role": "BUYER",
+      "expected_fit_lane": "OUT_OF_CORE",
+      "expected_disposition": "EXPIRED",
+      "expected_budget": "UNKNOWN",
+      "note": "UNDP-CYP-00082,2 digital 3D models for two sites; deadline Feb 27 2024. Sites are not human character production."
+    },
+    {
+      "id": "pcs_hardware",
+      "source_url": "https://www.publiccontractsscotland.gov.uk/search/show/search_view.aspx?ID=FEB549884",
+      "observed_at": "2026-09-05",
+      "expected_role": "BUYER",
+      "expected_fit_lane": "EQUIPMENT",
+      "expected_disposition": "REJECT_EQUIPMENT",
+      "expected_budget": "UNKNOWN",
+      "note": "Terrestrial laser scanner and software; purchase price is not a production-services budget."
+    },
+    {
+      "id": "een_seller",
+      "source_url": "https://een.ec.europa.eu/partnering-opportunities/polish-engineering-sme-offers-reverse-engineering-metrology-grade-3d",
+      "observed_at": "2026-09-05",
+      "expected_role": "SELLER",
+      "expected_fit_lane": "OUT_OF_CORE",
+      "expected_disposition": "SUPPLIER_OFFER",
+      "expected_budget": "UNKNOWN",
+      "note": "Engineering SME offers scanning and seeks outsourcing agreements. Seller direction remains seller despite outsourcing keyword."
+    },
+    {
+      "id": "riot_outsourcing_job",
+      "source_url": "https://www.riotgames.com/en/work-with-us/job/8003925/senior-art-outsourcing-manager-weapon-concept-valorant-skins-mercer-island-usa",
+      "observed_at": "2026-09-05",
+      "expected_role": "EMPLOYER",
+      "expected_fit_lane": "ADJACENT",
+      "expected_disposition": "BUYING_SIGNAL_ONLY",
+      "expected_budget": "UNKNOWN",
+      "note": "Art outsourcing management is a supplier-usage signal. Employee salary USD 150000–209600 is not a buyer project budget."
+    }
+  ]
+}

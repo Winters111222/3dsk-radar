@@ -11,8 +11,9 @@ Nejdřív načti:
 1. `README.md`
 2. `docs/PROJECT_BRIEF_CZ.md`
 3. `docs/PRODUCT_DECISION_COMPANY_MEMORY_CZ.md`
-4. `docs/PRELIVE_ACCEPTANCE_CZ.md`, pokud existuje
-5. aktuální `main` a relevantní aktivní review branch/PR podle handoffu
+4. `docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md`
+5. `docs/PRELIVE_ACCEPTANCE_CZ.md`, pokud existuje
+6. aktuální `main` a relevantní aktivní review branch/PR podle handoffu
 
 Tyto soubory jsou autoritou pro scope MVP. Novější explicitní product decision doplňuje původní brief tam, kde byl scope později zpřesněn.
 

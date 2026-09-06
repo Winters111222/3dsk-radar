@@ -16,14 +16,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build exact-revision metadata
+        env:
+          COMMIT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          CONTEXT: ci
+          RADAR_ARTIFACT_PROVENANCE: CI_TESTED_SOURCE
+          RADAR_ACCEPTANCE_PROFILE: PAID_FOCUSED
+        run: npm run build
       - name: Run tests
         run: npm test
+      - name: Validate source research catalog (offline)
+        run: npm run sources:check
       - name: Run zero-cost fixture acceptance
         run: npm run accept:fixture
       - name: Run static HTTP smoke acceptance
@@ -36,7 +47,10 @@ jobs:
             node --check "$file"
           done
       - name: Package tested source
-        run: git archive --format=tar.gz -o radar-source.tar.gz HEAD
+        run: |
+          git archive --format=tar -o radar-source.tar HEAD
+          tar --append --file radar-source.tar build-metadata.json
+          gzip -9 radar-source.tar
       - name: Upload tested source
         uses: actions/upload-artifact@v4
         with:
@@ -44,14 +58,3 @@ jobs:
           path: radar-source.tar.gz
           if-no-files-found: error
           retention-days: 7
-      - name: Prepare isolated Netlify deploy helper
-        run: |
-          npm install --ignore-scripts --no-save --no-audit --no-fund @netlify/mcp@1.15.1
-          tar -czf netlify-mcp-runtime.tar.gz node_modules
-      - name: Upload Netlify deploy helper
-        uses: actions/upload-artifact@v4
-        with:
-          name: netlify-mcp-runtime
-          path: netlify-mcp-runtime.tar.gz
-          if-no-files-found: error
-          retention-days: 1

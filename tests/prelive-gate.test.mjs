@@ -10,4 +10,6 @@ test("all paid AI paths are guarded by explicit final-acceptance kill switch",()
     assert.ok(source.indexOf("LIVE_AI_LOCKED") < source.indexOf("OPENAI_API_KEY"));
   }
   assert.match(env,/^RADAR_LIVE_AI_ENABLED=false$/m);
+  assert.match(env,/^RADAR_PRODUCTION_SEARCH_ENABLED=false$/m);
+  assert.match(env,/^RADAR_PRODUCTION_REPLY_ENABLED=false$/m);
 });

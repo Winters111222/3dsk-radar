@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "status": "PROPOSED_NOT_RUNTIME_CONFIG",
+  "packs": [
+    {
+      "id": "human_scan",
+      "lane": "CORE",
+      "language": "en",
+      "terms": [
+        "human photogrammetry",
+        "full body scan",
+        "scan cleanup",
+        "scan processing",
+        "RealityCapture",
+        "retopology",
+        "R3DS Wrap",
+        "basemesh conforming"
+      ],
+      "queries": [
+        "\"human scan\" \"cleanup\" (looking OR needed OR hiring)",
+        "\"full body\" \"photogrammetry\" (contract OR paid OR project)",
+        "\"scan cleanup\" (batch OR ongoing OR team)",
+        "\"R3DS Wrap\" (freelance OR contract OR seeking)"
+      ]
+    },
+    {
+      "id": "character_pipeline",
+      "lane": "CORE",
+      "language": "en",
+      "terms": [
+        "realistic character",
+        "digital double",
+        "digital human",
+        "likeness",
+        "NPC",
+        "game ready character",
+        "texturing",
+        "groom"
+      ],
+      "queries": [
+        "\"character artist\" (freelance OR outsourcing) (needed OR hiring)",
+        "\"digital double\" (brief OR RFP OR seeking)",
+        "\"realistic character\" (commission OR contract OR vendor)",
+        "\"game ready\" \"character\" (paid OR project)"
+      ]
+    },
+    {
+      "id": "facial",
+      "lane": "CORE",
+      "language": "en",
+      "terms": [
+        "FACS",
+        "facial rig",
+        "blendshapes",
+        "facial scan",
+        "MetaHuman",
+        "facial deformation"
+      ],
+      "queries": [
+        "\"FACS\" (contract OR vendor OR outsourcing)",
+        "\"facial rig\" (needed OR hiring OR commission)",
+        "\"MetaHuman\" (\"paid contract\" OR \"expert needed\")",
+        "\"blendshapes\" (freelance OR outsourcing) (hiring OR project)"
+      ]
+    },
+    {
+      "id": "overflow",
+      "lane": "CORE",
+      "language": "en",
+      "terms": [
+        "production overflow",
+        "external art",
+        "co-development",
+        "character outsourcing",
+        "vendor capacity"
+      ],
+      "queries": [
+        "\"character art\" \"external\" (vendor OR partner) (seeking OR request)",
+        "\"art production\" \"overflow\" (partner OR capacity)",
+        "\"character\" \"request for proposal\"",
+        "\"outsourcing\" \"characters\" \"looking for\""
+      ]
+    },
+    {
+      "id": "contract_art",
+      "lane": "HIRING_SIGNAL",
+      "language": "en",
+      "terms": [
+        "character artist contract",
+        "technical animator",
+        "rigging artist",
+        "freelance animator"
+      ],
+      "queries": [
+        "\"character artist\" (contract OR freelance) remote",
+        "\"rigging artist\" (contract OR freelance)",
+        "\"technical animator\" contract remote",
+        "\"humanoid animation\" (contract OR freelance)"
+      ]
+    },
+    {
+      "id": "vendor_signal",
+      "lane": "BUYER_SIGNAL",
+      "language": "en",
+      "terms": [
+        "art outsourcing manager",
+        "external development producer",
+        "supplier registration",
+        "art vendor application"
+      ],
+      "queries": [
+        "\"art outsourcing manager\" \"external partners\"",
+        "\"external development\" \"character\" producer",
+        "\"art vendor\" (application OR registration OR seeking)",
+        "\"supplier\" \"post production\" registration"
+      ]
+    },
+    {
+      "id": "service_tenders",
+      "lane": "PROCUREMENT",
+      "language": "en",
+      "terms": [
+        "3D scanning services",
+        "digital human",
+        "facial capture services",
+        "character animation production",
+        "photogrammetry services"
+      ],
+      "queries": [
+        "\"3D scanning services\" (tender OR RFP OR procurement)",
+        "\"digital human\" (tender OR RFP OR procurement)",
+        "\"character animation production\" (tender OR RFQ)",
+        "\"photogrammetry\" (tender OR RFQ) (human OR artefact)"
+      ]
+    }
+  ],
+  "localized_queries": [
+    {
+      "language": "cs",
+      "pack_id": "human_scan",
+      "query": "\"skenování osob\" poptávka",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "cs",
+      "pack_id": "service_tenders",
+      "query": "\"3D animace postav\" \"veřejná zakázka\"",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "de",
+      "pack_id": "human_scan",
+      "query": "\"3D Körperscan\" Auftrag",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "de",
+      "pack_id": "character_pipeline",
+      "query": "\"Charaktermodellierung\" Freelancer gesucht",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "fr",
+      "pack_id": "human_scan",
+      "query": "\"scan 3D humain\" prestation",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "fr",
+      "pack_id": "character_pipeline",
+      "query": "\"personnage 3D\" \"recherche freelance\"",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "es",
+      "pack_id": "character_pipeline",
+      "query": "\"personajes 3D\" \"buscamos\" freelance",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "es",
+      "pack_id": "service_tenders",
+      "query": "\"animación de personajes 3D\" licitación",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "it",
+      "pack_id": "character_pipeline",
+      "query": "\"personaggi 3D\" \"cerchiamo\" freelance",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "it",
+      "pack_id": "human_scan",
+      "query": "\"fotogrammetria\" \"corpo umano\" progetto",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "pl",
+      "pack_id": "character_pipeline",
+      "query": "\"postacie 3D\" zlecenie",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "pl",
+      "pack_id": "service_tenders",
+      "query": "\"animacja postaci 3D\" przetarg",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "pt",
+      "pack_id": "character_pipeline",
+      "query": "\"personagens 3D\" \"procuramos\" freelancer",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "pt",
+      "pack_id": "service_tenders",
+      "query": "\"animação de personagem 3D\" licitação",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "ja",
+      "pack_id": "character_pipeline",
+      "query": "\"3Dキャラクター\" \"業務委託\"",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "ja",
+      "pack_id": "human_scan",
+      "query": "\"3Dスキャン\" \"人物\" \"募集\"",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    }
+  ],
+  "planning_rules": {
+    "expansion": "Select source-appropriate queries; never execute the full source × query × language Cartesian product.",
+    "date_windows_days": [
+      1,
+      7,
+      30
+    ],
+    "older_records": "Require independent evidence of still accepting; last_crawled is not publication or acceptance.",
+    "site_scoping": "Use verified source domain/category. Official API adapters use native filters, not search-engine query strings.",
+    "hard_reject_semantics": [
+      "seller_only",
+      "closed_or_filled",
+      "awarded_or_cancelled",
+      "unpaid_only",
+      "revshare_only",
+      "equipment_only",
+      "geospatial_or_bim_only",
+      "geo_ineligible"
+    ],
+    "notes": "Do not globally minus paid/for hire/closed words: mixed headings, negations and useful stale buyer signals require body-level classification."
+  },
+  "run_profiles": [
+    {
+      "id": "focused",
+      "max_sources": 15,
+      "max_list_pages": 40,
+      "max_detail_pages": 80,
+      "max_ai_candidates": 45,
+      "max_hosted_web_search_calls": 12,
+      "proposed_ai_budget_usd": 0.5
+    },
+    {
+      "id": "wide",
+      "max_sources": 45,
+      "max_list_pages": 140,
+      "max_detail_pages": 360,
+      "max_ai_candidates": 180,
+      "max_hosted_web_search_calls": 40,
+      "proposed_ai_budget_usd": 1.0
+    }
+  ],
+  "profile_notes": "Capacity ceilings, not observed yield or paid authorization. Shared across retries; requested max_sources can exceed currently eligible/implemented sources.",
+  "extraction_batch_size": 15,
+  "scheduled_runs_enabled": false,
+  "automatic_paid_execution_enabled": false
+}

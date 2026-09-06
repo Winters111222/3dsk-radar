@@ -1,0 +1,1600 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-09-05",
+  "based_on_pr": 10,
+  "based_on_sha": "e57912f1c42544493912120228a15ea4b0d54112",
+  "status": "RESEARCH_CATALOG_NOT_RUNTIME_CONFIG",
+  "count_definition": "One platform or distinct official procurement service per source record; multiple category seeds do not multiply platforms. ATS templates are not sources.",
+  "caveat": "Observation is research access, not a deployed crawler test or permission to automate. All source crawling remains disabled in this artifact.",
+  "sources": [
+    {
+      "id": "polycount_paid",
+      "name": "Polycount — paid freelance",
+      "seed_urls": [
+        "https://polycount.com/categories/freelance-job-postings"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P1",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "FOLLOW_OBSERVED_NEXT_LINK_AFTER_REVIEW",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Placené freelance poptávky; první post a jeho editace, nikoli nabídky autorů v odpovědích. CLOSED/FILLED a USA-only vyřadit.",
+      "evidence_urls": [
+        "https://polycount.com/categories/freelance-job-postings"
+      ]
+    },
+    {
+      "id": "unreal_job_offerings",
+      "name": "Unreal — Job Offerings",
+      "seed_urls": [
+        "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P1",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "HTML_OR_FEED_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "DISCOURSE_PAGINATION_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "MetaHuman, rigging, character setup. I Job Offerings obsahuje LFW/sellery/revshare. Feed/JSON není provozně ověřen.",
+      "evidence_urls": [
+        "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76"
+      ]
+    },
+    {
+      "id": "blender_paid",
+      "name": "Blender Artists — Paid Work",
+      "seed_urls": [
+        "https://blenderartists.org/c/jobs/paid-work/53"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P1",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "HTML_OR_FEED_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "DISCOURSE_PAGINATION_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Placené 3D zakázky včetně charakterů a riggingu; odlišit drobné props od core služby. RSS/JSON neotestován.",
+      "evidence_urls": [
+        "https://blenderartists.org/c/jobs/paid-work/53"
+      ]
+    },
+    {
+      "id": "upwork",
+      "name": "Upwork — human scanning / photogrammetry",
+      "seed_urls": [
+        "https://www.upwork.com/freelance-jobs/photogrammetry/",
+        "https://www.upwork.com/freelance-jobs/3d-scanning/"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P1",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "APPROVED_API_OR_MANUAL",
+      "automation_review": "APPROVAL_REQUIRED",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Velmi relevantní opakované human scan cleanup zakázky. Jen schválený konkrétní API use case; žádný automatický HTML scraper. Public read neprokazuje oprávnění automatizace.",
+      "evidence_urls": [
+        "https://www.upwork.com/freelance-jobs/photogrammetry/",
+        "https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly"
+      ]
+    },
+    {
+      "id": "freelancer_3d",
+      "name": "Freelancer — 3D Modelling",
+      "seed_urls": [
+        "https://www.freelancer.com/jobs/3d-modelling/"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "APPROVED_API_OR_INDEX",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Projektové briefy; Average bid není buyer budget. Detail může být nedostupný; API/podmínky ověřit před adapterem.",
+      "evidence_urls": [
+        "https://www.freelancer.com/jobs/3d-modelling/"
+      ]
+    },
+    {
+      "id": "peopleperhour_3d",
+      "name": "PeoplePerHour — 3D Design",
+      "seed_urls": [
+        "https://www.peopleperhour.com/freelance-jobs/design/3d-design"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Veřejné briefy a budgety; kontrolovat deadline. /hourlie jsou prodávané služby, nikoli poptávky.",
+      "evidence_urls": [
+        "https://www.peopleperhour.com/freelance-jobs/design/3d-design"
+      ]
+    },
+    {
+      "id": "guru_3d",
+      "name": "Guru — 3D Modeling / Design & Art",
+      "seed_urls": [
+        "https://www.guru.com/m/find/freelance-jobs/3d-modeling/",
+        "https://www.guru.com/m/find/freelance-jobs/design-art/"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Projektové zakázky, anatomy/animation adjunct. /hire/freelancers/ je seller katalog.",
+      "evidence_urls": [
+        "https://www.guru.com/m/find/freelance-jobs/3d-modeling/"
+      ]
+    },
+    {
+      "id": "workwithindies",
+      "name": "Work With Indies",
+      "seed_urls": [
+        "https://workwithindies.com/"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P1",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Art/animation, contract/freelance. Individuální pracovní smlouva není automaticky zakázka pro studio. Ověřit CLOSED a původní datum.",
+      "evidence_urls": [
+        "https://workwithindies.com/"
+      ]
+    },
+    {
+      "id": "remote_game_jobs",
+      "name": "Remote Game Jobs — Contract / Art",
+      "seed_urls": [
+        "https://remotegamejobs.com/remote-contract-game-jobs",
+        "https://remotegamejobs.com/remote-game-art-and-animation-jobs"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P1",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Worldwide contract příležitosti; studio eligibility musí potvrdit brief. Related Jobs nesmí dodat cenu ani kontakt k hlavní nabídce.",
+      "evidence_urls": [
+        "https://remotegamejobs.com/remote-contract-game-jobs"
+      ]
+    },
+    {
+      "id": "hitmarker",
+      "name": "Hitmarker",
+      "seed_urls": [
+        "https://hitmarker.net/"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "INDEX_TO_EMPLOYER",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Dohledat původní employer source; fixed-term contract může být zaměstnání. Dedupe employer requisition ID.",
+      "evidence_urls": [
+        "https://hitmarker.net/"
+      ]
+    },
+    {
+      "id": "gamesjobsdirect",
+      "name": "Games Jobs Direct",
+      "seed_urls": [
+        "https://www.gamesjobsdirect.com/"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "INDEX_ONLY",
+      "proposed_method": "INDEX_TO_EMPLOYER",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Konkrétní detaily nalezeny indexem, homepage načtení selhalo. Provozní crawl není potvrzen.",
+      "evidence_urls": [
+        "https://www.gamesjobsdirect.com/job/keywords-studios/technical-artist-d3t-12-month-contract/355728"
+      ]
+    },
+    {
+      "id": "artstation_jobs",
+      "name": "ArtStation Jobs",
+      "seed_urls": [
+        "https://www.artstation.com/jobs"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "PARTIAL_ACCESS",
+      "proposed_method": "INDEX_TO_EMPLOYER",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Indexované role; přímá stránka převážně signup shell. Portfolia nejsou buyer nabídky. Žádné obcházení přístupu.",
+      "evidence_urls": [
+        "https://www.artstation.com/jobs"
+      ]
+    },
+    {
+      "id": "gamejobs_co",
+      "name": "GameJobs.co",
+      "seed_urls": [
+        "https://gamejobs.co/search?w=REMOTE"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "INDEX_TO_EMPLOYER",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Agregované kariérní role; následovat originál a odstranit duplicitní syndikace.",
+      "evidence_urls": [
+        "https://gamejobs.co/search?w=REMOTE"
+      ]
+    },
+    {
+      "id": "vfxengine",
+      "name": "VFXengine Jobs",
+      "seed_urls": [
+        "https://www.vfxengine.com/jobs"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "INDEX_TO_EMPLOYER",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "VFX/animation hiring; vendor poptávka potřebuje důkaz navíc. Tvrzení updated daily není ověřená latence dat.",
+      "evidence_urls": [
+        "https://www.vfxengine.com/jobs"
+      ]
+    },
+    {
+      "id": "global_animation_sheet",
+      "name": "Global animation jobs sheet",
+      "seed_urls": [
+        "https://docs.google.com/spreadsheets/d/1eR2oAXOuflr8CZeGoz3JTrsgNj3KuefbdXJOmNtjEVM/edit"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "FEED_PERMISSION_PENDING",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Studio discovery a source odkazy; remote/hybrid nejisté podle tabulky. Export/API a reuse práva pending, vždy ověřit originál.",
+      "evidence_urls": [
+        "https://docs.google.com/spreadsheets/d/1eR2oAXOuflr8CZeGoz3JTrsgNj3KuefbdXJOmNtjEVM/edit"
+      ]
+    },
+    {
+      "id": "behance_jobs",
+      "name": "Behance Jobs",
+      "seed_urls": [
+        "https://www.behance.net/joblist/"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "PARTIAL_ACCESS",
+      "proposed_method": "INDEX_OR_MANUAL",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Freelance briefy i nábor; aplikace a některé detaily za Pro. Bez identity zadavatele nepřisuzovat firmu ani email.",
+      "evidence_urls": [
+        "https://www.behance.net/joblist/"
+      ]
+    },
+    {
+      "id": "reddit_gamedevclassifieds",
+      "name": "Reddit — gameDevClassifieds",
+      "seed_urls": [
+        "https://www.reddit.com/r/gameDevClassifieds/"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "INDEX_ONLY",
+      "proposed_method": "APPROVED_API_OR_INDEX",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Silný mix HIRING / FOR HIRE. Flair může odporovat textu. API/licence a limity zatím neověřeny; žádný browser scraper.",
+      "evidence_urls": [
+        "https://www.reddit.com/r/gameDevClassifieds/"
+      ]
+    },
+    {
+      "id": "contra_opportunities",
+      "name": "Contra Opportunities",
+      "seed_urls": [
+        "https://contra.com/opportunities"
+      ],
+      "lane": "DIRECT_BUYER",
+      "priority": "P3",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "character_pipeline",
+        "facial",
+        "overflow"
+      ],
+      "observed_access": "UNVERIFIED",
+      "proposed_method": "INDEX_OR_MANUAL",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Žádný čitelný list při direct open; marketing landing page není důkaz živého feedu. /hire/ obsahuje dodavatele.",
+      "evidence_urls": [
+        "https://contra.com/opportunities"
+      ]
+    },
+    {
+      "id": "ted_eu",
+      "name": "TED — EU tenders",
+      "seed_urls": [
+        "https://ted.europa.eu/"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P1",
+      "regions": [
+        "EU",
+        "EEA"
+      ],
+      "content_languages": [
+        "en",
+        "cs",
+        "de",
+        "fr",
+        "es",
+        "it",
+        "pl"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "DOCUMENTATION_OBSERVED",
+      "proposed_method": "PUBLIC_API",
+      "automation_review": "DOCUMENTED_OPEN_DATA",
+      "pagination": "EXPERT_QUERY_XML_AND_API_PAGINATION_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Anonymní Search API pro reuse; notice type, lot, latest revision a deadline. CPV samo nestačí.",
+      "evidence_urls": [
+        "https://docs.ted.europa.eu/api/latest/search.html"
+      ]
+    },
+    {
+      "id": "find_tender_uk",
+      "name": "Find a Tender",
+      "seed_urls": [
+        "https://www.find-tender.service.gov.uk/"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P1",
+      "regions": [
+        "UK"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "DOCUMENTATION_OBSERVED",
+      "proposed_method": "OCDS_API",
+      "automation_review": "DOCUMENTED_OPEN_DATA",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "OCDS read data dokumentována GOV.UK; detailní API docs direct open 403. Provozní adapter neotestován.",
+      "evidence_urls": [
+        "https://www.gov.uk/government/publications/open-contracting",
+        "https://www.find-tender.service.gov.uk/Developer/Documentation"
+      ]
+    },
+    {
+      "id": "contracts_finder_uk",
+      "name": "Contracts Finder",
+      "seed_urls": [
+        "https://www.contractsfinder.service.gov.uk/"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P1",
+      "regions": [
+        "UK"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "DOCUMENTATION_OBSERVED",
+      "proposed_method": "OCDS_API",
+      "automation_review": "DOCUMENTED_OPEN_DATA",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Použít OCDS read/download, nezaměnit publishing API. Překryv s FTS podle procurement ID.",
+      "evidence_urls": [
+        "https://www.gov.uk/government/publications/open-contracting"
+      ]
+    },
+    {
+      "id": "sam_us",
+      "name": "SAM.gov Contract Opportunities",
+      "seed_urls": [
+        "https://sam.gov/"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P2",
+      "regions": [
+        "US"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "DOCUMENTATION_OBSERVED",
+      "proposed_method": "KEYED_PUBLIC_API",
+      "automation_review": "KEY_REQUIRED",
+      "pagination": "DATE_WINDOW_OFFSET_DOCUMENTED",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "SAM API key nutný; role-specific limity. postedFrom/To interval nejvýše rok, page limit 1000. active:Yes může být i award.",
+      "evidence_urls": [
+        "https://open.gsa.gov/api/get-opportunities-public-api/"
+      ]
+    },
+    {
+      "id": "canadabuys",
+      "name": "CanadaBuys",
+      "seed_urls": [
+        "https://canadabuys.canada.ca/en/tender-opportunities"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P1",
+      "regions": [
+        "CA"
+      ],
+      "content_languages": [
+        "en",
+        "fr"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "DOCUMENTATION_OBSERVED",
+      "proposed_method": "OPEN_DATA_OR_FEED",
+      "automation_review": "DOCUMENTED_OPEN_DATA",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Open/cancelled/expired jsou ve stejných datech. Feed/download endpoint vyřešit před enable; některé dokumenty SAP login.",
+      "evidence_urls": [
+        "https://open.canada.ca/data/en/dataset/6abd20d4-7a1c-4b38-baa2-9525d0bb2fd2",
+        "https://canadabuys.canada.ca/en/support/searching-tender-opportunities"
+      ]
+    },
+    {
+      "id": "austender",
+      "name": "AusTender — Approaches to Market",
+      "seed_urls": [
+        "https://www.tenders.gov.au/atm"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P2",
+      "regions": [
+        "AU"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "INDEX_ONLY",
+      "proposed_method": "HTML_OR_FEED_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Hledat current ATM. Contract Notice OCDS award data nejsou feed otevřených poptávek. RSS pending.",
+      "evidence_urls": [
+        "https://www.finance.gov.au/government/procurement",
+        "https://www.tenders.gov.au/"
+      ]
+    },
+    {
+      "id": "ungm",
+      "name": "UN Global Marketplace",
+      "seed_urls": [
+        "https://www.ungm.org/public/notice"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P1",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "INDEX_OR_HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "UN notices; prázdná JS šablona není 0 zakázek. RFQ/RFP/EOI detail. Registrace URL s 3D%3D nesmí spustit keyword match.",
+      "evidence_urls": [
+        "https://www.ungm.org/public/notice"
+      ]
+    },
+    {
+      "id": "undp",
+      "name": "UNDP Procurement Notices",
+      "seed_urls": [
+        "https://procurement-notices.undp.org/"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "INDEX_ONLY",
+      "proposed_method": "INDEX_OR_HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Notice → Quantum, dedupe UNGM agency/ref/lot/revision. Žádné automatické účty.",
+      "evidence_urls": [
+        "https://www.ungm.org/Public/Notice/224847"
+      ]
+    },
+    {
+      "id": "nen_cz",
+      "name": "NEN — designated XML",
+      "seed_urls": [
+        "https://nen.nipez.cz/verejne-zakazky"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P1",
+      "regions": [
+        "CZ"
+      ],
+      "content_languages": [
+        "cs"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "DOCUMENTATION_OBSERVED",
+      "proposed_method": "DESIGNATED_XML",
+      "automation_review": "DESIGNATED_INTERFACE_ONLY",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Frontend API nelze používat jako crawler. NEN XML profilu zadavatele je určená strojová cesta; konkrétní endpoint pending.",
+      "evidence_urls": [
+        "https://podpora.nipez.cz/cs/pravidla-pouziti-sluzeb-nipez/latest/pravidla-pro-pouzivani-api-systemu-nipez"
+      ]
+    },
+    {
+      "id": "isvz_vvz_cz",
+      "name": "ISVZ open data / VVZ",
+      "seed_urls": [
+        "https://isvz.nipez.cz/opendata",
+        "https://vvz.nipez.cz/"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P1",
+      "regions": [
+        "CZ"
+      ],
+      "content_languages": [
+        "cs"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "DOCUMENTATION_OBSERVED",
+      "proposed_method": "OPEN_DATA",
+      "automation_review": "DESIGNATED_INTERFACE_ONLY",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Jedna česká datová větev, VVZ detail jako provenance. Přesný dataset ověřit; NEN/VVZ/TED mohou být stejná zakázka.",
+      "evidence_urls": [
+        "https://podpora.nipez.cz/cs/pravidla-pouziti-sluzeb-nipez/latest/pravidla-pro-pouzivani-api-systemu-nipez"
+      ]
+    },
+    {
+      "id": "een_requests",
+      "name": "Enterprise Europe Network — requests",
+      "seed_urls": [
+        "https://een.ec.europa.eu/partnering-opportunities"
+      ],
+      "lane": "PARTNERSHIP",
+      "priority": "P1",
+      "regions": [
+        "EU",
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "human_scan",
+        "vendor_signal",
+        "service_tenders"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "FOLLOW_OBSERVED_NEXT_LINK_AFTER_REVIEW",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 24,
+      "notes_cz": "Prioritně Business Request / Technology Request; offer může být konkurent hledající zákazníky. R&D zvlášť. Anonymní firmu nepojmenovávat.",
+      "evidence_urls": [
+        "https://een.ec.europa.eu/partnering-opportunities"
+      ]
+    },
+    {
+      "id": "eu_funding_partner_search",
+      "name": "EU Funding & Tenders — partner search",
+      "seed_urls": [
+        "https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/how-to-participate/partner-search"
+      ],
+      "lane": "PARTNERSHIP",
+      "priority": "P3",
+      "regions": [
+        "EU"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "vendor_signal"
+      ],
+      "observed_access": "INDEX_ONLY",
+      "proposed_method": "INDEX_OR_MANUAL",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Konsorcia/R&D, nikoli automaticky placená zakázka. Grantový budget není vendor budget.",
+      "evidence_urls": [
+        "https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/how-to-participate/partner-search"
+      ]
+    },
+    {
+      "id": "gets_nz",
+      "name": "GETS New Zealand",
+      "seed_urls": [
+        "https://www.gets.govt.nz/ExternalIndex.htm"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P2",
+      "regions": [
+        "NZ"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "PUBLIC_FEED_PENDING",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Homepage nabízí RSS/Atom; konkrétní feed URL ověřit. Registrace pro další dokumenty/odpověď. Future/closed oddělit.",
+      "evidence_urls": [
+        "https://www.gets.govt.nz/"
+      ]
+    },
+    {
+      "id": "gebiz_sg",
+      "name": "GeBIZ Singapore",
+      "seed_urls": [
+        "https://www.gebiz.gov.sg/"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P2",
+      "regions": [
+        "SG"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "MANUAL_PERMISSION_PENDING",
+      "automation_review": "PERMISSION_REQUIRED",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Relevantní 3D služby existují, ale notice omezuje reuse/republication na přípravu bids. Žádný automaticky enabled ingest.",
+      "evidence_urls": [
+        "https://www.gebiz.gov.sg/ptn/opportunity/opportunityDetails.xhtml?OPPORTUNITY_ID=1000000000000523257&code=NHB000ETT26000003&origin=rss&status=RELEASED&type=TT"
+      ]
+    },
+    {
+      "id": "pcs_scotland",
+      "name": "Public Contracts Scotland",
+      "seed_urls": [
+        "https://www.publiccontractsscotland.gov.uk/"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P2",
+      "regions": [
+        "UK"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "INDEX_OR_HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Scan-to-BIM a scanner equipment jsou časté false positives. Pouze relevantní service deliverables a current status.",
+      "evidence_urls": [
+        "https://www.publiccontractsscotland.gov.uk/search/show/search_view.aspx?ID=AUG486557"
+      ]
+    },
+    {
+      "id": "etenders_ie",
+      "name": "eTenders Ireland",
+      "seed_urls": [
+        "https://www.etenders.gov.ie/",
+        "https://www.etenders.gov.ie/epps/quickSearchAction.do?searchType=cftFTS"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P2",
+      "regions": [
+        "IE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "INDEX_OR_HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Public CfT search, JS/response login. Dedupe TED překryv.",
+      "evidence_urls": [
+        "https://www.etenders.gov.ie/"
+      ]
+    },
+    {
+      "id": "worldbank_procurement",
+      "name": "World Bank procurement notices",
+      "seed_urls": [
+        "https://projects.worldbank.org/en/projects-operations/procurement"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "DOCUMENTATION_OBSERVED",
+      "proposed_method": "PUBLIC_API_PENDING",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Oficiální dataset uvádí search.worldbank.org/api/procnotices přes HTTP; ověřit HTTPS a schema před použitím. Vysoký GIS noise.",
+      "evidence_urls": [
+        "https://financesone.worldbank.org/procurement-notice/DS00979",
+        "https://financesone.worldbank.org/procurement-notices-kenya/DS01594"
+      ]
+    },
+    {
+      "id": "ebrd_ecepp",
+      "name": "EBRD / ECEPP",
+      "seed_urls": [
+        "https://ecepp.ebrd.com/delta/noticeSearchResults.html"
+      ],
+      "lane": "PROCUREMENT",
+      "priority": "P3",
+      "regions": [
+        "EU",
+        "CENTRAL_ASIA",
+        "MENA"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "service_tenders",
+        "human_scan"
+      ],
+      "observed_access": "INDEX_ONLY",
+      "proposed_method": "INDEX_OR_HTML_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Doplňkové consultancy/digitisation; nízký core character fit. Část notices jen na EBRD; účast login.",
+      "evidence_urls": [
+        "https://www.ebrd.com/home/work-with-us/project-procurement/procurement-notices.html"
+      ]
+    },
+    {
+      "id": "riot",
+      "name": "Riot Games",
+      "seed_urls": [
+        "https://www.riotgames.com/en/work-with-us/jobs"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "EMPLOYER_HTML_OR_ATS_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Externí art production / outsourcing management signály existují; mzda zaměstnance není project budget.",
+      "evidence_urls": [
+        "https://www.riotgames.com/en/work-with-us/jobs"
+      ]
+    },
+    {
+      "id": "ubisoft",
+      "name": "Ubisoft",
+      "seed_urls": [
+        "https://www.ubisoft.com/en-us/company/careers/locations"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "EMPLOYER_HTML_OR_ATS_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Oficiální seznam studií; follow Open Positions a skutečnou ATS adresu, token nehádáme.",
+      "evidence_urls": [
+        "https://www.ubisoft.com/en-us/company/careers/locations"
+      ]
+    },
+    {
+      "id": "remedy",
+      "name": "Remedy Entertainment",
+      "seed_urls": [
+        "https://www.remedygames.com/careers"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "EMPLOYER_HTML_OR_ATS_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Realistic game production hiring; externí studio musí mít konkrétní buying signal, ne pouze volnou pozici.",
+      "evidence_urls": [
+        "https://www.remedygames.com/careers"
+      ]
+    },
+    {
+      "id": "framestore",
+      "name": "Framestore",
+      "seed_urls": [
+        "https://www.framestore.com/careers"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "EMPLOYER_HTML_OR_ATS_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Oficiální careers odkazuje framestore.recruitee.com. VFX zaměstnání není potvrzený outsourcing.",
+      "evidence_urls": [
+        "https://www.framestore.com/careers"
+      ]
+    },
+    {
+      "id": "dneg",
+      "name": "DNEG",
+      "seed_urls": [
+        "https://www.dneg.com/join-us"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "EMPLOYER_HTML_OR_ATS_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "VFX career discovery. Dodavatelská firma může sama hledat práci; overflow nákup vyžaduje důkaz.",
+      "evidence_urls": [
+        "https://www.dneg.com/join-us"
+      ]
+    },
+    {
+      "id": "weta_fx",
+      "name": "Wētā FX",
+      "seed_urls": [
+        "https://careers.wetafx.co.nz"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "EMPLOYER_HTML_OR_ATS_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Oficiální kariéra, i onsite expressions of interest. Dostupnost českého externího týmu nelze předpokládat.",
+      "evidence_urls": [
+        "https://careers.wetafx.co.nz"
+      ]
+    },
+    {
+      "id": "naughty_dog",
+      "name": "Naughty Dog",
+      "seed_urls": [
+        "https://www.naughtydog.com/careers"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "EMPLOYER_HTML_OR_ATS_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Oficiální art/3D role; follow employer detail, dedupe ATS ID. Pouze hiring signal bez B2B briefu.",
+      "evidence_urls": [
+        "https://www.naughtydog.com/careers"
+      ]
+    },
+    {
+      "id": "guerrilla",
+      "name": "Guerrilla",
+      "seed_urls": [
+        "https://www.guerrilla-games.com/join"
+      ],
+      "lane": "HIRING_SIGNAL",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "contract_art",
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "EMPLOYER_HTML_OR_ATS_AFTER_REVIEW",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Oficiální studio career source; outsourcing eligibility a employer detail pending.",
+      "evidence_urls": [
+        "https://www.guerrilla-games.com/join"
+      ]
+    },
+    {
+      "id": "sony_pictures_supplier",
+      "name": "Sony Pictures — supplier information",
+      "seed_urls": [
+        "https://supplier.sonypictures.com/"
+      ],
+      "lane": "PARTNERSHIP",
+      "priority": "P2",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [
+        "vendor_signal"
+      ],
+      "observed_access": "HTML_OBSERVED",
+      "proposed_method": "SUPPLIER_PORTAL_MANUAL",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Ověřená cesta pro prospective suppliers; registrace dodavatele není zveřejněná objednávka. Nepodávat přihlášku automaticky.",
+      "evidence_urls": [
+        "https://supplier.sonypictures.com/"
+      ]
+    },
+    {
+      "id": "ea_careers",
+      "name": "EA Careers",
+      "seed_urls": [
+        "https://jobs.ea.com/en_US/careers"
+      ],
+      "lane": "DISABLED",
+      "priority": "P3",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [],
+      "observed_access": "UNVERIFIED",
+      "proposed_method": "DISABLED",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Direct open selhal; aktuální vstup/redirect ověřit před zařazením do coverage.",
+      "evidence_urls": [
+        "https://jobs.ea.com/en_US/careers"
+      ]
+    },
+    {
+      "id": "rockstar_careers",
+      "name": "Rockstar Careers",
+      "seed_urls": [
+        "https://www.rockstargames.com/careers"
+      ],
+      "lane": "DISABLED",
+      "priority": "P3",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [],
+      "observed_access": "UNVERIFIED",
+      "proposed_method": "DISABLED",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Při načtení 0 řádků; JS/index přístup pending, ne potvrzený crawler.",
+      "evidence_urls": [
+        "https://www.rockstargames.com/careers"
+      ]
+    },
+    {
+      "id": "bungie_careers",
+      "name": "Bungie Careers",
+      "seed_urls": [
+        "https://www.bungie.net/7/en/careers"
+      ],
+      "lane": "DISABLED",
+      "priority": "P3",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [],
+      "observed_access": "UNVERIFIED",
+      "proposed_method": "DISABLED",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Direct open selhal. Záznam je čekající kandidát zdroje, nikoli ověřená datová integrace.",
+      "evidence_urls": [
+        "https://www.bungie.net/7/en/careers"
+      ]
+    },
+    {
+      "id": "creativeheads",
+      "name": "CreativeHeads",
+      "seed_urls": [
+        "https://www.creativeheads.net/"
+      ],
+      "lane": "DISABLED",
+      "priority": "P3",
+      "regions": [
+        "WORLDWIDE"
+      ],
+      "content_languages": [
+        "en"
+      ],
+      "query_pack_ids": [],
+      "observed_access": "UNAVAILABLE",
+      "proposed_method": "DISABLED",
+      "automation_review": "REVIEW_PENDING",
+      "pagination": "ADAPTER_PENDING",
+      "crawl_enabled": false,
+      "adapter_status": "NOT_IMPLEMENTED",
+      "review_date": "2026-09-05",
+      "refresh_after_hours": 168,
+      "notes_cz": "Under Reconstruction / We are rebuilding. Nepočítat jako aktivní job databázi.",
+      "evidence_urls": [
+        "https://www.creativeheads.net/"
+      ]
+    }
+  ],
+  "adapter_templates": [
+    {
+      "id": "greenhouse",
+      "documentation_url": "https://docs.greenhouse.io/job-board.html",
+      "request_template": "https://boards-api.greenhouse.io/v1/boards/{verified_board_token}/jobs?content=true",
+      "access": "PUBLIC_GET_DOCUMENTED",
+      "pagination": "Board list response; preserve updated_at and job ID.",
+      "caveat": "Discover board token from employer link; no private recruitment API or application POST.",
+      "adapter_status": "NOT_IMPLEMENTED",
+      "runtime_tested": false
+    },
+    {
+      "id": "lever",
+      "documentation_url": "https://github.com/lever/postings-api",
+      "request_template": "https://api.lever.co/v0/postings/{verified_site}?mode=json&skip={offset}&limit={limit}",
+      "access": "PUBLIC_POSTINGS_DOCUMENTED",
+      "pagination": "skip/limit documented; EU instance uses api.eu.lever.co.",
+      "caveat": "Per employer site, not global full-text search. Recruitment role is not B2B buyer evidence.",
+      "adapter_status": "NOT_IMPLEMENTED",
+      "runtime_tested": false
+    },
+    {
+      "id": "ashby",
+      "documentation_url": "https://developers.ashbyhq.com/docs/public-job-posting-api",
+      "request_template": "https://api.ashbyhq.com/posting-api/job-board/{verified_board_name}",
+      "access": "PUBLIC_POSTINGS_DOCUMENTED",
+      "pagination": "Published jobs array; require isListed=true.",
+      "caveat": "Do not ingest unlisted records. Compensation is employee compensation, not buyer budget.",
+      "adapter_status": "NOT_IMPLEMENTED",
+      "runtime_tested": false
+    },
+    {
+      "id": "smartrecruiters",
+      "documentation_url": "https://developers.smartrecruiters.com/docs/posting-api",
+      "request_template": null,
+      "access": "AUTH_AND_PUBLIC_SCOPE_REVIEW_PENDING",
+      "pagination": "Endpoint/schema and pagination require follow-up.",
+      "caveat": "Current docs mention API key/OAuth and internal postings. Do not infer anonymous unlimited access or use internal scopes.",
+      "adapter_status": "NOT_IMPLEMENTED",
+      "runtime_tested": false
+    }
+  ]
+}

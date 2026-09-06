@@ -4,8 +4,7 @@ export const CATEGORIES = {
   WRAP_BASEMESH: "Wrap / Basemesh", FACIAL_FACS: "Facial / FACS",
   CHARACTER_FINISHING: "Character Finishing", CHARACTER_OUTSOURCING: "Character Outsourcing",
   EXTERNAL_DEVELOPMENT: "External Development", PRODUCTION_OVERFLOW: "Production Overflow",
-  PIPELINE_CONSULTING: "Pipeline Consulting", VISUAL_AI_MOTION: "Visual / AI / Motion",
-  OTHER_RELEVANT: "Other Relevant"
+  PIPELINE_CONSULTING: "Pipeline Consulting", OTHER_RELEVANT: "Other Relevant"
 };
 export const SORTS = {
   fit_score: "Fit", win_score: "Win", title: "Opportunity", company: "Company",
@@ -25,11 +24,16 @@ export function visibleResults(items, filters) {
     if (numbers.has(key)) return Number.isFinite(Number(raw)) ? Number(raw) : null;
     return String(raw);
   };
-  return items.filter(item =>
-    (view === "ALL" || (view === "BOOKMARKED" ? item.company_bookmarked : item.opportunity_kind === view)) &&
+  return items.filter(item => {
+    const recordKind = recordKindOf(item);
+    const viewMatches = view === "COMPETITORS"
+      ? recordKind === "COMPETITOR"
+      : isSalesOpportunityRecord(item)
+        && (view === "ALL" || (view === "BOOKMARKED" ? item.company_bookmarked : item.opportunity_kind === view));
+    return viewMatches &&
     (status === "ALL" || item.status === status) && item.fit_score >= minFit &&
-    (!categories.length || categories.some(category => item.categories?.includes(category)))
-  ).sort((a,b) => {
+    (!categories.length || categories.some(category => item.categories?.includes(category)));
+  }).sort((a,b) => {
     const av=value(a), bv=value(b);
     if (av === null && bv !== null) return 1;
     if (bv === null && av !== null) return -1;
@@ -37,3 +41,4 @@ export function visibleResults(items, filters) {
     return comparison * (sortDirection === "asc" ? 1 : -1) || b.fit_score-a.fit_score || String(a.id).localeCompare(String(b.id));
   });
 }
+import { isSalesOpportunityRecord, recordKindOf } from "../server/record-classification.mjs";

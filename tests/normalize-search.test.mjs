@@ -12,10 +12,17 @@ function candidate(overrides = {}) {
     company:"Example Studio",
     summary:"External vendor request for scanned realistic characters and production basemesh conforming.",
     opportunity_kind:"OPEN_OPPORTUNITY",
+    commercial_role:"BUYER",
+    notice_status:"OPEN",
+    studio_eligibility:"YES",
+    eligibility_reason:"Worldwide external vendor request.",
+    scope_fit:"CORE",
     categories:["WRAP_BASEMESH","CHARACTER_OUTSOURCING"],
     location:"Worldwide",
     remote_scope:"WORLDWIDE_VENDOR",
     published_date:"2026-09-05",
+    source_updated_date:null,
+    acceptance_source_url:null,
     source_url:PRIMARY,
     apply_url:PRIMARY,
     fit_score:92,
@@ -104,4 +111,160 @@ test("same normalized opportunity is deduplicated within one search run", () => 
   const normalized = normalizeSearchResponse(response([candidate(), candidate({win_score:89})]), {nowIso:NOW,maxResults:12});
   assert.equal(normalized.opportunities.length, 1);
   assert.equal(normalized.opportunities[0].win_score, 89);
+});
+
+test("visual AI motion-only results are rejected instead of falling back to Other Relevant", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  const result = normalizeCandidate(candidate({categories:["VISUAL_AI_MOTION"]}), verified, NOW);
+  assert.equal(result.opportunity, null);
+  assert.equal(result.rejection, "excluded_search_category");
+});
+
+test("hard truth gates reject stale listings and accept old listings only with current source evidence", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  const stale = normalizeCandidate(candidate({published_date:"2026-07-08"}), verified, NOW);
+  assert.equal(stale.rejection, "stale_or_unverified");
+  const active = normalizeCandidate(candidate({published_date:"2026-07-08",acceptance_source_url:PRIMARY}), verified, NOW);
+  assert.equal(active.opportunity.freshness_basis, "ACTIVE_ACCEPTANCE_EVIDENCE");
+  assert.equal(active.opportunity.acceptance_verified_at, NOW);
+});
+
+test("normalizer classifies sellers as competitors and demotes employment signals to Potential Lead", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  const seller = normalizeCandidate(candidate({commercial_role:"SELLER"}), verified, NOW).opportunity;
+  assert.equal(seller.record_kind, "COMPETITOR");
+  assert.equal(seller.opportunity_kind, null);
+  const employment = normalizeCandidate(candidate({commercial_role:"EMPLOYER",studio_eligibility:"UNKNOWN"}), verified, NOW).opportunity;
+  assert.equal(employment.record_kind, "SALES_OPPORTUNITY");
+  assert.equal(employment.opportunity_kind, "POTENTIAL_LEAD");
+});
+
+test("normalization reports measured rejection and duplicate counters", () => {
+  const payload = response([
+    candidate(),
+    candidate({win_score:89}),
+    candidate({company:"Seller",source_url:CONTACT,apply_url:CONTACT,commercial_role:"SELLER",source_evidence:[{type:"SIGNAL_SOURCE",url:CONTACT,note:"Seller"}]})
+  ]);
+  const normalized = normalizeSearchResponse(payload,{nowIso:NOW,maxResults:12});
+  assert.deepEqual(normalized.counters,{candidates_seen:3,candidates_verified:1,competitors_classified:1,source_platforms_classified:0,candidates_rejected:0,duplicates_removed:1,rejection_reasons:{}});
+  assert.equal(normalized.records.length,2);
+  assert.equal(normalized.competitors[0].company,"Seller");
+});
+
+test("non-sales records never consume the configured sales-result limit", () => {
+  const sellerUrl="https://seller.example/services/game-art",secondBuyer="https://buyer-two.example/rfp";
+  const normalized=normalizeSearchResponse(response([
+    candidate({source_url:sellerUrl,apply_url:sellerUrl,company:"Seller Studio",commercial_role:"SELLER",source_evidence:[{type:"SIGNAL_SOURCE",url:sellerUrl,note:"Seller page"}]}),
+    candidate(),
+    candidate({source_url:secondBuyer,apply_url:secondBuyer,company:"Second Buyer",title:"Second buyer brief",source_evidence:[{type:"PRIMARY_SOURCE",url:secondBuyer,note:"Buyer brief"}]})
+  ],[sellerUrl,PRIMARY,secondBuyer]),{nowIso:NOW,maxResults:1});
+  assert.equal(normalized.opportunities.length,1);
+  assert.equal(normalized.competitors.length,1);
+  assert.equal(normalized.records.length,2);
+  assert.equal(normalized.counters.candidates_verified,1);
+});
+
+test("source-platform description is retained only as diagnostics/intelligence record", () => {
+  const platform="https://jobs-index.example/archive";
+  const normalized=normalizeSearchResponse(response([candidate({source_url:platform,apply_url:platform,company:"Synthetic Jobs Index",commercial_role:"UNKNOWN",summary:"Archived job aggregator and ATS dataset.",source_evidence:[{type:"SIGNAL_SOURCE",url:platform,note:"Archive"}]})],[platform]),{nowIso:NOW,maxResults:6});
+  assert.equal(normalized.opportunities.length,0);
+  assert.equal(normalized.source_platforms.length,1);
+  assert.equal(normalized.records[0].opportunity_kind,null);
+  assert.equal(normalized.records[0].contact_email,null);
+});
+
+test("seller license and missing buyer provenance never become an opportunity budget", () => {
+  const sources = new Set([normalizeUrl(PRIMARY)]);
+  for (const basis of [undefined, "SELLER_PRICE", "EMPLOYEE_COMPENSATION", "UNKNOWN"]) {
+    const result = normalizeCandidate(candidate({budget_type:"PUBLISHED",budget_published:"$240,000 annual license",budget_basis:basis,budget_source_url:PRIMARY}), sources, NOW).opportunity;
+    assert.equal(result.budget_type, "UNKNOWN");
+    assert.equal(result.budget_published, null);
+    assert.equal(result.budget_source_url, null);
+  }
+});
+
+test("buyer budget requires a consulted source and survives with its provenance", () => {
+  const sources = new Set([normalizeUrl(PRIMARY), CONTACT]);
+  const input = candidate({budget_type:"PUBLISHED",budget_basis:"BUYER_PROJECT",budget_published:"USD 18,000 per batch",budget_source_url:CONTACT});
+  const valid = normalizeCandidate(input, sources, NOW).opportunity;
+  assert.equal(valid.budget_type, "PUBLISHED");
+  assert.equal(valid.budget_published, input.budget_published);
+  assert.ok(valid.source_evidence.some(x=>x.url===CONTACT));
+  const invalid = normalizeCandidate({...input,budget_source_url:"https://unvisited.example/price"}, sources, NOW).opportunity;
+  assert.equal(invalid.budget_type, "UNKNOWN");
+});
+
+test("estimated buyer budget needs numeric bounds and preserves ESTIMATED", () => {
+  const sources = new Set([normalizeUrl(PRIMARY)]);
+  const input = candidate({budget_type:"ESTIMATED",budget_basis:"BUYER_PROJECT",budget_source_url:PRIMARY,budget_estimated_min:1000,budget_estimated_max:3000,budget_currency:"EUR"});
+  assert.equal(normalizeCandidate(input,sources,NOW).opportunity.budget_type,"ESTIMATED");
+  for (const min of [null,undefined,"1000",-1,4000]) {
+    const invalid=normalizeCandidate({...input,budget_estimated_min:min},sources,NOW).opportunity;
+    assert.equal(invalid.budget_type,"UNKNOWN");
+    assert.equal(invalid.budget_estimated_min,null);
+  }
+});
+
+test("index discovery rejects verified URLs outside narrow Tier A opportunity paths", () => {
+  const outside = normalizeUrl(PRIMARY);
+  const rejected = normalizeCandidate(candidate(), new Set([outside]), NOW, {indexDiscovery:true});
+  assert.equal(rejected.opportunity, null);
+  assert.equal(rejected.rejection, "source_not_allowed_for_index_discovery");
+
+  const upwork = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+  const accepted = normalizeCandidate(candidate({source_url:upwork,apply_url:upwork,source_evidence:[{type:"PRIMARY_SOURCE",url:upwork,note:"Indexed detail"}]}), new Set([upwork]), NOW, {indexDiscovery:true});
+  assert.equal(accepted.rejection, null);
+  assert.equal(accepted.opportunity.discovery_source_id, "upwork");
+  assert.equal(accepted.opportunity.manual_verification_status, "REQUIRED_BEFORE_CONTACT");
+  assert.equal(accepted.opportunity.direct_source_requests, 0);
+});
+
+test("index discovery strips outside-domain evidence even when it appears in hosted sources", () => {
+  const upwork = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+  const outside = "https://outside.example/contact";
+  const input = candidate({
+    source_url:upwork,
+    apply_url:outside,
+    contact_email:"person@outside.example",
+    contact_email_source:outside,
+    source_evidence:[
+      {type:"PRIMARY_SOURCE",url:upwork,note:"Indexed detail"},
+      {type:"CONTACT_SOURCE",url:outside,note:"Must not survive"}
+    ]
+  });
+  const normalized = normalizeCandidate(input, new Set([upwork,outside]), NOW, {indexDiscovery:true}).opportunity;
+  assert.equal(normalized.apply_url, upwork);
+  assert.equal(normalized.contact_email, null);
+  assert.equal(normalized.source_evidence.some((item) => item.url === outside), false);
+});
+
+test("index discovery reports privacy-safe source yield and rejection diagnostics", () => {
+  const upwork = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+  const freelancer = "https://www.freelancer.com/projects/3d-modelling/realistic-character-cleanup";
+  const reddit = "https://www.reddit.com/r/gameDevClassifieds/comments/abc123/paid_character_vendor_needed";
+  const payload = response([
+    candidate({source_url:upwork,apply_url:upwork,source_evidence:[{type:"PRIMARY_SOURCE",url:upwork,note:"Indexed detail"}]}),
+    candidate({source_url:upwork,apply_url:upwork,win_score:90,source_evidence:[{type:"PRIMARY_SOURCE",url:upwork,note:"Duplicate indexed detail"}]}),
+    candidate({company:"Seller",source_url:freelancer,apply_url:freelancer,commercial_role:"SELLER",source_evidence:[{type:"SIGNAL_SOURCE",url:freelancer,note:"Seller"}]})
+  ], [upwork, freelancer, reddit]);
+  const normalized = normalizeSearchResponse(payload,{nowIso:NOW,maxResults:12,indexDiscovery:true});
+  const bySource = Object.fromEntries(normalized.diagnostics.source_yield.map((item) => [item.source_id,item]));
+  assert.equal(normalized.diagnostics.schema_version, 1);
+  assert.equal(normalized.diagnostics.privacy, "AGGREGATED_COUNTS_ONLY");
+  assert.equal(normalized.diagnostics.zero_result_reason, null);
+  assert.deepEqual(normalized.diagnostics.rejection_reasons,{});
+  assert.deepEqual(bySource.upwork,{source_id:"upwork",source_label:"Upwork",consulted_urls:1,eligible_detail_urls:1,candidates_seen:2,candidates_accepted:2,competitors_detected:0,source_platforms_detected:0,candidates_rejected:0,duplicates_removed:1,returned:1});
+  assert.deepEqual(bySource.freelancer,{source_id:"freelancer",source_label:"Freelancer",consulted_urls:1,eligible_detail_urls:1,candidates_seen:1,candidates_accepted:0,competitors_detected:1,source_platforms_detected:0,candidates_rejected:0,duplicates_removed:0,returned:0});
+  assert.equal(bySource.reddit_gamedevclassifieds.consulted_urls,1);
+  assert.equal(bySource.reddit_gamedevclassifieds.candidates_seen,0);
+  assert.doesNotMatch(JSON.stringify(normalized.diagnostics),/https?:\/\//);
+  assert.doesNotMatch(JSON.stringify(normalized.diagnostics),/Human Scan Cleanup|Seller/);
+});
+
+test("index discovery explains a zero result with no structured candidates", () => {
+  const upwork = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
+  const normalized = normalizeSearchResponse(response([], [upwork]),{nowIso:NOW,maxResults:12,indexDiscovery:true});
+  assert.equal(normalized.opportunities.length,0);
+  assert.equal(normalized.diagnostics.zero_result_reason,"NO_STRUCTURED_CANDIDATES");
+  assert.deepEqual(normalized.diagnostics.rejection_reasons,{});
 });
