@@ -62,6 +62,7 @@ test("discovery provenance always requires manual source review and records zero
     discovery_source_id:"upwork",
     manual_verification_status:INDEX_DISCOVERY_MANUAL_STATUS,
     manual_verified_at:null,
+    manual_verified_source_url:null,
     direct_source_requests:0
   });
 });

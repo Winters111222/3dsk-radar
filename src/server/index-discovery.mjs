@@ -77,6 +77,7 @@ export function indexDiscoveryMetadata(sourceUrl) {
     discovery_source_id:policy.id,
     manual_verification_status:INDEX_DISCOVERY_MANUAL_STATUS,
     manual_verified_at:null,
+    manual_verified_source_url:null,
     direct_source_requests:0
   };
 }

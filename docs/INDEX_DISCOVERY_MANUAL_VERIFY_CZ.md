@@ -30,9 +30,12 @@ Server, nikoli model, doplní:
 - `discovery_source_id`
 - `manual_verification_status: REQUIRED_BEFORE_CONTACT`
 - `manual_verified_at: null`
+- `manual_verified_source_url: null`
 - `direct_source_requests: 0`
 
-UI ukáže `VERIFY SOURCE` a výrazné `MANUAL SOURCE CHECK REQUIRED` s klikacím originálním odkazem. Před oslovením nebo generováním odpovědi má operátor zkontrolovat aktivitu nabídky, scope, remote/B2B eligibility a kontaktní postup přímo na platformě.
+UI ukáže `VERIFY SOURCE` a výrazné `MANUAL SOURCE CHECK REQUIRED` s klikacím originálním odkazem. Operátor musí na platformě zkontrolovat aktivitu nabídky, scope, remote/B2B eligibility a kontaktní postup a potom použít `I CHECKED IT · MARK VERIFIED`.
+
+Potvrzení je uložené ve sdíleném workspace jako `VERIFIED_BEFORE_CONTACT`, čas a přesná ověřená URL. Je idempotentní a přežije opětovné nalezení stejné nabídky. Jiná nebo změněná URL staré potvrzení nepřevezme. Dokud tato serverová podmínka není splněná, API odmítne generování odpovědi i zápis `MARK EMAIL SENT` kódem `SOURCE_MANUAL_VERIFICATION_REQUIRED`; stejné akce jsou zamčené také v UI.
 
 ## Co režim záměrně nedělá
 

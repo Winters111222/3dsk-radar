@@ -18,7 +18,10 @@ const requiredUi = [
   "Search truth counters",
   "Studio eligibility",
   "MANUAL SOURCE CHECK REQUIRED",
-  "OPEN ORIGINAL SOURCE"
+  "OPEN ORIGINAL SOURCE",
+  "I CHECKED IT · MARK VERIFIED",
+  "SOURCE MANUALLY VERIFIED",
+  "CONTACT LOCKED"
 ];
 
 test("pre-live UI contains the complete V0.1 decision and response flow", () => {

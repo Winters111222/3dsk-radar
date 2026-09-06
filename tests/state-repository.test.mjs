@@ -35,3 +35,23 @@ test("new buyer budget evidence survives a repository reload",async()=>{
  const result=await createStateRepository(store).getOpportunity("opp-1");
  assert.equal(result.budget_type,"PUBLISHED");assert.equal(result.budget_published,"EUR 12,000 per batch");
 });
+
+test("manual source verification is URL-bound, idempotent and survives a repeat search",async()=>{
+ const store=memoryStore(),repo=createStateRepository(store),source="https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123";
+ const pending=opportunity({canonical_url:source,source_url:source,discovery_mode:"INDEX_DISCOVERY_MANUAL_VERIFY",manual_verification_status:"REQUIRED_BEFORE_CONTACT",manual_verified_at:null,manual_verified_source_url:null});
+ await repo.saveOpportunity(pending);
+ await assert.rejects(()=>repo.verifyOpportunitySource("opp-1","https://upwork.com/freelance-jobs/apply/Other_~999","2026-09-06T08:00:00Z"),error=>error.code==="SOURCE_VERIFICATION_URL_MISMATCH");
+ const verified=await repo.verifyOpportunitySource("opp-1",source,"2026-09-06T08:01:00Z");
+ assert.equal(verified.manual_verification_status,"VERIFIED_BEFORE_CONTACT");
+ assert.equal(verified.manual_verified_source_url,source);
+ const replay=await repo.verifyOpportunitySource("opp-1",source,"2026-09-06T08:02:00Z");
+ assert.equal(replay.manual_verified_at,"2026-09-06T08:01:00Z");
+ const [merged]=await repo.mergeSearchResults([pending],"2026-09-06T09:00:00Z");
+ assert.equal(merged.manual_verification_status,"VERIFIED_BEFORE_CONTACT");
+ assert.equal(merged.manual_verified_at,"2026-09-06T08:01:00Z");
+ const changedSource="https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup-Updated_~0456";
+ const [changed]=await repo.mergeSearchResults([{...pending,canonical_url:source,source_url:changedSource}],"2026-09-06T10:00:00Z");
+ assert.equal(changed.manual_verification_status,"REQUIRED_BEFORE_CONTACT");
+ assert.equal(changed.manual_verified_at,null);
+ assert.equal(changed.manual_verified_source_url,null);
+});

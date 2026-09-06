@@ -14,6 +14,11 @@ export function mergeOpportunityHistory(existingItems, incomingItems, companySta
     const companyState=companyStatesByKey[key]||emptyCompanyState(incoming.company);
     const normalized={...previous,...incoming,id:previous?.id||incoming.id,first_seen:previous?.first_seen||incoming.first_seen||nowIso,last_seen:nowIso,is_new:!previous,status:previous?.status||incoming.status||"NEW"};
     if(previous){for(const field of ["reply_to","reply_subject","reply_body","reply_generated_at","reply_model","reply_response_id"]){if(Object.hasOwn(previous,field))normalized[field]=previous[field];}}
+    if(previous?.manual_verification_status==="VERIFIED_BEFORE_CONTACT" && previous.source_url===incoming.source_url){
+      normalized.manual_verification_status=previous.manual_verification_status;
+      normalized.manual_verified_at=previous.manual_verified_at;
+      normalized.manual_verified_source_url=previous.manual_verified_source_url;
+    }
     mergedCurrent.push(applyOpportunityState(normalized,normalized.status,companyState));
   }
   return mergedCurrent;

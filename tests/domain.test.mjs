@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { bandForScore, contactDisplay, validateBudgetProvenance, validateOpportunity } from "../src/lib/domain.mjs";
+import { bandForScore, contactDisplay, sourceVerificationSatisfied, validateBudgetProvenance, validateOpportunity } from "../src/lib/domain.mjs";
 
 const fixtures = JSON.parse(await readFile(new URL("../fixtures/opportunities.json", import.meta.url), "utf8"));
 
@@ -39,4 +39,28 @@ test("fixture email has explicit source provenance", () => {
   const withEmail = fixtures.find((x) => x.contact_email);
   assert.equal(withEmail.contact_email, "vendor-contact@example.com");
   assert.equal(withEmail.contact_email_source, "https://example.com/contact");
+});
+
+test("discovery opportunity requires exact persisted manual verification provenance", () => {
+  const pending = {
+    ...fixtures[0],
+    discovery_mode:"INDEX_DISCOVERY_MANUAL_VERIFY",
+    source_access_method:"OPENAI_HOSTED_WEB_SEARCH",
+    discovery_source_id:"upwork",
+    manual_verification_status:"REQUIRED_BEFORE_CONTACT",
+    manual_verified_at:null,
+    manual_verified_source_url:null,
+    direct_source_requests:0
+  };
+  assert.equal(sourceVerificationSatisfied(pending), false);
+  assert.equal(validateOpportunity(pending).ok, true);
+  const verified = {
+    ...pending,
+    manual_verification_status:"VERIFIED_BEFORE_CONTACT",
+    manual_verified_at:"2026-09-06T08:00:00.000Z",
+    manual_verified_source_url:pending.source_url
+  };
+  assert.equal(sourceVerificationSatisfied(verified), true);
+  assert.equal(validateOpportunity(verified).ok, true);
+  assert.equal(validateOpportunity({...verified,manual_verified_source_url:"https://lookalike.example/item"}).ok, false);
 });

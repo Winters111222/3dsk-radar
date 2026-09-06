@@ -90,6 +90,35 @@ export function createStateRepository(store) {
       return next;
     },
 
+    async verifyOpportunitySource(id, confirmedSourceUrl, nowIso) {
+      const current = await this.getOpportunity(id);
+      if (!current) return null;
+      if (current.discovery_mode !== "INDEX_DISCOVERY_MANUAL_VERIFY") {
+        const error = new Error("Source verification is not required for this opportunity.");
+        error.code = "SOURCE_VERIFICATION_NOT_REQUIRED";
+        throw error;
+      }
+      const currentUrl = normalizeUrl(current.source_url);
+      const confirmedUrl = normalizeUrl(confirmedSourceUrl);
+      if (!currentUrl || !confirmedUrl || current.source_url !== confirmedSourceUrl) {
+        const error = new Error("The confirmed source does not match the saved opportunity source.");
+        error.code = "SOURCE_VERIFICATION_URL_MISMATCH";
+        throw error;
+      }
+      if (current.manual_verification_status === "VERIFIED_BEFORE_CONTACT"
+        && current.manual_verified_source_url === current.source_url
+        && current.manual_verified_at) return current;
+      const next = {
+        ...current,
+        manual_verification_status:"VERIFIED_BEFORE_CONTACT",
+        manual_verified_at:nowIso,
+        manual_verified_source_url:current.source_url,
+        updated_at:nowIso
+      };
+      await this.saveOpportunity(next);
+      return next;
+    },
+
     async saveReply(id, reply, nowIso) {
       const current = await this.getOpportunity(id);
       if (!current) return null;

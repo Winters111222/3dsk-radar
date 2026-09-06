@@ -106,6 +106,7 @@ tr[data-id]:hover td, tr.is-selected td { background:#171d24; }
 .kind-badge.open { color:#b6d3ff; border-color:#294667; background:#111b27; }
 .kind-badge.lead { color:#f4cf74; border-color:#5c4a20; background:#211b0e; }
 .manual-verify-badge { display:inline-flex; margin:6px 0 0; padding:4px 7px; border:1px solid #665126; border-radius:999px; color:#f1d78f; background:#211b0e; font-size:8px; font-weight:900; letter-spacing:.07em; }
+.manual-verify-badge.verified { color:#aee3be; border-color:#294936; background:#102018; }
 .budget-cell { min-width:145px; }
 .budget-value { display:block; color:#e5eaf0; font-weight:750; line-height:1.35; }
 .provenance { margin-top:6px; padding:4px 7px; font-size:9px; }
@@ -126,6 +127,12 @@ tr[data-id]:hover td, tr.is-selected td { background:#171d24; }
 .manual-source-warning strong { color:#f1d78f; font-size:10px; letter-spacing:.1em; }
 .manual-source-warning span { color:#d5c59f; font-size:12px; line-height:1.5; }
 .manual-source-warning a { width:max-content; color:#fff0bd; font-size:10px; font-weight:900; text-underline-offset:3px; }
+.manual-source-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.manual-source-actions button { border:1px solid #8a7137; border-radius:8px; background:#30250e; color:#fff0bd; padding:8px 10px; cursor:pointer; font-size:9px; font-weight:900; letter-spacing:.04em; }
+.manual-source-actions button:disabled { opacity:.55; cursor:wait; }
+.manual-source-verified { margin-bottom:16px; padding:12px 14px; display:grid; gap:4px; border:1px solid #294936; border-radius:12px; background:#102018; }
+.manual-source-verified strong { color:#aee3be; font-size:10px; letter-spacing:.1em; }
+.manual-source-verified span { color:#92b99e; font-size:11px; }
 .detail-section { padding:17px 0; border-bottom:1px solid #252c35; }
 .detail-section:last-child { border-bottom:0; }
 .detail-section h4 { margin:0 0 9px; font-size:10px; letter-spacing:.12em; color:#7c8997; }

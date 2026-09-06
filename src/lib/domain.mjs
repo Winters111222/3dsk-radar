@@ -3,6 +3,7 @@ import { COMMERCIAL_ROLES, FRESHNESS_BASES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_
 export const STATUS_VALUES = ["NEW", "INTERESTING", "CONTACTED", "IGNORE"];
 export const OPPORTUNITY_KINDS = ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"];
 export const BUDGET_TYPES = ["PUBLISHED", "ESTIMATED", "UNKNOWN"];
+export const MANUAL_VERIFICATION_STATUSES = ["REQUIRED_BEFORE_CONTACT", "VERIFIED_BEFORE_CONTACT"];
 
 export const REQUIRED_OPPORTUNITY_FIELDS = [
   "id","canonical_url","source_url","source_domain","title","company","summary","opportunity_kind","commercial_role","notice_status","studio_eligibility","eligibility_reason","scope_fit","categories","location","remote_scope","published_date","source_updated_date","freshness_basis","acceptance_source_url","acceptance_verified_at","first_seen","last_seen","is_new","status","fit_score","win_score","win_band","budget_type","budget_published","budget_estimated_min","budget_estimated_max","budget_currency","budget_confidence","budget_reason","contact_name","contact_role","contact_email","contact_email_source","apply_url","why_it_fits","risks","missing_requirements","source_evidence"
@@ -49,6 +50,17 @@ function isHttpUrl(value) {
   }
 }
 
+function isIsoTimestamp(value) {
+  return typeof value === "string" && value.length > 0 && Number.isFinite(Date.parse(value));
+}
+
+export function sourceVerificationSatisfied(opportunity) {
+  if (opportunity?.discovery_mode !== "INDEX_DISCOVERY_MANUAL_VERIFY") return true;
+  return opportunity.manual_verification_status === "VERIFIED_BEFORE_CONTACT"
+    && isIsoTimestamp(opportunity.manual_verified_at)
+    && opportunity.manual_verified_source_url === opportunity.source_url;
+}
+
 export function validateOpportunity(opportunity) {
   const missing = REQUIRED_OPPORTUNITY_FIELDS.filter((key) => !(key in opportunity));
   const errors = missing.map((key) => `missing:${key}`);
@@ -74,8 +86,11 @@ export function validateOpportunity(opportunity) {
   if ("discovery_mode" in opportunity) {
     if (opportunity.discovery_mode !== "INDEX_DISCOVERY_MANUAL_VERIFY") errors.push("invalid:discovery_mode");
     if (opportunity.source_access_method !== "OPENAI_HOSTED_WEB_SEARCH") errors.push("invalid:source_access_method");
-    if (opportunity.manual_verification_status !== "REQUIRED_BEFORE_CONTACT") errors.push("invalid:manual_verification_status");
-    if (opportunity.manual_verified_at !== null) errors.push("invalid:manual_verified_at");
+    if (!MANUAL_VERIFICATION_STATUSES.includes(opportunity.manual_verification_status)) errors.push("invalid:manual_verification_status");
+    if (opportunity.manual_verification_status === "REQUIRED_BEFORE_CONTACT"
+      && (opportunity.manual_verified_at !== null || opportunity.manual_verified_source_url !== null)) errors.push("invalid:manual_verification_pending_state");
+    if (opportunity.manual_verification_status === "VERIFIED_BEFORE_CONTACT"
+      && !sourceVerificationSatisfied(opportunity)) errors.push("invalid:manual_verification_provenance");
     if (opportunity.direct_source_requests !== 0) errors.push("invalid:direct_source_requests");
   }
   return { ok: errors.length === 0, errors };
