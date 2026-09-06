@@ -108,6 +108,14 @@ export async function runPaidDeployedAcceptance({
     throw new Error("PAID_ACCEPTANCE_DIAGNOSTICS_MISSING");
   }
 
+  const returnedIds = search.payload.opportunities.map((item) => item?.id).filter(Boolean);
+  if (returnedIds.length !== search.payload.opportunities.length) throw new Error("PAID_ACCEPTANCE_RESULT_ID_MISSING");
+  const saved = await request("/api/opportunities", { headers });
+  const savedIds = new Set((saved.payload?.opportunities || []).map((item) => item?.id).filter(Boolean));
+  if (saved.status !== 200 || saved.payload?.ok !== true || !returnedIds.every((id) => savedIds.has(id))) {
+    throw new Error("PAID_ACCEPTANCE_PERSISTENCE_FAILED");
+  }
+
   return {
     ok:true,
     base_url:base,
@@ -123,6 +131,7 @@ export async function runPaidDeployedAcceptance({
     estimated_cost_usd:search.payload.run.estimated_cost_usd,
     returned_count:search.payload.run.returned_count,
     verified_source_count:search.payload.run.verified_source_count,
+    persistence_verified:true,
     diagnostics,
     opportunities:search.payload.opportunities.map((item) => ({
       title:item.title,

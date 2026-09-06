@@ -88,9 +88,12 @@ test("real Blobs SDK keeps production data across deploy IDs and isolates previe
   assert.equal(await preview.getOpportunity("fixture-opportunity"), null);
   const acceptance = await getStateRepository(request("opportunities", "acceptance"), { deploy: { context: "production" } });
   assert.equal(await acceptance.getOpportunity("fixture-opportunity"), null);
-  assert.equal(paths[0], paths[1], "production reads must target the same store after a deploy");
-  assert.notEqual(paths[1], paths[2]);
-  assert.notEqual(paths[1], paths[3]);
+  const productionItem = "/fixture-site/site:radar-state/opportunities/fixture-opportunity";
+  const previewItem = "/region:us-east-2/fixture-site/deploy:bbbbbbbbbbbbbbbbbbbbbbbb:radar-state/opportunities/fixture-opportunity";
+  const acceptanceItem = "/fixture-site/site:radar-prelive-acceptance/opportunities/fixture-opportunity";
+  assert.ok(paths.filter((path) => path === productionItem).length >= 2, "production reads must target the same store after a deploy");
+  assert.ok(paths.includes(previewItem));
+  assert.ok(paths.includes(acceptanceItem));
   const change = new Request("https://radar.test/api/opportunity-status", {
     method: "POST", headers: { authorization: "Bearer fixture-secret", "content-type": "application/json" },
     body: JSON.stringify({ opportunity_id: "fixture-opportunity", status: "INTERESTING" })

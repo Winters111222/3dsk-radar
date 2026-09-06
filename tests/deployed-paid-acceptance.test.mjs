@@ -7,7 +7,7 @@ import { normalizedPaidAcceptanceBaseUrl, runPaidDeployedAcceptance } from "../s
 const BASE = "https://a1b2c3d4e5f60718293a4b5c--3dsk-opportunity-radar.netlify.app";
 const COMMIT = "a".repeat(40);
 
-function transport({ commit = COMMIT, deployContext = "deploy-preview" } = {}) {
+function transport({ commit = COMMIT, deployContext = "deploy-preview", persisted = true } = {}) {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
@@ -15,10 +15,11 @@ function transport({ commit = COMMIT, deployContext = "deploy-preview" } = {}) {
     if (path === "/build-metadata.json") return Response.json({ schema_version:2, service:"3dsk-opportunity-radar", commit_ref:commit, deploy_context:deployContext, acceptance_profile:"PAID_FOCUSED", artifact_provenance:"NETLIFY_GIT_DEPLOY" });
     if (path === "/api/health") return Response.json({ service:"3dsk-opportunity-radar", stage:"phase-e-paid-acceptance", live_ai_enabled:false, paid_ai_state:"LOCKED", paid_acceptance:"ARMED", paid_coordinator:"NETLIFY_DATABASE", source_collection:"LOCKED", access_configured:true });
     if (path === "/api/paid-coordinator-acceptance") return Response.json({ ok:true, concurrent_claim_winners:1, concurrent_budget_winners:1, idempotent_settlement:true, openai_requests:0, source_requests:0, cost_usd:0 });
+    if (path === "/api/opportunities") return Response.json({ ok:true, opportunities:persisted ? [{ id:"opp-safe" }] : [] });
     return Response.json({
       ok:true,
       replayed:false,
-      opportunities:[{ title:"Safe opportunity", company:"Buyer", opportunity_kind:"OPEN_OPPORTUNITY", fit_score:90, win_score:80, source_url:"https://buyer.example/opportunity" }],
+      opportunities:[{ id:"opp-safe", title:"Safe opportunity", company:"Buyer", opportunity_kind:"OPEN_OPPORTUNITY", fit_score:90, win_score:80, source_url:"https://buyer.example/opportunity" }],
       run:{
         model:"gpt-5.6-luna",
         attempts:1,
@@ -40,7 +41,7 @@ function transport({ commit = COMMIT, deployContext = "deploy-preview" } = {}) {
   return { calls, fetchImpl };
 }
 
-test("paid deployed acceptance makes exactly four bounded requests and returns no access code", async () => {
+test("paid deployed acceptance verifies persisted results and returns no access code", async () => {
   const mock = transport();
   const progress = [];
   const result = await runPaidDeployedAcceptance({
@@ -53,15 +54,16 @@ test("paid deployed acceptance makes exactly four bounded requests and returns n
     onProgress:event => progress.push(event)
   });
   assert.equal(result.ok, true);
-  assert.equal(result.operational_http_requests, 4);
+  assert.equal(result.operational_http_requests, 5);
   assert.equal(result.openai_requests, 1);
   assert.equal(result.hosted_web_search_calls, 1);
   assert.equal(result.direct_source_requests, 0);
   assert.equal(result.retries, 0);
+  assert.equal(result.persistence_verified, true);
   assert.equal(result.diagnostics.privacy,"AGGREGATED_COUNTS_ONLY");
   assert.equal(result.diagnostics.source_yield.find((item)=>item.source_id==="upwork").returned,1);
-  assert.equal(mock.calls.length, 4);
-  assert.equal(progress.filter((event) => event.state === "started").length, 4);
+  assert.equal(mock.calls.length, 5);
+  assert.equal(progress.filter((event) => event.state === "started").length, 5);
   assert.ok(mock.calls.slice(2).every((call) => call.options.headers.authorization === "Bearer secret-never-returned"));
   assert.doesNotMatch(JSON.stringify(result), /secret-never-returned/);
 });
@@ -76,6 +78,12 @@ test("paid deployed acceptance rejects branch-deploy metadata before authenticat
   const mock = transport({ deployContext:"branch-deploy" });
   await assert.rejects(() => runPaidDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", runId:"paid-run-001", testId:"atomic-test-001", fetchImpl:mock.fetchImpl }), /PAID_ACCEPTANCE_DEPLOY_IDENTITY_MISMATCH/);
   assert.equal(mock.calls.length, 1);
+});
+
+test("paid deployed acceptance fails if a returned result is missing after reload", async () => {
+  const mock = transport({ persisted:false });
+  await assert.rejects(() => runPaidDeployedAcceptance({ baseUrl:BASE, commitRef:COMMIT, accessCode:"secret", runId:"paid-run-001", testId:"atomic-test-001", fetchImpl:mock.fetchImpl }), /PAID_ACCEPTANCE_PERSISTENCE_FAILED/);
+  assert.equal(mock.calls.length, 5);
 });
 
 test("paid acceptance URL accepts only an immutable Radar deploy subdomain", () => {

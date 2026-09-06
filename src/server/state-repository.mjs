@@ -4,6 +4,7 @@ import { normalizeBudget, normalizeUrl } from "./normalize.mjs";
 import { createHash } from "node:crypto";
 
 const OP_PREFIX = "opportunities/";
+const OP_SNAPSHOT_KEY = "metadata/opportunities-v1";
 const COMPANY_PREFIX = "companies/";
 const SOURCE_RUN_PREFIX = "source-runs/";
 const SOURCE_RUN_REQUEST_PREFIX = "source-run-requests/";
@@ -31,14 +32,34 @@ function safeSavedOpportunity(item) {
 }
 
 async function listJSON(store, prefix) {
-  const result = await store.list({ prefix });
-  return Promise.all((result.blobs || []).map(({ key }) => store.get(key, { type: "json" })));
+  const result = await store.list({ prefix, directories:true });
+  return Promise.all((result.blobs || []).map(({ key }) => {
+    const fullKey = String(key || "").startsWith(prefix) ? key : `${prefix}${key}`;
+    return store.get(fullKey, { type: "json" });
+  }));
+}
+
+async function readOpportunitySnapshot(store) {
+  const value = await store.get(OP_SNAPSHOT_KEY, { type:"json" });
+  return Array.isArray(value) ? value : null;
+}
+
+async function writeOpportunitySnapshot(store, opportunities) {
+  await store.setJSON(OP_SNAPSHOT_KEY, opportunities);
+}
+
+function upsertOpportunity(items, next) {
+  const index = items.findIndex((item) => item?.id === next.id);
+  if (index === -1) return [...items, next];
+  return items.map((item, itemIndex) => itemIndex === index ? next : item);
 }
 
 export function createStateRepository(store) {
   return {
     async listOpportunities() {
-      return (await listJSON(store, OP_PREFIX)).filter(Boolean).map(safeSavedOpportunity);
+      const snapshot = await readOpportunitySnapshot(store);
+      const items = snapshot ?? await listJSON(store, OP_PREFIX);
+      return items.filter(Boolean).map(safeSavedOpportunity);
     },
 
     async listCompanies() {
@@ -78,7 +99,9 @@ export function createStateRepository(store) {
     },
 
     async saveOpportunity(item) {
+      const existing = await this.listOpportunities();
       await store.setJSON(`${OP_PREFIX}${item.id}`, item);
+      await writeOpportunitySnapshot(store, upsertOpportunity(existing, item));
       return item;
     },
 
@@ -136,8 +159,21 @@ export function createStateRepository(store) {
       const companies = await this.listCompanies();
       const byKey = Object.fromEntries(companies.map((item) => [item.company_key, item]));
       const merged = mergeOpportunityHistory(existing, incoming, byKey, nowIso);
-      for (const item of merged) await this.saveOpportunity(item);
-      const workspaceFingerprints = new Set([...existing, ...merged].map(opportunityFingerprint));
+      let workspace = existing;
+      for (const item of merged) {
+        const fingerprint = opportunityFingerprint(item);
+        const previous = workspace.find((entry) => opportunityFingerprint(entry) === fingerprint);
+        workspace = previous
+          ? workspace.map((entry) => opportunityFingerprint(entry) === fingerprint ? item : entry)
+          : [...workspace, item];
+        await store.setJSON(`${OP_PREFIX}${item.id}`, item);
+      }
+      await writeOpportunitySnapshot(store, workspace);
+      const persisted = await readOpportunitySnapshot(store);
+      if (!persisted || !merged.every((item) => persisted.some((saved) => saved?.id === item.id))) {
+        throw new Error("STATE_WRITE_VERIFICATION_FAILED");
+      }
+      const workspaceFingerprints = new Set(workspace.map(opportunityFingerprint));
       return {
         opportunities: merged,
         new_count: merged.filter((item) => item.is_new).length,

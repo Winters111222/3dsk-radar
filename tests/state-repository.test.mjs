@@ -7,6 +7,37 @@ test("search merge preserves first_seen and status and makes repeat result not n
 
 test("detailed search merge separates new, updated and workspace totals",async()=>{const repo=createStateRepository(memoryStore());await repo.saveOpportunity(opportunity());const result=await repo.mergeSearchResultsWithStats([opportunity({id:"repeat"}),opportunity({id:"opp-2",canonical_url:"https://example.com/b",title:"New Request"})],"2026-09-06T09:00:00Z");assert.equal(result.new_count,1);assert.equal(result.updated_count,1);assert.equal(result.workspace_total,2);});
 
+test("search merge persists one authoritative workspace snapshot for reloads",async()=>{
+ const store=memoryStore(),repo=createStateRepository(store);
+ await repo.saveOpportunity(opportunity());
+ await repo.mergeSearchResultsWithStats([opportunity({id:"opp-2",canonical_url:"https://example.com/b",title:"New Request"})],"2026-09-06T09:00:00Z");
+ store.list=async()=>({blobs:[],directories:[]});
+ const snap=await createStateRepository(store).snapshot();
+ assert.deepEqual(snap.opportunities.map((item)=>item.id).sort(),["opp-1","opp-2"]);
+});
+
+test("legacy blob lists with prefix-relative keys are loaded and migrated",async()=>{
+ const data=new Map([["opportunities/opp-legacy",opportunity({id:"opp-legacy"})]]);
+ const store={
+  async setJSON(key,value){data.set(key,structuredClone(value));},
+  async get(key){return data.has(key)?structuredClone(data.get(key)):null;},
+  async list({prefix}={}){return{blobs:[...data.keys()].filter((key)=>key.startsWith(prefix)).map((key)=>({key:key.slice(prefix.length),etag:"x"})),directories:[]};}
+ };
+ const repo=createStateRepository(store);
+ assert.equal((await repo.listOpportunities())[0].id,"opp-legacy");
+ await repo.saveOpportunity(opportunity({id:"opp-new",canonical_url:"https://example.com/new"}));
+ assert.deepEqual((await data.get("metadata/opportunities-v1")).map((item)=>item.id).sort(),["opp-legacy","opp-new"]);
+});
+
+test("search merge fails closed when the workspace snapshot cannot be read back",async()=>{
+ const store=memoryStore(),originalGet=store.get.bind(store);
+ store.get=async(key,...args)=>key==="metadata/opportunities-v1"?null:originalGet(key,...args);
+ await assert.rejects(
+  ()=>createStateRepository(store).mergeSearchResultsWithStats([opportunity()],"2026-09-06T09:00:00Z"),
+  /STATE_WRITE_VERIFICATION_FAILED/
+ );
+});
+
 test("a new repository instance retains old opportunities, reply and last search a week later",async()=>{
  const store=memoryStore(),repo=createStateRepository(store);
  await repo.saveOpportunity(opportunity({reply_subject:"Approved subject",reply_body:"Saved body",reply_to:"public@example.com"}));

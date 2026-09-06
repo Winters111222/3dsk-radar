@@ -13,6 +13,10 @@ Původní run evidence uměla doložit `verified_source_count: 29` a `returned_c
 
 Team access kód pouze načítá uložený workspace. Nespouští placené hledání ani nevytváří demo data. Izolované Deploy Preview navíc nesdílí výsledky mezi různými preview deployi.
 
+## Persistence acceptance
+
+Výsledky se ukládají také jako jeden autoritativní workspace snapshot; jednotlivé opportunity klíče zůstávají kvůli přímému detailu a zpětné kompatibilitě. Po zápisu backend snapshot okamžitě načte a ověří ID všech právě vrácených nabídek. Deployed paid acceptance navíc provede autentizovaný `GET /api/opportunities` a skončí chybou `PAID_ACCEPTANCE_PERSISTENCE_FAILED`, pokud se některý vrácený výsledek po reloadu ztratí. Samotná úspěšná odpověď Search už tedy nestačí.
+
 ## Nový uložený kontrakt
 
 Každý nový `INDEX_DISCOVERY_MANUAL_VERIFY` run ukládá do `run.diagnostics`:
