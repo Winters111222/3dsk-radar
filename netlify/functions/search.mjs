@@ -1,7 +1,7 @@
 import { envValue, paidAcceptanceContextAllowed, workspaceAllowed } from "../../src/server/runtime.mjs";
 import { authorizeRequest } from "../../src/server/auth.mjs";
 import { loadPublicCompanyProfile } from "../../src/server/profile.mjs";
-import { runOpportunitySearch } from "../../src/server/openai-search.mjs";
+import { runOpportunitySearch, runWideOpportunitySearch } from "../../src/server/openai-search.mjs";
 import { estimateSearchCost } from "../../src/server/search-cost.mjs";
 import { getStateRepository } from "../../src/server/netlify-state.mjs";
 import { paidCoordinatorReadiness } from "../../src/server/paid-run-coordinator-contract.mjs";
@@ -67,7 +67,10 @@ export default async function handler(request, context) {
       cap_microusd:capMicrousd,
       max_results:boundedInt(envValue("RADAR_PAID_ACCEPTANCE_MAX_RESULTS"), 6, 1, 6),
       model:"gpt-5.6-luna",
+      search_profile:"FOCUSED",
+      openai_request_limit:1,
       max_tool_calls:3,
+      max_tool_calls_per_request:3,
       max_output_tokens:8000,
       now_iso:new Date().toISOString()
     };
@@ -120,17 +123,31 @@ export default async function handler(request, context) {
     const profile = await loadPublicCompanyProfile();
     const nowIso = execution.now_iso;
     dispatched = true;
-    const result = await runOpportunitySearch({
-      apiKey,
-      model:execution.model,
-      profile,
-      nowIso,
-      maxResults:execution.max_results,
-      allowStructuredRetry:false,
-      maxToolCalls:execution.max_tool_calls,
-      maxOutputTokens:execution.max_output_tokens
-    });
-    if (result.attempts !== 1 || result.web_search_call_count > execution.max_tool_calls) throw new Error("PAID_REQUEST_BOUNDARY_EXCEEDED");
+    const result = execution.search_profile === "WIDE_INDEX"
+      ? await runWideOpportunitySearch({
+        apiKey,
+        model:execution.model,
+        profile,
+        nowIso,
+        shards:execution.shards,
+        maxResults:execution.max_results,
+        maxResultsPerShard:6,
+        maxToolCallsPerShard:execution.max_tool_calls_per_request,
+        maxOutputTokensPerShard:execution.max_output_tokens
+      })
+      : await runOpportunitySearch({
+        apiKey,
+        model:execution.model,
+        profile,
+        nowIso,
+        maxResults:execution.max_results,
+        allowStructuredRetry:false,
+        maxToolCalls:execution.max_tool_calls,
+        maxOutputTokens:execution.max_output_tokens
+      });
+    if (result.attempts !== 1
+      || result.openai_request_count > execution.openai_request_limit
+      || result.web_search_call_count > execution.max_tool_calls) throw new Error("PAID_REQUEST_BOUNDARY_EXCEEDED");
     const estimatedCost = estimateSearchCost({ model:result.model, usage:result.usage, webSearchCalls:result.web_search_call_count });
     if (!estimatedCost || Math.ceil(estimatedCost.total_usd * 1_000_000) > execution.cap_microusd) throw new Error("PAID_COST_CAP_EXCEEDED");
     const settlement = await coordinator.settleBudget(
@@ -154,7 +171,7 @@ export default async function handler(request, context) {
       ...result.counters,
       source_requests:0,
       direct_source_requests:result.direct_source_requests,
-      openai_requests:1,
+      openai_requests:result.openai_request_count,
       retries:0,
       new_opportunities:merge.new_count,
       updated_opportunities:merge.updated_count,
@@ -162,16 +179,20 @@ export default async function handler(request, context) {
     };
     const run = {
       mode:result.discovery_mode,
+      search_profile:result.search_profile,
+      search_status:result.search_status,
+      coverage:result.coverage,
       diagnostics:result.diagnostics,
       completed_at:nowIso,
       model:result.model,
       response_id:result.response_id,
+      response_ids:result.response_ids,
       attempts:result.attempts,
       verified_source_count:result.verified_source_count,
       allowed_domains:result.allowed_domains,
       direct_source_requests:result.direct_source_requests,
       rejected_candidate_count:result.rejections.length,
-      returned_count:opportunities.length,
+      returned_count:result.opportunities.length,
       counters,
       usage:result.usage,
       web_search_call_count:result.web_search_call_count,
@@ -187,7 +208,7 @@ export default async function handler(request, context) {
         settled_usd:settlement.actual_microusd / 1_000_000,
         fence_token:reservation.fence_token,
         coordinator:"NETLIFY_DATABASE",
-        openai_requests:1,
+        openai_requests:result.openai_request_count,
         source_requests:0,
         retries:0
     };

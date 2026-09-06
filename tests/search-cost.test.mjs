@@ -36,6 +36,17 @@ test("Luna worst-case accepted context remains below the $0.50 paid acceptance r
   assert.ok(cost.total_usd < 0.50);
 });
 
+test("representative five-shard wide run remains well below its two-dollar reservation", () => {
+  const cost = estimateSearchCost({
+    model:"gpt-5.6-luna",
+    webSearchCalls:15,
+    usage:{ input_tokens:500_000, output_tokens:30_000 }
+  });
+  assert.equal(cost.pricing_tier, "LONG_CONTEXT");
+  assert.equal(cost.total_usd, 0.404);
+  assert.ok(cost.total_usd < 2);
+});
+
 test("retry usage and tool calls can be accumulated without hiding first-attempt cost", () => {
   const total = addUsage(
     { input_tokens: 100, input_tokens_details: { cached_tokens: 20 }, output_tokens: 30 },

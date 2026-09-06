@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { buildOpenAIRequest, buildSearchOutputSchema, OPPORTUNITY_CATEGORIES, SEARCH_INTENTS } from "../src/server/search-contract.mjs";
-import { INDEX_DISCOVERY_ALLOWED_DOMAINS } from "../src/server/index-discovery.mjs";
+import { FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS } from "../src/server/index-discovery.mjs";
 
 const profile = JSON.parse(await readFile(new URL("../config/company-profile.public.json", import.meta.url), "utf8"));
 
@@ -12,7 +12,7 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.deepEqual(body.tools, [{
     type:"web_search",
     search_context_size:"medium",
-    filters:{ allowed_domains:[...INDEX_DISCOVERY_ALLOWED_DOMAINS] }
+    filters:{ allowed_domains:[...FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS] }
   }]);
   assert.equal(body.max_tool_calls, 3);
   assert.equal(body.max_output_tokens, 8000);

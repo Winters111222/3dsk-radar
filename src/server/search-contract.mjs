@@ -1,5 +1,5 @@
 import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES } from "../lib/source-truth.mjs";
-import { INDEX_DISCOVERY_ALLOWED_DOMAINS, INDEX_DISCOVERY_MODE, indexDiscoveryPolicySummary } from "./index-discovery.mjs";
+import { FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS, INDEX_DISCOVERY_MODE, indexDiscoveryPolicySummary } from "./index-discovery.mjs";
 
 export const SEARCH_INTENTS = [
   "game studio seeking external character art vendor RFP",
@@ -142,7 +142,15 @@ export function buildSearchOutputSchema(maxResults = 12) {
   };
 }
 
-export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retry = false }) {
+export function buildSearchInstructions({
+  profile,
+  nowIso,
+  maxResults = 12,
+  retry = false,
+  allowedDomains = FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS,
+  searchFocus = null,
+  shardLabel = null
+}) {
   const publicCapabilities = profile.capabilities.filter((item) =>
     item.status === "APPROVED" && item.outbound_safe && !EXCLUDED_SEARCH_CAPABILITY_IDS.has(item.id));
   const publicCredentials = profile.credentials.filter((item) => item.status === "PUBLIC_APPROVED" && item.outbound_safe);
@@ -153,7 +161,9 @@ export function buildSearchInstructions({ profile, nowIso, maxResults = 12, retr
     `Return at most ${maxResults} normalized opportunities.`,
     `Discovery mode: ${INDEX_DISCOVERY_MODE}.`,
     "You MUST use web search. Prefer original primary sources over aggregators.",
-    `Search only these allowlisted opportunity sources and paths: ${indexDiscoveryPolicySummary()}.`,
+    shardLabel ? `This required coverage shard is: ${shardLabel}.` : "",
+    searchFocus ? `Mandatory focus for this shard: ${searchFocus}` : "",
+    `Search only these allowlisted opportunity sources and paths: ${indexDiscoveryPolicySummary(allowedDomains)}.`,
     "Return only an exact public opportunity/detail URL matching one of those paths. Never return a home page, profile, category, tag, feed or search-results page.",
     "Do not sign in, use cookies or sessions, automate a browser, solve access controls, or claim that hosted discovery grants API, crawling or content-reuse permission.",
     "Every returned item requires a person to open the original source and verify that it is still active before any contact or response generation.",
@@ -191,7 +201,11 @@ export function buildOpenAIRequest({
   model = "gpt-5.6-luna",
   retry = false,
   maxToolCalls = 3,
-  maxOutputTokens = 8000
+  maxOutputTokens = 8000,
+  allowedDomains = FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS,
+  searchFocus = null,
+  shardLabel = null,
+  searchContextSize = "medium"
 }) {
   return {
     model,
@@ -199,13 +213,13 @@ export function buildOpenAIRequest({
     reasoning: { effort: "low" },
     tools: [{
       type: "web_search",
-      search_context_size: "medium",
-      filters: { allowed_domains:[...INDEX_DISCOVERY_ALLOWED_DOMAINS] }
+      search_context_size: ["low", "medium", "high"].includes(searchContextSize) ? searchContextSize : "medium",
+      filters: { allowed_domains:[...allowedDomains] }
     }],
     tool_choice: "required",
     max_tool_calls: Math.max(1, Math.min(3, Number(maxToolCalls) || 3)),
     include: ["web_search_call.action.sources"],
-    instructions: buildSearchInstructions({ profile, nowIso, maxResults, retry }),
+    instructions: buildSearchInstructions({ profile, nowIso, maxResults, retry, allowedDomains, searchFocus, shardLabel }),
     input: "Search the current public web now and return only the structured Radar opportunity dataset. Do not add prose outside the schema.",
     max_output_tokens: Math.max(2000, Math.min(8000, Number(maxOutputTokens) || 8000)),
     text: {

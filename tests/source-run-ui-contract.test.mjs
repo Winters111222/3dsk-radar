@@ -39,11 +39,13 @@ test("operator controls have responsive layouts and the collection lock is accep
   assert.match(app, /prelive_lock_check/);
 });
 
-test("paid search diagnostics expose per-source yield and aggregate rejection reasons", () => {
-  for (const marker of ["Search yield diagnostics","source-yield-grid","search-rejection-summary","ZERO RESULT"]) {
+test("paid search diagnostics expose required-shard coverage, per-source yield and rejection reasons", () => {
+  for (const marker of ["Search yield diagnostics","search-coverage-grid","source-yield-grid","search-rejection-summary","ZERO RESULT"]) {
     assert.match(`${html}\n${app}`,new RegExp(marker));
   }
   assert.match(app,/diagnostics\.source_yield/);
   assert.match(app,/diagnostics\.rejection_reasons/);
+  assert.match(app,/state\.lastRun\?\.coverage/);
+  assert.match(app,/web_search_calls/);
   assert.match(html,/AGGREGATED COUNTS ONLY/);
 });

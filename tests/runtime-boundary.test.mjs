@@ -75,7 +75,29 @@ test("health exposes production search readiness independently from global AI", 
   const preview = await (await health(undefined, { deploy:{ context:"deploy-preview" } })).json();
   assert.equal(production.paid_ai_state, "ENABLED");
   assert.equal(production.production_search, "READY");
+  assert.equal(production.production_search_profile, "FOCUSED");
+  assert.equal(production.production_search_max_usd, 0.5);
   assert.equal(preview.production_search, "CONTEXT_BLOCKED");
+});
+
+test("health exposes wide search profile and its server-owned limits without dispatch", async t => {
+  runtime(t, {
+    RADAR_INTERNAL_ACCESS_SECRET:"fixture-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24"
+  });
+  const network = t.mock.method(globalThis, "fetch", () => { throw new Error("Health must not dispatch search"); });
+  const production = await (await health(undefined, {deploy:{context:"production"}})).json();
+  assert.equal(production.production_search, "READY");
+  assert.equal(production.production_search_profile, "WIDE_INDEX");
+  assert.equal(production.production_search_max_results, 24);
+  assert.equal(production.production_search_max_usd, 2);
+  assert.equal(production.production_search_openai_request_limit, 5);
+  assert.equal(production.production_search_web_call_limit, 15);
+  assert.equal(network.mock.callCount(), 0);
 });
 
 test("real Blobs SDK keeps production data across deploy IDs and isolates preview/acceptance", async t => {

@@ -1,5 +1,5 @@
 import { envValue, paidAcceptanceContextAllowed, sourceCollectionEnabled } from "../../src/server/runtime.mjs";
-import { productionSearchState } from "../../src/server/production-search-policy.mjs";
+import { productionSearchConfiguration, productionSearchState } from "../../src/server/production-search-policy.mjs";
 import { productionReplyState } from "../../src/server/production-reply-policy.mjs";
 
 export default async (_request, context) => {
@@ -7,6 +7,7 @@ export default async (_request, context) => {
   const paidAcceptanceEnabled = envValue("RADAR_PAID_ACCEPTANCE_ENABLED").toLowerCase() === "true";
   const paidAcceptancePreview = paidAcceptanceContextAllowed(context);
   const controlledProductionSearch = productionSearchState({ context });
+  const productionSearchConfig = controlledProductionSearch === "READY" ? productionSearchConfiguration() : null;
   const controlledProductionReply = productionReplyState({ context });
   return Response.json({
     ok: true,
@@ -16,6 +17,11 @@ export default async (_request, context) => {
     live_ai_enabled: liveAIEnabled,
     paid_ai_state: liveAIEnabled ? "ENABLED" : "LOCKED",
     production_search: controlledProductionSearch,
+    production_search_profile: productionSearchConfig?.search_profile || null,
+    production_search_max_results: productionSearchConfig?.max_results || null,
+    production_search_max_usd: productionSearchConfig ? productionSearchConfig.cap_microusd / 1_000_000 : null,
+    production_search_openai_request_limit: productionSearchConfig?.openai_request_limit || null,
+    production_search_web_call_limit: productionSearchConfig?.max_tool_calls || null,
     production_reply: controlledProductionReply,
     paid_acceptance: paidAcceptanceEnabled ? (paidAcceptancePreview ? "ARMED" : "CONTEXT_BLOCKED") : "LOCKED",
     deploy_context: context?.deploy?.context || "unknown",

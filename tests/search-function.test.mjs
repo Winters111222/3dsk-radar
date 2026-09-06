@@ -385,3 +385,68 @@ test("concurrent production clicks have one paid winner", async () => {
     clearWarmState();
   }
 });
+
+test("wide production search runs five bounded coverage shards and persists one merged dataset", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_INDEX",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"2.00",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"24",
+    OPENAI_API_KEY:"fake-test-key"
+  });
+  const sourceForFirstDomain = {
+    "upwork.com":SOURCE,
+    "reddit.com":"https://www.reddit.com/r/gameDevClassifieds/comments/abc123/hiring_character_artist/",
+    "workwithindies.com":"https://workwithindies.com/careers/example-studio-character-artist",
+    "ted.europa.eu":"https://ted.europa.eu/en/notice/-/detail/123456-2026"
+  };
+  let openaiRequests = 0;
+  let savedRun;
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator({capMicrousd:2_000_000});
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = {
+    mergeSearchResultsWithStats:async (items) => ({opportunities:items,new_count:items.length,updated_count:0,workspace_total:items.length}),
+    saveSearchRun:async (run) => { savedRun = run; }
+  };
+  globalThis.fetch = async (_url, options) => {
+    openaiRequests += 1;
+    const providerRequest = JSON.parse(options.body);
+    const firstDomain = providerRequest.tools[0].filters.allowed_domains[0];
+    const source = sourceForFirstDomain[firstDomain];
+    const opportunities = firstDomain === "upwork.com" ? [candidate()] : [];
+    return new Response(JSON.stringify({
+      id:`resp_wide_${openaiRequests}`,
+      model:"gpt-5.6-luna",
+      usage:{input_tokens:50,output_tokens:25,total_tokens:75},
+      output:[
+        {type:"web_search_call",action:{sources:[{url:source,title:"official"}]}},
+        {type:"message",content:[{type:"output_text",text:JSON.stringify({opportunities})}]}
+      ]
+    }), {status:200,headers:{"content-type":"application/json"}});
+  };
+  try {
+    const response = await handler(new Request("https://radar.test/api/search", {
+      method:"POST",
+      headers:{authorization:"Bearer team-secret","content-type":"application/json"},
+      body:"{}"
+    }), {deploy:{context:"production"}});
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(openaiRequests, 5);
+    assert.equal(payload.run.search_profile, "WIDE_INDEX");
+    assert.equal(payload.run.search_status, "COMPLETE");
+    assert.equal(payload.run.coverage.length, 5);
+    assert.equal(payload.run.paid_execution.cap_usd, 2);
+    assert.equal(payload.run.paid_execution.openai_requests, 5);
+    assert.equal(payload.run.web_search_call_count, 5);
+    assert.equal(payload.run.returned_count, 1);
+    assert.deepEqual(savedRun.coverage, payload.run.coverage);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});

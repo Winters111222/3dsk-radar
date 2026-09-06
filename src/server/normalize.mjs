@@ -418,7 +418,7 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12, ind
   const opportunities = [];
   const rejections = [];
   const outcomes = [];
-  const candidates = parsed.opportunities.slice(0, Math.max(1, Math.min(20, maxResults)));
+  const candidates = parsed.opportunities.slice(0, Math.max(1, Math.min(30, maxResults)));
   for (const candidate of candidates) {
     const normalized = normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { indexDiscovery });
     if (normalized.opportunity) {
