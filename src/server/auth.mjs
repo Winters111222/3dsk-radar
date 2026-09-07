@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 export function bearerToken(request) {
   const header = request.headers.get("authorization") || "";
@@ -8,9 +8,8 @@ export function bearerToken(request) {
 
 export function constantTimeEqual(left, right) {
   if (typeof left !== "string" || typeof right !== "string" || !left || !right) return false;
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  if (a.length !== b.length) return false;
+  const a = createHash("sha256").update(left, "utf8").digest();
+  const b = createHash("sha256").update(right, "utf8").digest();
   return timingSafeEqual(a, b);
 }
 

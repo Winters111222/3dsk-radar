@@ -1,6 +1,8 @@
 import { sourceConnectorReadiness } from "./wide-v3-source-plan.mjs";
+import { bearerToken, constantTimeEqual } from "./auth.mjs";
 
 export const OFFICIAL_SOURCE_CANARY_CONFIRMATION = "RUN_WIDE_V3_FREE_SOURCE_CANARY_ONCE";
+export const OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN_MIN_LENGTH = 32;
 
 const PROFILES = Object.freeze({
   BLUESKY_ONLY:Object.freeze({ source_ids:Object.freeze(["bluesky_public"]), request_limit:1 }),
@@ -67,4 +69,19 @@ export function officialSourceCanaryConfiguration({ context, getEnv = (key) => p
   const blocked = profile.source_ids.filter((sourceId) => readiness.get(sourceId)?.status !== "CONFIG_READY");
   if (blocked.length) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_CONNECTOR_NOT_READY", blocked_sources:blocked };
   return { ok:true, ...provenance, profile:profileName, source_ids:[...profile.source_ids], request_limit:profile.request_limit, max_results_per_source:10 };
+}
+
+export function authorizeOfficialSourceCanaryRequest({ request, configuration, getEnv = (key) => process.env[key] } = {}) {
+  const token = bearerToken(request);
+  const internalSecret = String(getEnv("RADAR_INTERNAL_ACCESS_SECRET") || "");
+  if (constantTimeEqual(token, internalSecret)) return { ok:true, mechanism:"internal" };
+
+  const canaryAccessToken = String(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN") || "");
+  if (!configuration?.ok) return { ok:false, status:401, code:"UNAUTHORIZED" };
+  if (canaryAccessToken && canaryAccessToken.length < OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN_MIN_LENGTH) {
+    return { ok:false, status:503, code:"OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN_INVALID" };
+  }
+  if (constantTimeEqual(token, canaryAccessToken)) return { ok:true, mechanism:"ephemeral_canary" };
+  if (!internalSecret && !canaryAccessToken) return { ok:false, status:503, code:"RADAR_ACCESS_NOT_CONFIGURED" };
+  return { ok:false, status:401, code:"UNAUTHORIZED" };
 }
