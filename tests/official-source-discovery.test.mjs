@@ -1,16 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  BLUESKY_PUBLIC_API_ORIGIN,
+  BLUESKY_APPVIEW_SERVICE,
+  BLUESKY_DEFAULT_PDS_ORIGIN,
   OFFICIAL_SOURCE_MAX_RESULTS,
   REDDIT_API_ORIGIN,
   UPWORK_GRAPHQL_URL,
   buildBlueskySearchRequest,
+  buildBlueskySessionRequest,
   buildMastodonSearchRequest,
   buildRedditSearchRequest,
   buildUpworkSearchRequest,
   collectOfficialSource,
   parseBlueskySearch,
+  parseBlueskySession,
   parseMastodonSearch,
   parseRedditSearch,
   parseUpworkSearch
@@ -39,15 +42,23 @@ test("Reddit is limited to the approved subreddit and last month", () => {
   assert.equal(request.url.includes("rd-secret"), false);
 });
 
-test("Bluesky uses the public latest-post search endpoint", () => {
-  const request = buildBlueskySearchRequest({ query:"3D character artist contract", limit:7 });
+test("Bluesky creates a revocable app-password session and proxies authenticated search through the PDS", () => {
+  const sessionRequest = buildBlueskySessionRequest({ identifier:"radar.bsky.social", appPassword:"app-password" });
+  assert.equal(new URL(sessionRequest.url).origin, BLUESKY_DEFAULT_PDS_ORIGIN);
+  assert.equal(new URL(sessionRequest.url).pathname, "/xrpc/com.atproto.server.createSession");
+  assert.deepEqual(JSON.parse(sessionRequest.options.body), { identifier:"radar.bsky.social", password:"app-password" });
+
+  const request = buildBlueskySearchRequest({ accessToken:"access-jwt", query:"3D character artist contract", limit:7 });
   const url = new URL(request.url);
-  assert.equal(url.origin, BLUESKY_PUBLIC_API_ORIGIN);
+  assert.equal(url.origin, BLUESKY_DEFAULT_PDS_ORIGIN);
   assert.equal(url.pathname, "/xrpc/app.bsky.feed.searchPosts");
   assert.equal(url.searchParams.get("sort"), "latest");
   assert.equal(url.searchParams.get("limit"), "7");
-  assert.equal(request.options.headers.authorization, undefined);
+  assert.equal(request.options.headers.authorization, "Bearer access-jwt");
+  assert.equal(request.options.headers["atproto-proxy"], BLUESKY_APPVIEW_SERVICE);
   assert.match(request.options.headers["user-agent"], /3dsk-opportunity-radar/);
+  assert.deepEqual(parseBlueskySession({ accessJwt:"access-jwt", refreshJwt:"must-not-escape" }), { accessToken:"access-jwt" });
+  assert.throws(() => buildBlueskySessionRequest({ identifier:"radar.bsky.social", appPassword:"x", pdsOrigin:"http://bsky.social" }), /BLUESKY_PDS_ORIGIN_INVALID/);
 });
 
 test("Mastodon accepts only a clean HTTPS server origin", () => {
@@ -77,18 +88,24 @@ test("official payloads normalize to discovery-only hints", () => {
   assert.equal(mastodon[0].title, "Need a photogrammetry vendor");
 });
 
-test("one official source collection makes one request, zero AI calls and zero retries", async () => {
+test("one Bluesky collection makes one session request plus one search request, zero AI calls and zero retries", async () => {
   let calls = 0;
-  const fakeFetch = async (_url, options) => {
+  const fakeFetch = async (url, options) => {
     calls += 1;
+    if (String(url).includes("createSession")) {
+      assert.equal(options.method, "POST");
+      assert.equal(options.body.includes("app-password"), true);
+      return new Response(JSON.stringify({ accessJwt:"access-jwt", refreshJwt:"refresh-jwt" }), {status:200});
+    }
     assert.equal(options.method, "GET");
+    assert.equal(options.headers.authorization, "Bearer access-jwt");
     return new Response(JSON.stringify({ posts:[{uri:"at://did:plc:abc/app.bsky.feed.post/3xyz",author:{handle:"buyer.bsky.social"},record:{text:"Paid character contract",createdAt:"2026-09-06T10:00:00Z"}}] }), {status:200,headers:{"content-type":"application/json"}});
   };
-  const result = await collectOfficialSource({ sourceId:"bluesky_public", query:"character contract", fetchImpl:fakeFetch });
-  assert.equal(calls, 1);
+  const result = await collectOfficialSource({ sourceId:"bluesky_public", config:{identifier:"radar.bsky.social",appPassword:"app-password"}, query:"character contract", fetchImpl:fakeFetch });
+  assert.equal(calls, 2);
   assert.equal(result.status, "COMPLETE");
   assert.equal(result.items.length, 1);
-  assert.deepEqual(result.counters, { source_requests:1, candidates_seen:1, openai_requests:0, retries:0, cost_usd:0 });
+  assert.deepEqual(result.counters, { source_requests:2, candidates_seen:1, openai_requests:0, retries:0, cost_usd:0 });
 });
 
 test("invalid schemas and credentials fail closed", () => {
@@ -96,5 +113,6 @@ test("invalid schemas and credentials fail closed", () => {
   assert.throws(() => parseUpworkSearch({}), /UPWORK_SCHEMA_MISMATCH/);
   assert.throws(() => parseRedditSearch({}), /REDDIT_SCHEMA_MISMATCH/);
   assert.throws(() => parseBlueskySearch({}), /BLUESKY_SCHEMA_MISMATCH/);
+  assert.throws(() => parseBlueskySession({}), /BLUESKY_SESSION_SCHEMA_MISMATCH/);
   assert.throws(() => parseMastodonSearch({}), /MASTODON_SCHEMA_MISMATCH/);
 });

@@ -9,8 +9,8 @@ const OFFICIAL_SOURCE_CANARY_CONTEXT = "deploy-preview";
 const OFFICIAL_SOURCE_CANARY_BRANCH_CONTEXT = "branch-deploy";
 
 const PROFILES = Object.freeze({
-  BLUESKY_ONLY:Object.freeze({ source_ids:Object.freeze(["bluesky_public"]), request_limit:1 }),
-  BLUESKY_MASTODON:Object.freeze({ source_ids:Object.freeze(["bluesky_public", "mastodon_official"]), request_limit:2 })
+  BLUESKY_ONLY:Object.freeze({ source_ids:Object.freeze(["bluesky_public"]), request_limit:2 }),
+  BLUESKY_MASTODON:Object.freeze({ source_ids:Object.freeze(["bluesky_public", "mastodon_official"]), request_limit:3 })
 });
 
 const enabled = (value) => String(value || "").trim().toLowerCase() === "true";

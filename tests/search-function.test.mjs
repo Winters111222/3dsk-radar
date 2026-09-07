@@ -528,7 +528,7 @@ test("Firecrawl WIDE v2 performs exactly five bounded pre-discovery calls before
   }
 });
 
-test("WIDE V3 performs one configured official-source request and eight Sol verification shards", async () => {
+test("WIDE V3 performs one authenticated Bluesky session plus search and eight Sol verification shards", async () => {
   const oldFetch = globalThis.fetch;
   clearWarmState();
   const restore = installNetlifyEnv({
@@ -539,8 +539,10 @@ test("WIDE V3 performs one configured official-source request and eight Sol veri
     RADAR_PRODUCTION_SEARCH_MAX_USD:"3.00",
     RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"32",
     RADAR_OFFICIAL_SOURCE_DISCOVERY_ENABLED:"true",
-    RADAR_OFFICIAL_SOURCE_MAX_REQUESTS:"4",
+    RADAR_OFFICIAL_SOURCE_MAX_REQUESTS:"5",
     RADAR_BLUESKY_SEARCH_ENABLED:"true",
+    BLUESKY_IDENTIFIER:"radar.bsky.social",
+    BLUESKY_APP_PASSWORD:"bsky-app-secret",
     OPENAI_API_KEY:"fake-openai-key"
   });
   const sourceForFirstDomain = {
@@ -560,8 +562,9 @@ test("WIDE V3 performs one configured official-source request and eight Sol veri
     mergeSearchResultsWithStats:async (items) => ({opportunities:items,new_count:items.length,updated_count:0,workspace_total:items.length}),
     saveSearchRun:async () => {}
   };
-  globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__ = async () => {
+  globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__ = async (url) => {
     officialRequests += 1;
+    if (String(url).includes("createSession")) return Response.json({ accessJwt:"bsky-access-jwt", refreshJwt:"refresh-must-not-escape" });
     return new Response(JSON.stringify({ posts:[{
       uri:"at://did:plc:buyer/app.bsky.feed.post/3signal",
       author:{handle:"buyer.bsky.social"},
@@ -592,15 +595,16 @@ test("WIDE V3 performs one configured official-source request and eight Sol veri
     }), {deploy:{context:"production"}});
     const payload = await response.json();
     assert.equal(response.status, 200);
-    assert.equal(officialRequests, 1);
+    assert.equal(officialRequests, 2);
     assert.equal(openaiRequests, 8);
     assert.equal(payload.run.search_profile, "WIDE_V3");
     assert.equal(payload.run.model, "gpt-5.6-sol");
-    assert.equal(payload.run.direct_source_requests, 1);
-    assert.equal(payload.run.paid_execution.source_requests, 1);
+    assert.equal(payload.run.direct_source_requests, 2);
+    assert.equal(payload.run.paid_execution.source_requests, 2);
     assert.equal(payload.run.official_source_discovery.candidates_seen, 1);
     assert.equal(JSON.stringify(payload.run.official_source_discovery).includes("external 3D character"), false);
     assert.equal(openaiBodies.some((item) => item.input.includes("buyer.bsky.social")), true);
+    assert.equal(JSON.stringify(payload).includes("refresh-must-not-escape"), false);
   } finally {
     globalThis.fetch = oldFetch;
     restore();

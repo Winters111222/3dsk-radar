@@ -2,7 +2,8 @@ import { Buffer } from "node:buffer";
 
 export const UPWORK_GRAPHQL_URL = "https://api.upwork.com/graphql";
 export const REDDIT_API_ORIGIN = "https://oauth.reddit.com";
-export const BLUESKY_PUBLIC_API_ORIGIN = "https://public.api.bsky.app";
+export const BLUESKY_DEFAULT_PDS_ORIGIN = "https://bsky.social";
+export const BLUESKY_APPVIEW_SERVICE = "did:web:api.bsky.app#bsky_appview";
 export const OFFICIAL_SOURCE_MAX_BYTES = 2_000_000;
 export const OFFICIAL_SOURCE_MAX_RESULTS = 25;
 export const RADAR_SOURCE_USER_AGENT = "3dsk-opportunity-radar/0.1 (+https://3d.sk)";
@@ -64,10 +65,10 @@ function safeMastodonOrigin(value) {
   return url.origin;
 }
 
-async function boundedJson(response, maxBytes = OFFICIAL_SOURCE_MAX_BYTES) {
+async function boundedJson(response, maxBytes = OFFICIAL_SOURCE_MAX_BYTES, httpErrorPrefix = "OFFICIAL_SOURCE_HTTP") {
   if (!response?.ok) {
-    const error = new Error(`OFFICIAL_SOURCE_HTTP_${response?.status || "UNKNOWN"}`);
-    error.code = `OFFICIAL_SOURCE_HTTP_${response?.status || "UNKNOWN"}`;
+    const error = new Error(`${httpErrorPrefix}_${response?.status || "UNKNOWN"}`);
+    error.code = `${httpErrorPrefix}_${response?.status || "UNKNOWN"}`;
     error.status = response?.status || 502;
     throw error;
   }
@@ -91,7 +92,7 @@ async function boundedJson(response, maxBytes = OFFICIAL_SOURCE_MAX_BYTES) {
   }
 }
 
-async function requestJson(url, options, { fetchImpl = fetch, timeoutMs = 15_000 } = {}) {
+async function requestJson(url, options, { fetchImpl = fetch, timeoutMs = 15_000, httpErrorPrefix = "OFFICIAL_SOURCE_HTTP" } = {}) {
   let response;
   try {
     response = await fetchImpl(url, { ...options, redirect:"error", signal:AbortSignal.timeout(timeoutMs) });
@@ -101,7 +102,19 @@ async function requestJson(url, options, { fetchImpl = fetch, timeoutMs = 15_000
     error.code = error.message;
     throw error;
   }
-  return boundedJson(response);
+  return boundedJson(response, OFFICIAL_SOURCE_MAX_BYTES, httpErrorPrefix);
+}
+
+function safeHttpsOrigin(value, fallback, code) {
+  let url;
+  try { url = new URL(String(value || fallback || "")); }
+  catch { url = null; }
+  if (!url || url.protocol !== "https:" || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+    const error = new Error(code);
+    error.code = code;
+    throw error;
+  }
+  return url.origin;
 }
 
 export function buildUpworkSearchRequest({ accessToken, tenantId, query, limit = 10 } = {}) {
@@ -136,12 +149,45 @@ export function buildRedditSearchRequest({ accessToken, query, limit = 10 } = {}
   return { url:url.toString(), options:{ method:"GET", headers:{ accept:"application/json", authorization:`Bearer ${token}` } } };
 }
 
-export function buildBlueskySearchRequest({ query, limit = 10 } = {}) {
+export function buildBlueskySessionRequest({ identifier, appPassword, pdsOrigin = BLUESKY_DEFAULT_PDS_ORIGIN } = {}) {
+  const account = safeToken(identifier, "BLUESKY_IDENTIFIER_REQUIRED");
+  const password = safeToken(appPassword, "BLUESKY_APP_PASSWORD_REQUIRED");
+  const origin = safeHttpsOrigin(pdsOrigin, BLUESKY_DEFAULT_PDS_ORIGIN, "BLUESKY_PDS_ORIGIN_INVALID");
+  const url = new URL("/xrpc/com.atproto.server.createSession", origin);
+  return {
+    url:url.toString(),
+    options:{
+      method:"POST",
+      headers:{ accept:"application/json", "content-type":"application/json", "user-agent":RADAR_SOURCE_USER_AGENT },
+      body:JSON.stringify({ identifier:account, password })
+    }
+  };
+}
+
+export function parseBlueskySession(payload) {
+  const accessToken = safeToken(payload?.accessJwt, "BLUESKY_SESSION_SCHEMA_MISMATCH");
+  return { accessToken };
+}
+
+export function buildBlueskySearchRequest({ accessToken, pdsOrigin = BLUESKY_DEFAULT_PDS_ORIGIN, query, limit = 10 } = {}) {
+  const token = safeToken(accessToken, "BLUESKY_ACCESS_TOKEN_REQUIRED");
   const search = cleanText(query, 240);
   if (!search) throw Object.assign(new Error("BLUESKY_QUERY_REQUIRED"), { code:"BLUESKY_QUERY_REQUIRED" });
-  const url = new URL("/xrpc/app.bsky.feed.searchPosts", BLUESKY_PUBLIC_API_ORIGIN);
+  const origin = safeHttpsOrigin(pdsOrigin, BLUESKY_DEFAULT_PDS_ORIGIN, "BLUESKY_PDS_ORIGIN_INVALID");
+  const url = new URL("/xrpc/app.bsky.feed.searchPosts", origin);
   url.search = new URLSearchParams({ q:search, sort:"latest", limit:String(boundedLimit(limit)) }).toString();
-  return { url:url.toString(), options:{ method:"GET", headers:{ accept:"application/json", "user-agent":RADAR_SOURCE_USER_AGENT } } };
+  return {
+    url:url.toString(),
+    options:{
+      method:"GET",
+      headers:{
+        accept:"application/json",
+        authorization:`Bearer ${token}`,
+        "atproto-proxy":BLUESKY_APPVIEW_SERVICE,
+        "user-agent":RADAR_SOURCE_USER_AGENT
+      }
+    }
+  };
 }
 
 export function buildMastodonSearchRequest({ origin, accessToken, query, limit = 10 } = {}) {
@@ -233,6 +279,29 @@ const ADAPTERS = Object.freeze({
 export async function collectOfficialSource({ sourceId, config = {}, query, limit = 10, fetchImpl = fetch } = {}) {
   const adapter = ADAPTERS[sourceId];
   if (!adapter) throw Object.assign(new Error("OFFICIAL_SOURCE_ADAPTER_UNAVAILABLE"), { code:"OFFICIAL_SOURCE_ADAPTER_UNAVAILABLE" });
+  if (sourceId === "bluesky_public") {
+    let requests = 0;
+    try {
+      const sessionRequest = buildBlueskySessionRequest(config);
+      requests += 1;
+      const sessionPayload = await requestJson(sessionRequest.url, sessionRequest.options, { fetchImpl, httpErrorPrefix:"BLUESKY_SESSION_HTTP" });
+      const session = parseBlueskySession(sessionPayload);
+      const searchRequest = buildBlueskySearchRequest({ ...config, ...session, query, limit });
+      requests += 1;
+      const searchPayload = await requestJson(searchRequest.url, searchRequest.options, { fetchImpl, httpErrorPrefix:"BLUESKY_SEARCH_HTTP" });
+      const items = adapter.parse(searchPayload).slice(0, boundedLimit(limit));
+      return {
+        source_id:sourceId,
+        status:"COMPLETE",
+        requests,
+        items,
+        counters:{ source_requests:requests, candidates_seen:items.length, openai_requests:0, retries:0, cost_usd:0 }
+      };
+    } catch (error) {
+      error.requests = requests;
+      throw error;
+    }
+  }
   const request = adapter.build({ ...config, query, limit });
   const payload = await requestJson(request.url, request.options, { fetchImpl });
   const items = adapter.parse(payload).slice(0, boundedLimit(limit));

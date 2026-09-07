@@ -12,9 +12,11 @@ const connector = (id, label, accessMethod, gate, requiredEnv, options = {}) => 
   notes:options.notes || null
 });
 
-// These connectors deliberately avoid password automation, cookies, CAPTCHA
-// bypasses and reverse-engineered private endpoints. A configured credential is
-// treated as evidence that the operator completed the platform approval flow.
+// These connectors deliberately avoid primary-password automation, cookies,
+// CAPTCHA bypasses and reverse-engineered private endpoints. A configured
+// credential is treated as evidence that the operator completed the platform
+// approval flow. Bluesky uses a separately revocable app password, which its
+// official documentation permits for bots and command-line tools.
 export const WIDE_V3_SOURCE_CONNECTORS = Object.freeze([
   connector(
     "upwork_official",
@@ -35,10 +37,10 @@ export const WIDE_V3_SOURCE_CONNECTORS = Object.freeze([
   connector(
     "bluesky_public",
     "Bluesky public posts",
-    "OFFICIAL_PUBLIC_ATPROTO_API",
+    "OFFICIAL_ATPROTO_APP_PASSWORD_SESSION",
     "RADAR_BLUESKY_SEARCH_ENABLED",
-    [],
-    { notes:"Public search is discovery-only until a buyer brief or first-party destination is verified; run a deploy-region canary before enablement because CDN policy can vary by region." }
+    ["BLUESKY_IDENTIFIER", "BLUESKY_APP_PASSWORD"],
+    { notes:"Bluesky search currently requires an authenticated session. Use a separately revocable app password, never the primary account password; results remain discovery-only until a buyer brief or first-party destination is verified." }
   ),
   connector(
     "mastodon_official",

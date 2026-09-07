@@ -1,7 +1,7 @@
 import { collectOfficialSource } from "./official-source-discovery.mjs";
 import { sourceConnectorReadiness } from "./wide-v3-source-plan.mjs";
 
-export const OFFICIAL_SOURCE_MAX_REQUESTS = 4;
+export const OFFICIAL_SOURCE_MAX_REQUESTS = 5;
 
 const SOURCE_ORDER = Object.freeze([
   "upwork_official",
@@ -44,6 +44,11 @@ function configForSource(sourceId, getEnv) {
     tenantId:getEnv("UPWORK_API_TENANT_ID")
   };
   if (sourceId === "reddit_official") return { accessToken:getEnv("REDDIT_OAUTH_ACCESS_TOKEN") };
+  if (sourceId === "bluesky_public") return {
+    identifier:getEnv("BLUESKY_IDENTIFIER"),
+    appPassword:getEnv("BLUESKY_APP_PASSWORD"),
+    pdsOrigin:getEnv("BLUESKY_PDS_ORIGIN") || undefined
+  };
   if (sourceId === "mastodon_official") return {
     origin:getEnv("MASTODON_API_ORIGIN"),
     accessToken:getEnv("MASTODON_ACCESS_TOKEN")
@@ -103,10 +108,10 @@ export async function runOfficialWideDiscovery({ getEnv = (key) => process.env[k
       return {
         source_id:item.source_id,
         status:"FAILED",
-        requests:1,
+        requests:Number.isInteger(error?.requests) ? error.requests : 1,
         items:[],
         shard_ids:item.shard_ids,
-        counters:{ source_requests:1, candidates_seen:0, openai_requests:0, retries:0, cost_usd:0 },
+        counters:{ source_requests:Number.isInteger(error?.requests) ? error.requests : 1, candidates_seen:0, openai_requests:0, retries:0, cost_usd:0 },
         error_code:safeErrorCode(error)
       };
     }
