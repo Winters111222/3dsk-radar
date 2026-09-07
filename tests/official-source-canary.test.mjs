@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import handler from "../netlify/functions/official-source-canary.mjs";
 import { OFFICIAL_SOURCE_CANARY_CONFIRMATION, officialSourceCanaryConfiguration } from "../src/server/official-source-canary-policy.mjs";
 
@@ -23,6 +24,12 @@ const TEST_METADATA_BASE = {
   site_id:RADAR_SITE_ID,
   artifact_provenance:"NETLIFY_GIT_DEPLOY"
 };
+
+test("Netlify can statically discover the official-source canary custom route", () => {
+  const functionSource = readFileSync(new URL("../netlify/functions/official-source-canary.mjs", import.meta.url), "utf8");
+  assert.match(functionSource, /export const config = \{ path:["']\/api\/official-source-canary["'] \};/);
+  assert.doesNotMatch(functionSource, /export const config = \{ path:OFFICIAL_SOURCE_CANARY_PATH \};/);
+});
 
 function values(overrides = {}) {
   const env = {

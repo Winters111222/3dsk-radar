@@ -50,4 +50,5 @@ Reddit a Upwork zůstávají další vrstvou až po uživatelem dokončeném ofi
 - Runtime checks use `context.deploy.context/id` and `context.site.name/id`; `context.site.url` is the general site URL and is not treated as immutable deploy provenance.
 - Immutable deploy origin is derived as `https://<deploy.id>--<sealed-site-name>.netlify.app` and compared with the actual incoming `request.url`.
 - Branch deploy requests must use that exact HTTPS origin and `/api/official-source-canary` path; aliases, another deploy/site, HTTP, ports, credentials, query strings and fragments fail closed before source dispatch.
+- Netlify Function custom route remains a literal string in the exported `config`; a source contract test prevents replacing it with an imported or dynamic expression that the deploy-time route discovery may not register.
 - Temporary token is accepted only when all gates pass (preview/branch policy, live-AI lock, profile, limits, connector readiness).
