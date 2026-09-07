@@ -65,3 +65,17 @@ test("a manual upload cannot claim Netlify Git Deploy provenance", () => {
   });
   assert.equal(metadata.artifact_provenance, "DIRECT_BUILD");
 });
+
+test("an exact Netlify Git branch deploy has repository provenance", () => {
+  const commit = "f".repeat(40);
+  const metadata = createBuildMetadata({ environment:{
+    NETLIFY:"true",
+    CONTEXT:"branch-deploy",
+    BRANCH:"audit/wide-v3-git-branch-canary-fallback-20260907",
+    COMMIT_REF:commit,
+    REPOSITORY_URL:"https://github.com/Winters111222/3dsk-radar"
+  }});
+  assert.equal(metadata.commit_ref, commit);
+  assert.equal(metadata.deploy_context, "branch-deploy");
+  assert.equal(metadata.artifact_provenance, "NETLIFY_GIT_DEPLOY");
+});
