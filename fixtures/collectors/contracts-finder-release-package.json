@@ -1,0 +1,82 @@
+{
+  "uri": "https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search",
+  "version": "1.1",
+  "publishedDate": "2026-09-05T10:00:00Z",
+  "license": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+  "releases": [
+    {
+      "ocid": "ocds-b5fd17-00000000-0000-4000-8000-000000000001",
+      "id": "00000000-0000-4000-8000-000000000001-100001",
+      "date": "2026-09-01T09:30:00Z",
+      "tag": ["tender"],
+      "tender": {
+        "id": "CF-SYNTHETIC-001",
+        "title": "Digital double and human photogrammetry production services",
+        "description": "A synthetic buyer seeks human scan cleanup and digital-double production.",
+        "datePublished": "2026-09-01T09:30:00Z",
+        "status": "active",
+        "classification": { "scheme": "CPV", "id": "72200000", "description": "Software programming and consultancy services" },
+        "value": { "amount": 75000, "currency": "GBP" },
+        "tenderPeriod": { "endDate": "2026-09-24T12:00:00Z" },
+        "documents": [
+          {
+            "id": "1",
+            "documentType": "tenderNotice",
+            "description": "Opportunity notice on Contracts Finder",
+            "url": "https://www.contractsfinder.service.gov.uk/Notice/00000000-0000-4000-8000-000000000001",
+            "datePublished": "2026-09-01T09:30:00Z",
+            "format": "text/html"
+          }
+        ]
+      },
+      "buyer": { "id": "GB-CFS-SYNTHETIC-1", "name": "Synthetic UK Digital Buyer" },
+      "parties": [{ "id": "GB-CFS-SYNTHETIC-1", "name": "Synthetic UK Digital Buyer", "roles": ["buyer"] }]
+    },
+    {
+      "ocid": "ocds-b5fd17-00000000-0000-4000-8000-000000000002",
+      "id": "00000000-0000-4000-8000-000000000002-100002",
+      "date": "2026-09-02T08:00:00Z",
+      "tag": ["tender"],
+      "tender": {
+        "title": "Closed human photogrammetry work",
+        "datePublished": "2026-09-02T08:00:00Z",
+        "status": "complete",
+        "tenderPeriod": { "endDate": "2026-09-03T12:00:00Z" },
+        "documents": [{ "documentType": "tenderNotice", "url": "https://www.contractsfinder.service.gov.uk/Notice/00000000-0000-4000-8000-000000000002" }]
+      },
+      "buyer": { "id": "GB-CFS-SYNTHETIC-2", "name": "Synthetic Closed Buyer" }
+    },
+    {
+      "ocid": "ocds-b5fd17-00000000-0000-4000-8000-000000000003",
+      "id": "00000000-0000-4000-8000-000000000003-100003",
+      "date": "2026-09-03T11:00:00Z",
+      "tag": ["tender"],
+      "tender": {
+        "title": "Catering supplies",
+        "description": "Food delivery for a public office.",
+        "datePublished": "2026-09-03T11:00:00Z",
+        "status": "active",
+        "tenderPeriod": { "endDate": "2026-10-01T12:00:00Z" },
+        "documents": [{ "documentType": "tenderNotice", "url": "https://www.contractsfinder.service.gov.uk/Notice/00000000-0000-4000-8000-000000000003" }]
+      },
+      "buyer": { "id": "GB-CFS-SYNTHETIC-3", "name": "Synthetic Catering Buyer" }
+    },
+    {
+      "ocid": "ocds-b5fd17-00000000-0000-4000-8000-000000000004",
+      "id": "00000000-0000-4000-8000-000000000004-100004",
+      "date": "2026-08-05T11:00:00Z",
+      "tag": ["tender"],
+      "tender": {
+        "title": "Old digital double project",
+        "datePublished": "2026-08-05T11:00:00Z",
+        "status": "active",
+        "tenderPeriod": { "endDate": "2026-10-01T12:00:00Z" },
+        "documents": [{ "documentType": "tenderNotice", "url": "https://www.contractsfinder.service.gov.uk/Notice/00000000-0000-4000-8000-000000000004" }]
+      },
+      "buyer": { "id": "GB-CFS-SYNTHETIC-4", "name": "Synthetic Old Buyer" }
+    }
+  ],
+  "links": {
+    "next": "https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?publishedFrom=2026-08-06T12%3A00%3A00&publishedTo=2026-09-05T12%3A00%3A00&stages=tender&limit=4&cursor=MTAwM%3D"
+  }
+}

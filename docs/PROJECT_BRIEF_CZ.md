@@ -143,7 +143,9 @@ Vedle core photogrammetry pipeline existuje i silná vizuální kompetence:
 - dlouholetá expert-level zkušenost s Photoshopem v týmu,
 - generativní AI workflows,
 - kombinace AI + Photoshop + další 2D/3D nástroje,
-- motion / After Effects může být sekundární opportunity category, ale není hlavním cílem V1.
+- motion / After Effects je capability týmu, ne aktivní Search category.
+
+Aktualizace scope 5. 9. 2026: tato kompetence zůstává pravdivou součástí company profilu, ale podle novějšího závazného rozhodnutí `PRODUCT_DECISION_SEARCH_SCOPE_CZ.md` se pro ni v Radaru aktivně nehledají příležitosti a nemá vlastní Search kategorii.
 
 ## 3.7 Produkční model
 
@@ -266,16 +268,9 @@ Radar nehledá jen pracovní pozice. Hledá **obchodní příležitosti pro stud
 - photogrammetry pipeline consulting,
 - capture rig / scanning workflow consulting.
 
-## 5.3 Sekundární opportunity lane
+## 5.3 Vyloučená Search lane
 
-Volitelně lze ve V1/V1.1 zachytit:
-
-- Photoshop-heavy visual production,
-- generative AI visual workflows,
-- After Effects / AI motion work,
-- creative production, pokud využívá kombinaci AI + Photoshop + 3D.
-
-Tyto výsledky musí být oddělené od hlavní AAA character/photogrammetry kategorie.
+Podle product decision z 5. 9. 2026 Radar aktivně nehledá ani nevrací samostatné Photoshop / generative-AI visual / motion-design / After Effects příležitosti. Character rigging nebo animation zůstává relevantní jen jako součást human/character production scope.
 
 ---
 
@@ -294,7 +289,6 @@ Každý výsledek klasifikuj alespoň do jedné z kategorií:
 - `EXTERNAL_DEVELOPMENT`
 - `PRODUCTION_OVERFLOW`
 - `PIPELINE_CONSULTING`
-- `VISUAL_AI_MOTION`
 - `OTHER_RELEVANT`
 
 A dále rozlišuj zdroj příležitosti:
