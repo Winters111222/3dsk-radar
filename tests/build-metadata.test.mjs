@@ -11,6 +11,10 @@ test("build metadata binds a deploy artifact to one exact commit", () => {
     service:"3dsk-opportunity-radar",
     commit_ref:COMMIT,
     deploy_context:"ci",
+    repository_url:"https://github.com/winters111222/3dsk-radar",
+    branch:"",
+    site_name:"3dsk-opportunity-radar",
+    site_id:"f390f4e9-12f5-4074-946e-c83f2d7fe20d",
     generated_at:"2026-09-05T12:00:00.000Z",
     acceptance_profile:"LOCKED_ZERO_COST",
     artifact_provenance:"CI_TESTED_SOURCE"
@@ -38,6 +42,10 @@ test("Netlify cannot replace sealed tested-source identity with its unrelated CO
   assert.equal(metadata.commit_ref, packagedCommit);
   assert.equal(metadata.deploy_context, "branch-deploy");
   assert.equal(metadata.artifact_provenance, "CI_TESTED_SOURCE");
+  assert.equal(metadata.repository_url, "https://github.com/winters111222/3dsk-radar");
+  assert.equal(metadata.branch, "");
+  assert.equal(metadata.site_name, "3dsk-opportunity-radar");
+  assert.equal(metadata.site_id, "f390f4e9-12f5-4074-946e-c83f2d7fe20d");
 });
 
 test("Phase E CI profile survives the later Netlify Deploy Preview build", () => {
@@ -49,7 +57,7 @@ test("Phase E CI profile survives the later Netlify Deploy Preview build", () =>
       CONTEXT:"deploy-preview",
       PULL_REQUEST:"true",
       REVIEW_ID:"21",
-      REPOSITORY_URL:"https://github.com/Winters111222/3dsk-radar",
+      REPOSITORY_URL:"https://github.com/winters111222/3dsk-radar",
       RADAR_ACCEPTANCE_PROFILE:"PAID_FOCUSED"
     }
   });
@@ -73,9 +81,13 @@ test("an exact Netlify Git branch deploy has repository provenance", () => {
     CONTEXT:"branch-deploy",
     BRANCH:"audit/wide-v3-git-branch-canary-fallback-20260907",
     COMMIT_REF:commit,
-    REPOSITORY_URL:"https://github.com/Winters111222/3dsk-radar"
+    REPOSITORY_URL:"https://github.com/winters111222/3dsk-radar"
   }});
   assert.equal(metadata.commit_ref, commit);
   assert.equal(metadata.deploy_context, "branch-deploy");
+  assert.equal(metadata.repository_url, "https://github.com/winters111222/3dsk-radar");
+  assert.equal(metadata.branch, "audit/wide-v3-git-branch-canary-fallback-20260907");
+  assert.equal(metadata.site_name, "3dsk-opportunity-radar");
+  assert.equal(metadata.site_id, "f390f4e9-12f5-4074-946e-c83f2d7fe20d");
   assert.equal(metadata.artifact_provenance, "NETLIFY_GIT_DEPLOY");
 });

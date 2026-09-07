@@ -4,9 +4,23 @@ import handler from "../netlify/functions/official-source-canary.mjs";
 import { OFFICIAL_SOURCE_CANARY_CONFIRMATION, officialSourceCanaryConfiguration } from "../src/server/official-source-canary-policy.mjs";
 
 const EPHEMERAL_TOKEN = "temporary-canary-token-0123456789abcdef";
-const BRANCH = "audit/wide-v3-ephemeral-canary-auth-20260907";
+const BRANCH = "audit/wide-v3-runtime-provenance-20260907";
 const COMMIT = "6".repeat(40);
 const DEPLOY_ID = "1234567890abcdef12345678";
+const RADAR_SITE_NAME = "3dsk-opportunity-radar";
+const RADAR_SITE_ID = "f390f4e9-12f5-4074-946e-c83f2d7fe20d";
+const DEPLOY_URL = `https://${DEPLOY_ID}--${RADAR_SITE_NAME}.netlify.app`;
+const TEST_METADATA_BASE = {
+  schema_version:2,
+  service:"3dsk-opportunity-radar",
+  commit_ref:COMMIT,
+  deploy_context:"branch-deploy",
+  repository_url:"https://github.com/winters111222/3dsk-radar",
+  branch:BRANCH,
+  site_name:RADAR_SITE_NAME,
+  site_id:RADAR_SITE_ID,
+  artifact_provenance:"NETLIFY_GIT_DEPLOY"
+};
 
 function values(overrides = {}) {
   const env = {
@@ -16,6 +30,8 @@ function values(overrides = {}) {
     RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"BLUESKY_ONLY",
     RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"1",
     RADAR_BLUESKY_SEARCH_ENABLED:"true",
+    SITE_NAME:RADAR_SITE_NAME,
+    SITE_ID:RADAR_SITE_ID,
     ...overrides
   };
   return (key) => env[key] || "";
@@ -34,81 +50,129 @@ function branchDeployValues(overrides = {}) {
   return values({
     RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN:EPHEMERAL_TOKEN,
     RADAR_OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_ENABLED:"true",
-    NETLIFY:"true",
-    CONTEXT:"branch-deploy",
-    REPOSITORY_URL:"https://github.com/Winters111222/3dsk-radar",
-    SITE_NAME:"3dsk-opportunity-radar",
-    SITE_ID:"f390f4e9-12f5-4074-946e-c83f2d7fe20d",
     RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:BRANCH,
     RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:COMMIT,
-    BRANCH,
-    COMMIT_REF:COMMIT,
-    DEPLOY_ID,
-    DEPLOY_URL:`https://${DEPLOY_ID}--3dsk-opportunity-radar.netlify.app`,
     ...overrides
   });
 }
 
-async function withRuntime(getEnv, fetchImpl, callback) {
+function functionRuntimeContext(overrides = {}) {
+  const deployId = overrides.DEPLOY_ID || overrides.deploy?.id || DEPLOY_ID;
+  const siteName = overrides.SITE_NAME || overrides.site?.name || RADAR_SITE_NAME;
+  const siteId = overrides.SITE_ID || overrides.site?.id || RADAR_SITE_ID;
+  return {
+    ...overrides,
+    deploy:{ context:"branch-deploy", id:deployId, ...overrides.deploy },
+    site:{
+      name:siteName,
+      id:siteId,
+      url:`https://${deployId}--${siteName}.netlify.app`,
+      ...overrides.site
+    }
+  };
+}
+
+function previewContext(deployId = DEPLOY_ID, siteName = RADAR_SITE_NAME, siteId = RADAR_SITE_ID) {
+  return {
+    deploy:{ context:"deploy-preview", id:deployId },
+    site:{ name:siteName, id:siteId, url:`https://${deployId}--${siteName}.netlify.app` }
+  };
+}
+
+function withRuntime(getEnv, fetchImpl, callback, buildMetadata = null) {
   const previousNetlify = globalThis.Netlify;
   const previousFetch = globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__;
+  const previousMetadata = globalThis.__RADAR_TEST_OFFICIAL_SOURCE_CANARY_METADATA__;
   globalThis.Netlify = { env:{ get:getEnv } };
+  if (buildMetadata) globalThis.__RADAR_TEST_OFFICIAL_SOURCE_CANARY_METADATA__ = buildMetadata;
+  else if (previousMetadata === undefined) delete globalThis.__RADAR_TEST_OFFICIAL_SOURCE_CANARY_METADATA__;
   globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__ = fetchImpl;
   try {
-    return await callback();
+    return callback();
   } finally {
     if (previousNetlify === undefined) delete globalThis.Netlify;
     else globalThis.Netlify = previousNetlify;
     if (previousFetch === undefined) delete globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__;
     else globalThis.__RADAR_TEST_OFFICIAL_SOURCE_FETCH__ = previousFetch;
+    if (previousMetadata === undefined) delete globalThis.__RADAR_TEST_OFFICIAL_SOURCE_CANARY_METADATA__;
+    else globalThis.__RADAR_TEST_OFFICIAL_SOURCE_CANARY_METADATA__ = previousMetadata;
   }
 }
 
 test("canary policy is preview-only, exact-cap and live-AI locked", () => {
-  assert.equal(officialSourceCanaryConfiguration({ context:{deploy:{context:"production"}}, getEnv:values() }).code, "OFFICIAL_SOURCE_CANARY_PREVIEW_REQUIRED");
-  assert.equal(officialSourceCanaryConfiguration({ context:{deploy:{context:"deploy-preview"}}, getEnv:values({RADAR_LIVE_AI_ENABLED:"true"}) }).code, "OFFICIAL_SOURCE_CANARY_LIVE_AI_MUST_BE_LOCKED");
-  assert.equal(officialSourceCanaryConfiguration({ context:{deploy:{context:"deploy-preview"}}, getEnv:values({RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2"}) }).code, "OFFICIAL_SOURCE_CANARY_REQUEST_LIMIT_INVALID");
+  assert.equal(officialSourceCanaryConfiguration({
+    context:previewContext(),
+    getEnv:values(),
+    getBuildMetadata:() => ({ ...TEST_METADATA_BASE, deploy_context:"deploy-preview", artifact_provenance:"DIRECT_BUILD" })
+  }).ok, true);
+  assert.equal(officialSourceCanaryConfiguration({
+    context:previewContext(),
+    getEnv:values({ RADAR_LIVE_AI_ENABLED:"true" }),
+    getBuildMetadata:() => ({ ...TEST_METADATA_BASE, deploy_context:"deploy-preview", artifact_provenance:"DIRECT_BUILD" })
+  }).code, "OFFICIAL_SOURCE_CANARY_LIVE_AI_MUST_BE_LOCKED");
+  assert.equal(officialSourceCanaryConfiguration({ context:{deploy:{context:"production"}, site:{name:RADAR_SITE_NAME,id:RADAR_SITE_ID}}, getEnv:values(), getBuildMetadata:() => TEST_METADATA_BASE }).code, "OFFICIAL_SOURCE_CANARY_PREVIEW_REQUIRED");
 });
 
-test("branch-deploy fallback derives the immutable URL from read-only Netlify deploy provenance", () => {
-  const context = {deploy:{context:"branch-deploy"}};
-  const commit = "6".repeat(40);
-  const branch = "audit/wide-v3-git-branch-canary-fallback-20260907";
-  const deployId = "1234567890abcdef12345678";
-  const deployUrl = `https://${deployId}--3dsk-opportunity-radar.netlify.app`;
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values() }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_LOCKED");
-  const base = {
-    RADAR_OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_ENABLED:"true",
-    NETLIFY:"true",
-    CONTEXT:"branch-deploy",
-    REPOSITORY_URL:"https://github.com/Winters111222/3dsk-radar",
-    SITE_NAME:"3dsk-opportunity-radar",
-    SITE_ID:"f390f4e9-12f5-4074-946e-c83f2d7fe20d",
-    RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:branch,
-    RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:commit,
-    BRANCH:branch,
-    COMMIT_REF:commit,
-    DEPLOY_ID:deployId,
-    DEPLOY_URL:deployUrl
-  };
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, REPOSITORY_URL:""}) }).code, "OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, SITE_ID:"wrong"}) }).code, "OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, BRANCH:"wrong"}) }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, COMMIT_REF:"7".repeat(40)}) }).code, "OFFICIAL_SOURCE_CANARY_COMMIT_MISMATCH");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, DEPLOY_ID:""}) }).code, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, DEPLOY_ID:"z".repeat(24)}) }).code, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, DEPLOY_ID:"abcdefabcdefabcdefabcdef"}) }).code, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, DEPLOY_URL:"https://branch--3dsk-opportunity-radar.netlify.app"}) }).code, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, DEPLOY_URL:`https://${deployId}--wrong-site.netlify.app`}) }).code, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH");
-  const ready = officialSourceCanaryConfiguration({ context, getEnv:values(base) });
+test("runtime provenance is sourced from build metadata and Function context", () => {
+  const malformedMetadata = { ...TEST_METADATA_BASE, branch:"other" };
+  assert.equal(officialSourceCanaryConfiguration({
+    context:functionRuntimeContext(),
+    getEnv:branchDeployValues({
+      RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:BRANCH,
+      RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:COMMIT,
+      BRANCH:"wrong-branch-from-runtime",
+      COMMIT_REF:"7".repeat(40),
+      DEPLOY_ID:"bbbbbbbbbbbbbbbbbbbbbbbb",
+      DEPLOY_URL:"https://wrong-site.netlify.app"
+    }),
+    getBuildMetadata:() => TEST_METADATA_BASE
+  }).ok, true);
+  assert.equal(officialSourceCanaryConfiguration({
+    context:functionRuntimeContext(),
+    getEnv:branchDeployValues({
+      RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:BRANCH,
+      RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:COMMIT,
+      BRANCH:"wrong-branch-from-runtime",
+      COMMIT_REF:COMMIT,
+      DEPLOY_ID:"bbbbbbbbbbbbbbbbbbbbbbbb",
+      DEPLOY_URL:"https://wrong-site.netlify.app"
+    }),
+    getBuildMetadata:() => malformedMetadata
+  }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH");
+});
+
+test("branch-deploy fallback derives immutable URL from Function context and runtime site metadata", () => {
+  const context = functionRuntimeContext();
+  const base = branchDeployValues();
+  const validMetadata = TEST_METADATA_BASE;
+
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:base, getBuildMetadata:() => validMetadata }).ok, true);
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_ENABLED:"false" }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_LOCKED");
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:"wrong-branch" }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH");
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:"7".repeat(40) }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_COMMIT_MISMATCH");
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:branchDeployValues(), getBuildMetadata:() => ({ ...validMetadata, repository_url:"https://github.com/other/repo" }) }).code, "OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED");
+  assert.equal(officialSourceCanaryConfiguration({
+    context:{ ...functionRuntimeContext(), site:{ ...functionRuntimeContext().site, name:"wrong-site" } },
+    getEnv:base,
+    getBuildMetadata:() => validMetadata
+  }).code, "OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED");
+  assert.equal(officialSourceCanaryConfiguration({
+    context:functionRuntimeContext({ site:{ url:"https://wrong-site-url.netlify.app", name:RADAR_SITE_NAME } }),
+    getEnv:base,
+    getBuildMetadata:() => validMetadata
+  }).code, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH");
+  const ready = officialSourceCanaryConfiguration({ context, getEnv:base, getBuildMetadata:() => validMetadata });
   assert.equal(ready.ok, true);
-  assert.deepEqual({context:ready.deploy_context, branch:ready.branch, commit_ref:ready.commit_ref, deploy_id:ready.deploy_id, deploy_url:ready.deploy_url, repository_url:ready.repository_url}, {context:"branch-deploy", branch, commit_ref:commit, deploy_id:deployId, deploy_url:deployUrl, repository_url:"https://github.com/Winters111222/3dsk-radar"});
+  assert.equal(ready.deploy_context, "branch-deploy");
+  assert.equal(ready.repository_url, "https://github.com/winters111222/3dsk-radar");
+  assert.equal(ready.artifact_provenance, "NETLIFY_GIT_DEPLOY");
 });
 
-test("Bluesky plus Mastodon profile requires an actually ready Mastodon adapter", () => {
+test("Bluesky only profile requires ready adapters and exact request limit", () => {
   const configuration = officialSourceCanaryConfiguration({
-    context:{deploy:{context:"deploy-preview"}},
-    getEnv:values({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"BLUESKY_MASTODON", RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2" })
+    context:previewContext(),
+    getEnv:values({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"BLUESKY_MASTODON", RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2" }),
+    getBuildMetadata:() => ({ ...TEST_METADATA_BASE, deploy_context:"deploy-preview", commit_ref:COMMIT, artifact_provenance:"DIRECT_BUILD" })
   });
   assert.equal(configuration.code, "OFFICIAL_SOURCE_CANARY_CONNECTOR_NOT_READY");
   assert.deepEqual(configuration.blocked_sources, ["mastodon_official"]);
@@ -130,19 +194,21 @@ test("temporary token performs exactly one mocked Bluesky request with exact bra
   console.error = (...items) => logs.push(items.join(" "));
   try {
     await withRuntime(branchDeployValues(), fetchImpl, async () => {
-      const response = await handler(request(EPHEMERAL_TOKEN), {deploy:{context:"branch-deploy"}});
+      const response = await handler(request(EPHEMERAL_TOKEN), functionRuntimeContext());
       const payload = await response.json();
       assert.equal(response.status, 200);
       assert.equal(calls, 1);
       assert.deepEqual(payload.counters, { source_requests:1, openai_requests:0, hosted_search_calls:0, writes:0, retries:0, cost_usd:0 });
+      assert.equal(payload.deployment_provenance.artifact_provenance, "NETLIFY_GIT_DEPLOY");
       assert.equal(payload.discovery_hints[0].outreach_locked, true);
       assert.equal(payload.deployment_provenance.context, "branch-deploy");
       assert.equal(payload.deployment_provenance.deploy_id, DEPLOY_ID);
+      assert.equal(payload.deployment_provenance.deploy_url, DEPLOY_URL);
       assert.equal(JSON.stringify(payload).includes(EPHEMERAL_TOKEN), false);
       assert.equal(JSON.stringify(payload).includes("team-secret"), false);
       assert.equal(logs.join("\n").includes(EPHEMERAL_TOKEN), false);
       assert.equal(logs.join("\n").includes("team-secret"), false);
-    });
+    }, TEST_METADATA_BASE);
   } finally {
     console.error = previousConsoleError;
   }
@@ -154,28 +220,28 @@ test("existing internal secret remains a supported canary authorization path", a
     calls += 1;
     return Response.json({ posts:[] });
   }, async () => {
-    const response = await handler(request("team-secret"), {deploy:{context:"deploy-preview"}});
+    const response = await handler(request("team-secret"), previewContext());
     const payload = await response.json();
     assert.equal(response.status, 200);
     assert.equal(calls, 1);
     assert.deepEqual(payload.counters, { source_requests:1, openai_requests:0, hosted_search_calls:0, writes:0, retries:0, cost_usd:0 });
     assert.equal(JSON.stringify(payload).includes("team-secret"), false);
-  });
+  }, { ...TEST_METADATA_BASE, deploy_context:"deploy-preview", artifact_provenance:"DIRECT_BUILD" });
 });
 
 test("missing, wrong and too-short temporary tokens fail before source dispatch", async () => {
   let calls = 0;
   const neverFetch = async () => { calls += 1; throw new Error("source dispatch must remain locked"); };
   await withRuntime(branchDeployValues(), neverFetch, async () => {
-    assert.equal((await handler(request(null), {deploy:{context:"branch-deploy"}})).status, 401);
-    assert.equal((await handler(request("wrong-token"), {deploy:{context:"branch-deploy"}})).status, 401);
-  });
+    assert.equal((await handler(request(null), functionRuntimeContext())).status, 401);
+    assert.equal((await handler(request("wrong-token"), functionRuntimeContext())).status, 401);
+  }, TEST_METADATA_BASE);
   await withRuntime(branchDeployValues({ RADAR_INTERNAL_ACCESS_SECRET:"", RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN:"too-short" }), neverFetch, async () => {
-    const response = await handler(request("too-short"), {deploy:{context:"branch-deploy"}});
+    const response = await handler(request("too-short"), functionRuntimeContext());
     const payload = await response.json();
     assert.equal(response.status, 503);
     assert.equal(payload.error.code, "OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN_INVALID");
-  });
+  }, { ...TEST_METADATA_BASE, artifact_provenance:"NETLIFY_GIT_DEPLOY" });
   assert.equal(calls, 0);
 });
 
@@ -183,18 +249,19 @@ test("temporary token cannot bypass production, provenance, live-AI, profile or 
   let calls = 0;
   const neverFetch = async () => { calls += 1; throw new Error("source dispatch must remain locked"); };
   const cases = [
-    { context:{deploy:{context:"production"}}, env:branchDeployValues({ CONTEXT:"production" }) },
-    { context:{deploy:{context:"branch-deploy"}}, env:branchDeployValues({ COMMIT_REF:"7".repeat(40) }) },
-    { context:{deploy:{context:"branch-deploy"}}, env:branchDeployValues({ RADAR_LIVE_AI_ENABLED:"true" }) },
-    { context:{deploy:{context:"branch-deploy"}}, env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"INVALID" }) },
-    { context:{deploy:{context:"branch-deploy"}}, env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2" }) }
+    { context:{deploy:{context:"production", id:DEPLOY_ID}, site:{name:RADAR_SITE_NAME,id:RADAR_SITE_ID,url:DEPLOY_URL}}, env:branchDeployValues({}), metadata:TEST_METADATA_BASE },
+    { context:{deploy:{context:"branch-deploy", id:"badbadbadbadbadbadbadbadbad"}, site:{name:RADAR_SITE_NAME,id:RADAR_SITE_ID,url:`https://badbadbadbadbadbadbadbadbad--${RADAR_SITE_NAME}.netlify.app`}}, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { context:functionRuntimeContext(), env:branchDeployValues(), metadata: { ...TEST_METADATA_BASE, commit_ref:"7".repeat(40) } },
+    { context:functionRuntimeContext(), env:branchDeployValues({ RADAR_LIVE_AI_ENABLED:"true" }), metadata:TEST_METADATA_BASE },
+    { context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"INVALID" }), metadata:TEST_METADATA_BASE },
+    { context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2" }), metadata:TEST_METADATA_BASE }
   ];
   for (const item of cases) {
     await withRuntime(item.env, neverFetch, async () => {
       const response = await handler(request(EPHEMERAL_TOKEN), item.context);
       assert.equal(response.status, 401);
       assert.equal((await response.json()).error.code, "UNAUTHORIZED");
-    });
+    }, item.metadata);
   }
   assert.equal(calls, 0);
 });
@@ -202,8 +269,8 @@ test("temporary token cannot bypass production, provenance, live-AI, profile or 
 test("confirmation remains mandatory and is checked before source dispatch", async () => {
   let calls = 0;
   await withRuntime(branchDeployValues(), async () => { calls += 1; return Response.json({ posts:[] }); }, async () => {
-    const response = await handler(request(EPHEMERAL_TOKEN, "wrong"), {deploy:{context:"branch-deploy"}});
+    const response = await handler(request(EPHEMERAL_TOKEN, "wrong"), functionRuntimeContext());
     assert.equal(response.status, 409);
-  });
+  }, TEST_METADATA_BASE);
   assert.equal(calls, 0);
 });
