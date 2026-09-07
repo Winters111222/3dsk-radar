@@ -10,8 +10,14 @@ const PROFILES = Object.freeze({
 const enabled = (value) => String(value || "").trim().toLowerCase() === "true";
 const normalized = (value) => String(value || "").trim();
 const exactCommit = (value) => /^[0-9a-f]{40}$/.test(value);
-const immutableDeployUrl = (value) => /^https:\/\/[0-9a-f]{24}--3dsk-opportunity-radar\.netlify\.app\/?$/.test(value);
+const exactDeployId = (value) => /^[0-9a-f]{24}$/.test(value);
 const RADAR_REPOSITORY_URL = "https://github.com/Winters111222/3dsk-radar";
+const RADAR_NETLIFY_SITE_NAME = "3dsk-opportunity-radar";
+const RADAR_NETLIFY_SITE_ID = "f390f4e9-12f5-4074-946e-c83f2d7fe20d";
+
+function expectedImmutableDeployUrl(deployId) {
+  return `https://${deployId}--${RADAR_NETLIFY_SITE_NAME}.netlify.app`;
+}
 
 function deploymentProvenance(context, getEnv) {
   const deployContext = normalized(context?.deploy?.context);
@@ -20,21 +26,29 @@ function deploymentProvenance(context, getEnv) {
   }
   if (deployContext !== "branch-deploy") return { ok:false, code:"OFFICIAL_SOURCE_CANARY_PREVIEW_REQUIRED" };
   if (!enabled(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_ENABLED"))) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_LOCKED" };
-  if (!enabled(getEnv("NETLIFY")) || normalized(getEnv("CONTEXT")) !== "branch-deploy" || normalized(getEnv("REPOSITORY_URL")).replace(/\.git$/, "") !== RADAR_REPOSITORY_URL) {
+  if (
+    !enabled(getEnv("NETLIFY")) ||
+    normalized(getEnv("CONTEXT")) !== "branch-deploy" ||
+    normalized(getEnv("REPOSITORY_URL")).replace(/\.git$/, "") !== RADAR_REPOSITORY_URL ||
+    normalized(getEnv("SITE_NAME")) !== RADAR_NETLIFY_SITE_NAME ||
+    normalized(getEnv("SITE_ID")) !== RADAR_NETLIFY_SITE_ID
+  ) {
     return { ok:false, code:"OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED" };
   }
 
   const expectedBranch = normalized(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH"));
   const expectedCommit = normalized(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT")).toLowerCase();
-  const expectedDeployUrl = normalized(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_DEPLOY_URL"));
   const actualBranch = normalized(getEnv("BRANCH"));
   const actualCommit = normalized(getEnv("COMMIT_REF")).toLowerCase();
-  const actualDeployUrl = normalized(getEnv("DEPLOY_URL"));
+  const actualDeployId = normalized(getEnv("DEPLOY_ID")).toLowerCase();
+  const actualDeployUrl = normalized(getEnv("DEPLOY_URL")).replace(/\/$/, "");
 
   if (!expectedBranch || actualBranch !== expectedBranch) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH" };
   if (!exactCommit(expectedCommit) || actualCommit !== expectedCommit) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_COMMIT_MISMATCH" };
-  if (!immutableDeployUrl(expectedDeployUrl) || actualDeployUrl !== expectedDeployUrl) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH" };
-  return { ok:true, deploy_context:deployContext, branch:actualBranch, commit_ref:actualCommit, deploy_url:actualDeployUrl, repository_url:RADAR_REPOSITORY_URL };
+  if (!exactDeployId(actualDeployId) || actualDeployUrl !== expectedImmutableDeployUrl(actualDeployId)) {
+    return { ok:false, code:"OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH" };
+  }
+  return { ok:true, deploy_context:deployContext, branch:actualBranch, commit_ref:actualCommit, deploy_id:actualDeployId, deploy_url:actualDeployUrl, repository_url:RADAR_REPOSITORY_URL };
 }
 
 export function officialSourceCanaryConfiguration({ context, getEnv = (key) => process.env[key] } = {}) {
