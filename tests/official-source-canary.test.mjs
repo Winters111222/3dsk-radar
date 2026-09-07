@@ -10,6 +10,8 @@ const DEPLOY_ID = "1234567890abcdef12345678";
 const RADAR_SITE_NAME = "3dsk-opportunity-radar";
 const RADAR_SITE_ID = "f390f4e9-12f5-4074-946e-c83f2d7fe20d";
 const DEPLOY_URL = `https://${DEPLOY_ID}--${RADAR_SITE_NAME}.netlify.app`;
+const CANARY_URL = `${DEPLOY_URL}/api/official-source-canary`;
+const MAIN_SITE_URL = `https://${RADAR_SITE_NAME}.netlify.app`;
 const TEST_METADATA_BASE = {
   schema_version:2,
   service:"3dsk-opportunity-radar",
@@ -37,10 +39,10 @@ function values(overrides = {}) {
   return (key) => env[key] || "";
 }
 
-function request(token = "team-secret", confirmation = OFFICIAL_SOURCE_CANARY_CONFIRMATION) {
+function request(token = "team-secret", confirmation = OFFICIAL_SOURCE_CANARY_CONFIRMATION, url = CANARY_URL) {
   const headers = { "x-radar-official-source-confirmation":confirmation };
   if (token !== null) headers.authorization = `Bearer ${token}`;
-  return new Request("https://radar.test/api/official-source-canary", {
+  return new Request(url, {
     method:"POST",
     headers
   });
@@ -66,7 +68,7 @@ function functionRuntimeContext(overrides = {}) {
     site:{
       name:siteName,
       id:siteId,
-      url:`https://${deployId}--${siteName}.netlify.app`,
+      url:MAIN_SITE_URL,
       ...overrides.site
     }
   };
@@ -75,7 +77,7 @@ function functionRuntimeContext(overrides = {}) {
 function previewContext(deployId = DEPLOY_ID, siteName = RADAR_SITE_NAME, siteId = RADAR_SITE_ID) {
   return {
     deploy:{ context:"deploy-preview", id:deployId },
-    site:{ name:siteName, id:siteId, url:`https://${deployId}--${siteName}.netlify.app` }
+    site:{ name:siteName, id:siteId, url:MAIN_SITE_URL }
   };
 }
 
@@ -117,6 +119,7 @@ test("runtime provenance is sourced from build metadata and Function context", (
   const malformedMetadata = { ...TEST_METADATA_BASE, branch:"other" };
   assert.equal(officialSourceCanaryConfiguration({
     context:functionRuntimeContext(),
+    requestUrl:CANARY_URL,
     getEnv:branchDeployValues({
       RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:BRANCH,
       RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:COMMIT,
@@ -129,6 +132,7 @@ test("runtime provenance is sourced from build metadata and Function context", (
   }).ok, true);
   assert.equal(officialSourceCanaryConfiguration({
     context:functionRuntimeContext(),
+    requestUrl:CANARY_URL,
     getEnv:branchDeployValues({
       RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:BRANCH,
       RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:COMMIT,
@@ -141,31 +145,56 @@ test("runtime provenance is sourced from build metadata and Function context", (
   }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH");
 });
 
-test("branch-deploy fallback derives immutable URL from Function context and runtime site metadata", () => {
+test("branch-deploy derives immutable origin from deploy id and sealed site name, not context.site.url", () => {
   const context = functionRuntimeContext();
   const base = branchDeployValues();
   const validMetadata = TEST_METADATA_BASE;
 
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:base, getBuildMetadata:() => validMetadata }).ok, true);
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_ENABLED:"false" }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_LOCKED");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:"wrong-branch" }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:"7".repeat(40) }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_COMMIT_MISMATCH");
-  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:branchDeployValues(), getBuildMetadata:() => ({ ...validMetadata, repository_url:"https://github.com/other/repo" }) }).code, "OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED");
+  assert.equal(officialSourceCanaryConfiguration({ context, requestUrl:CANARY_URL, getEnv:base, getBuildMetadata:() => validMetadata }).ok, true);
+  assert.equal(officialSourceCanaryConfiguration({ context:functionRuntimeContext({ site:{ url:"https://custom.example" } }), requestUrl:CANARY_URL, getEnv:base, getBuildMetadata:() => validMetadata }).ok, true);
+  assert.equal(officialSourceCanaryConfiguration({ context, requestUrl:CANARY_URL, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_ENABLED:"false" }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_LOCKED");
+  assert.equal(officialSourceCanaryConfiguration({ context, requestUrl:CANARY_URL, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:"wrong-branch" }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH");
+  assert.equal(officialSourceCanaryConfiguration({ context, requestUrl:CANARY_URL, getEnv:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:"7".repeat(40) }), getBuildMetadata:() => validMetadata }).code, "OFFICIAL_SOURCE_CANARY_COMMIT_MISMATCH");
+  assert.equal(officialSourceCanaryConfiguration({ context, requestUrl:CANARY_URL, getEnv:branchDeployValues(), getBuildMetadata:() => ({ ...validMetadata, repository_url:"https://github.com/other/repo" }) }).code, "OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED");
   assert.equal(officialSourceCanaryConfiguration({
     context:{ ...functionRuntimeContext(), site:{ ...functionRuntimeContext().site, name:"wrong-site" } },
+    requestUrl:CANARY_URL,
     getEnv:base,
     getBuildMetadata:() => validMetadata
   }).code, "OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED");
-  assert.equal(officialSourceCanaryConfiguration({
-    context:functionRuntimeContext({ site:{ url:"https://wrong-site-url.netlify.app", name:RADAR_SITE_NAME } }),
-    getEnv:base,
-    getBuildMetadata:() => validMetadata
-  }).code, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH");
-  const ready = officialSourceCanaryConfiguration({ context, getEnv:base, getBuildMetadata:() => validMetadata });
+  const ready = officialSourceCanaryConfiguration({ context, requestUrl:CANARY_URL, getEnv:base, getBuildMetadata:() => validMetadata });
   assert.equal(ready.ok, true);
   assert.equal(ready.deploy_context, "branch-deploy");
   assert.equal(ready.repository_url, "https://github.com/winters111222/3dsk-radar");
   assert.equal(ready.artifact_provenance, "NETLIFY_GIT_DEPLOY");
+  assert.equal(ready.deploy_url, DEPLOY_URL);
+});
+
+test("branch-deploy request target rejects aliases, mismatches and unsafe URL forms", () => {
+  const inputs = [
+    [MAIN_SITE_URL + "/api/official-source-canary", "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"],
+    [`https://audit--${RADAR_SITE_NAME}.netlify.app/api/official-source-canary`, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"],
+    [`https://${"a".repeat(24)}--${RADAR_SITE_NAME}.netlify.app/api/official-source-canary`, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"],
+    [`https://${DEPLOY_ID}--wrong-site.netlify.app/api/official-source-canary`, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"],
+    [`http://${DEPLOY_ID}--${RADAR_SITE_NAME}.netlify.app/api/official-source-canary`, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"],
+    [`https://${DEPLOY_ID}--${RADAR_SITE_NAME}.netlify.app:443/api/official-source-canary`, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"],
+    [`https://user:password@${DEPLOY_ID}--${RADAR_SITE_NAME}.netlify.app/api/official-source-canary`, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"],
+    [`${DEPLOY_URL}/api/other`, "OFFICIAL_SOURCE_CANARY_REQUEST_PATH_MISMATCH"],
+    [`${CANARY_URL}?attempt=1`, "OFFICIAL_SOURCE_CANARY_REQUEST_PATH_MISMATCH"],
+    [`${CANARY_URL}#fragment`, "OFFICIAL_SOURCE_CANARY_REQUEST_PATH_MISMATCH"],
+    ["not a url", "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"],
+    [undefined, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH"]
+  ];
+  for (const [requestUrl, expectedCode] of inputs) {
+    const result = officialSourceCanaryConfiguration({
+      context:functionRuntimeContext(),
+      requestUrl,
+      getEnv:branchDeployValues(),
+      getBuildMetadata:() => TEST_METADATA_BASE
+    });
+    assert.equal(result.ok, false, String(requestUrl));
+    assert.equal(result.code, expectedCode, String(requestUrl));
+  }
 });
 
 test("Bluesky only profile requires ready adapters and exact request limit", () => {
@@ -245,22 +274,36 @@ test("missing, wrong and too-short temporary tokens fail before source dispatch"
   assert.equal(calls, 0);
 });
 
-test("temporary token cannot bypass production, provenance, live-AI, profile or request-limit gates", async () => {
+test("temporary token cannot bypass request-origin, production, provenance, live-AI, profile, limit or readiness gates", async () => {
   let calls = 0;
   const neverFetch = async () => { calls += 1; throw new Error("source dispatch must remain locked"); };
   const cases = [
-    { context:{deploy:{context:"production", id:DEPLOY_ID}, site:{name:RADAR_SITE_NAME,id:RADAR_SITE_ID,url:DEPLOY_URL}}, env:branchDeployValues({}), metadata:TEST_METADATA_BASE },
-    { context:{deploy:{context:"branch-deploy", id:"badbadbadbadbadbadbadbadbad"}, site:{name:RADAR_SITE_NAME,id:RADAR_SITE_ID,url:`https://badbadbadbadbadbadbadbadbad--${RADAR_SITE_NAME}.netlify.app`}}, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
-    { context:functionRuntimeContext(), env:branchDeployValues(), metadata: { ...TEST_METADATA_BASE, commit_ref:"7".repeat(40) } },
-    { context:functionRuntimeContext(), env:branchDeployValues({ RADAR_LIVE_AI_ENABLED:"true" }), metadata:TEST_METADATA_BASE },
-    { context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"INVALID" }), metadata:TEST_METADATA_BASE },
-    { context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2" }), metadata:TEST_METADATA_BASE }
+    { label:"production context", context:{deploy:{context:"production", id:DEPLOY_ID}, site:{name:RADAR_SITE_NAME,id:RADAR_SITE_ID,url:DEPLOY_URL}}, env:branchDeployValues({}), metadata:TEST_METADATA_BASE },
+    { label:"invalid deploy id", context:{deploy:{context:"branch-deploy", id:"bad-deploy-id"}, site:{name:RADAR_SITE_NAME,id:RADAR_SITE_ID,url:MAIN_SITE_URL}}, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"main site request", context:functionRuntimeContext(), url:`${MAIN_SITE_URL}/api/official-source-canary`, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"branch alias request", context:functionRuntimeContext(), url:`https://audit--${RADAR_SITE_NAME}.netlify.app/api/official-source-canary`, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"other deploy request", context:functionRuntimeContext(), url:`https://${"a".repeat(24)}--${RADAR_SITE_NAME}.netlify.app/api/official-source-canary`, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"other site request", context:functionRuntimeContext(), url:`https://${DEPLOY_ID}--wrong-site.netlify.app/api/official-source-canary`, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"http request", context:functionRuntimeContext(), url:`http://${DEPLOY_ID}--${RADAR_SITE_NAME}.netlify.app/api/official-source-canary`, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"other path", context:functionRuntimeContext(), url:`${DEPLOY_URL}/api/other`, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"query string", context:functionRuntimeContext(), url:`${CANARY_URL}?attempt=1`, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"fragment", context:functionRuntimeContext(), url:`${CANARY_URL}#fragment`, env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"context site name mismatch", context:functionRuntimeContext({ site:{ name:"wrong-site" } }), env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"context site id mismatch", context:functionRuntimeContext({ site:{ id:"wrong-site-id" } }), env:branchDeployValues(), metadata:TEST_METADATA_BASE },
+    { label:"sealed branch mismatch", context:functionRuntimeContext(), env:branchDeployValues(), metadata:{ ...TEST_METADATA_BASE, branch:"wrong-branch" } },
+    { label:"sealed commit mismatch", context:functionRuntimeContext(), env:branchDeployValues(), metadata:{ ...TEST_METADATA_BASE, commit_ref:"7".repeat(40) } },
+    { label:"sealed repository mismatch", context:functionRuntimeContext(), env:branchDeployValues(), metadata:{ ...TEST_METADATA_BASE, repository_url:"https://github.com/other/repo" } },
+    { label:"sealed artifact provenance mismatch", context:functionRuntimeContext(), env:branchDeployValues(), metadata:{ ...TEST_METADATA_BASE, artifact_provenance:"DIRECT_BUILD" } },
+    { label:"live AI enabled", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_LIVE_AI_ENABLED:"true" }), metadata:TEST_METADATA_BASE },
+    { label:"invalid profile", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"INVALID" }), metadata:TEST_METADATA_BASE },
+    { label:"invalid request limit", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2" }), metadata:TEST_METADATA_BASE },
+    { label:"Bluesky connector locked", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_BLUESKY_SEARCH_ENABLED:"false" }), metadata:TEST_METADATA_BASE }
   ];
   for (const item of cases) {
     await withRuntime(item.env, neverFetch, async () => {
-      const response = await handler(request(EPHEMERAL_TOKEN), item.context);
-      assert.equal(response.status, 401);
-      assert.equal((await response.json()).error.code, "UNAUTHORIZED");
+      const response = await handler(request(EPHEMERAL_TOKEN, OFFICIAL_SOURCE_CANARY_CONFIRMATION, item.url || CANARY_URL), item.context);
+      assert.equal(response.status, 401, item.label);
+      assert.equal((await response.json()).error.code, "UNAUTHORIZED", item.label);
     }, item.metadata);
   }
   assert.equal(calls, 0);
