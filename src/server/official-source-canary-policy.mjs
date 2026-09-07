@@ -1,8 +1,11 @@
 import { sourceConnectorReadiness } from "./wide-v3-source-plan.mjs";
 import { bearerToken, constantTimeEqual } from "./auth.mjs";
+import { readBuildMetadata } from "./runtime.mjs";
 
 export const OFFICIAL_SOURCE_CANARY_CONFIRMATION = "RUN_WIDE_V3_FREE_SOURCE_CANARY_ONCE";
 export const OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN_MIN_LENGTH = 32;
+const OFFICIAL_SOURCE_CANARY_CONTEXT = "deploy-preview";
+const OFFICIAL_SOURCE_CANARY_BRANCH_CONTEXT = "branch-deploy";
 
 const PROFILES = Object.freeze({
   BLUESKY_ONLY:Object.freeze({ source_ids:Object.freeze(["bluesky_public"]), request_limit:1 }),
@@ -13,48 +16,99 @@ const enabled = (value) => String(value || "").trim().toLowerCase() === "true";
 const normalized = (value) => String(value || "").trim();
 const exactCommit = (value) => /^[0-9a-f]{40}$/.test(value);
 const exactDeployId = (value) => /^[0-9a-f]{24}$/.test(value);
-const RADAR_REPOSITORY_URL = "https://github.com/Winters111222/3dsk-radar";
-const RADAR_NETLIFY_SITE_NAME = "3dsk-opportunity-radar";
-const RADAR_NETLIFY_SITE_ID = "f390f4e9-12f5-4074-946e-c83f2d7fe20d";
+const RADAR_REPOSITORY_URL = "https://github.com/winters111222/3dsk-radar";
+const RADAR_SITE_NAME = "3dsk-opportunity-radar";
 
 function expectedImmutableDeployUrl(deployId) {
-  return `https://${deployId}--${RADAR_NETLIFY_SITE_NAME}.netlify.app`;
+  return `https://${deployId}--${RADAR_SITE_NAME}.netlify.app`;
 }
 
-function deploymentProvenance(context, getEnv) {
+function normalizeRuntimeUrl(value) {
+  return normalized(value).replace(/\/$/, "");
+}
+
+function canonicalizeCanaryMetadata(metadata = {}) {
+  return {
+    service: normalized(metadata.service),
+    schema_version: Number(metadata.schema_version),
+    commit_ref: normalized(metadata.commit_ref).toLowerCase(),
+    deploy_context: normalized(metadata.deploy_context),
+    repository_url: normalized(metadata.repository_url).replace(/\.git$/, "").toLowerCase(),
+    branch: normalized(metadata.branch),
+    site_name: normalized(metadata.site_name),
+    site_id: normalized(metadata.site_id),
+    artifact_provenance: normalized(metadata.artifact_provenance)
+  };
+}
+
+function validCanaryMetadata(metadata) {
+  if (!metadata || typeof metadata !== "object") return null;
+  const normalizedMetadata = canonicalizeCanaryMetadata(metadata);
+  if (normalizedMetadata.schema_version !== 2 || normalizedMetadata.service !== "3dsk-opportunity-radar" || !exactCommit(normalizedMetadata.commit_ref)) return null;
+  if (normalizedMetadata.repository_url !== RADAR_REPOSITORY_URL) return null;
+  if (!normalizedMetadata.site_name || !normalizedMetadata.site_id) return null;
+  return normalizedMetadata;
+}
+
+function deploymentProvenance(context, getEnv, getBuildMetadata = readBuildMetadata) {
   const deployContext = normalized(context?.deploy?.context);
-  if (deployContext === "deploy-preview") {
-    return { ok:true, deploy_context:deployContext, branch:normalized(getEnv("BRANCH")), commit_ref:normalized(getEnv("COMMIT_REF")).toLowerCase(), deploy_url:normalized(getEnv("DEPLOY_URL")) };
+  if (![OFFICIAL_SOURCE_CANARY_CONTEXT, OFFICIAL_SOURCE_CANARY_BRANCH_CONTEXT].includes(deployContext)) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_PREVIEW_REQUIRED" };
+
+  const sealedMetadata = validCanaryMetadata(getBuildMetadata());
+  if (!sealedMetadata) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED" };
+
+  if (deployContext === OFFICIAL_SOURCE_CANARY_CONTEXT) {
+    return {
+      ok:true,
+      deploy_context:OFFICIAL_SOURCE_CANARY_CONTEXT,
+      branch:sealedMetadata.branch,
+      commit_ref:sealedMetadata.commit_ref,
+      repository_url:sealedMetadata.repository_url,
+      artifact_provenance:sealedMetadata.artifact_provenance,
+      deploy_id: normalized(context?.deploy?.id).toLowerCase(),
+      deploy_url: normalizeRuntimeUrl(context?.site?.url)
+    };
   }
-  if (deployContext !== "branch-deploy") return { ok:false, code:"OFFICIAL_SOURCE_CANARY_PREVIEW_REQUIRED" };
+
   if (!enabled(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_ENABLED"))) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_LOCKED" };
-  if (
-    !enabled(getEnv("NETLIFY")) ||
-    normalized(getEnv("CONTEXT")) !== "branch-deploy" ||
-    normalized(getEnv("REPOSITORY_URL")).replace(/\.git$/, "") !== RADAR_REPOSITORY_URL ||
-    normalized(getEnv("SITE_NAME")) !== RADAR_NETLIFY_SITE_NAME ||
-    normalized(getEnv("SITE_ID")) !== RADAR_NETLIFY_SITE_ID
-  ) {
+  if (!exactDeployId(normalized(context?.deploy?.id).toLowerCase())) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH" };
+
+  const expectedSiteName = sealedMetadata.site_name;
+  const expectedSiteId = sealedMetadata.site_id;
+  if (normalized(context?.site?.name) !== expectedSiteName || normalized(context?.site?.id) !== expectedSiteId) {
     return { ok:false, code:"OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED" };
   }
 
   const expectedBranch = normalized(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH"));
   const expectedCommit = normalized(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT")).toLowerCase();
-  const actualBranch = normalized(getEnv("BRANCH"));
-  const actualCommit = normalized(getEnv("COMMIT_REF")).toLowerCase();
-  const actualDeployId = normalized(getEnv("DEPLOY_ID")).toLowerCase();
-  const actualDeployUrl = normalized(getEnv("DEPLOY_URL")).replace(/\/$/, "");
+  const actualBranch = sealedMetadata.branch;
+  const actualCommit = sealedMetadata.commit_ref;
+  const actualDeployId = normalized(context?.deploy?.id).toLowerCase();
+  const actualDeployUrl = normalizeRuntimeUrl(context?.site?.url);
+  const expectedDeployUrl = expectedImmutableDeployUrl(actualDeployId);
 
   if (!expectedBranch || actualBranch !== expectedBranch) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH" };
   if (!exactCommit(expectedCommit) || actualCommit !== expectedCommit) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_COMMIT_MISMATCH" };
-  if (!exactDeployId(actualDeployId) || actualDeployUrl !== expectedImmutableDeployUrl(actualDeployId)) {
+  if (sealedMetadata.artifact_provenance !== "NETLIFY_GIT_DEPLOY") {
+    return { ok:false, code:"OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED" };
+  }
+  if (expectedDeployUrl !== actualDeployUrl) {
     return { ok:false, code:"OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH" };
   }
-  return { ok:true, deploy_context:deployContext, branch:actualBranch, commit_ref:actualCommit, deploy_id:actualDeployId, deploy_url:actualDeployUrl, repository_url:RADAR_REPOSITORY_URL };
+  return {
+    ok:true,
+    deploy_context:deployContext,
+    branch:actualBranch,
+    commit_ref:actualCommit,
+    artifact_provenance:sealedMetadata.artifact_provenance,
+    deploy_id:actualDeployId,
+    deploy_url:actualDeployUrl,
+    repository_url:RADAR_REPOSITORY_URL
+  };
 }
 
-export function officialSourceCanaryConfiguration({ context, getEnv = (key) => process.env[key] } = {}) {
-  const provenance = deploymentProvenance(context, getEnv);
+export function officialSourceCanaryConfiguration({ context, getEnv = (key) => process.env[key], getBuildMetadata = readBuildMetadata } = {}) {
+  const provenance = deploymentProvenance(context, getEnv, getBuildMetadata);
   if (!provenance.ok) return provenance;
   if (!enabled(getEnv("RADAR_OFFICIAL_SOURCE_CANARY_ENABLED"))) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_LOCKED" };
   if (enabled(getEnv("RADAR_LIVE_AI_ENABLED"))) return { ok:false, code:"OFFICIAL_SOURCE_CANARY_LIVE_AI_MUST_BE_LOCKED" };

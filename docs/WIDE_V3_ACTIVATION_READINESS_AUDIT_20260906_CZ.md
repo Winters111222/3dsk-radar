@@ -43,3 +43,10 @@ Dočasný canary token je timing-safe porovnán a je uznán až poté, co projde
 6. Odstranit dočasné canary proměnné a vrátit oba source gates do `false`.
 
 Reddit a Upwork zůstávají další vrstvou až po uživatelem dokončeném oficiálním approval/OAuth procesu. LinkedIn zůstává pouze alert/public-index signál s povinným přechodem na originální buyer/ATS URL. Telegram a Discord pouze pro boty pozvané do explicitně allowlisted kanálů. X zůstává mimo aktivaci do samostatného cenového a implementačního schválení.
+
+## Runtime provenance: build vs runtime split
+- Build-time truth is sealed in `build-metadata.json` during build and includes `deploy_context`, `commit_ref`, `repository_url`, `branch`, `site_name`, `site_id` and `artifact_provenance`.
+- Canary policy does not use runtime env variables `BRANCH`, `COMMIT_REF`, `DEPLOY_ID`, or `DEPLOY_URL` for branch-deploy/provenance checks.
+- Runtime checks use only `context.deploy` and `context.site` fields: `context.deploy.context/id` and `context.site.name/id/url`.
+- Immutable deploy URL is derived as `https://<deploy.id>--<site.name>.netlify.app` and compared with runtime context.
+- Temporary token is accepted only when all gates pass (preview/branch policy, live-AI lock, profile, limits, connector readiness).

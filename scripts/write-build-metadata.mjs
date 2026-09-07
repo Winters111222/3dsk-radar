@@ -3,6 +3,22 @@ import { readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
+const RADAR_REPOSITORY_URL = "https://github.com/winters111222/3dsk-radar";
+const RADAR_NETLIFY_SITE_NAME = "3dsk-opportunity-radar";
+const RADAR_NETLIFY_SITE_ID = "f390f4e9-12f5-4074-946e-c83f2d7fe20d";
+
+function normalize(value) {
+  return String(value || "").trim();
+}
+
+function normalizedRepository(value) {
+  return normalize(value).replace(/\.git$/, "").toLowerCase();
+}
+
+function normalizedOptionalString(value) {
+  return normalize(value);
+}
+
 export const TESTED_SOURCE_PROVENANCE = "CI_TESTED_SOURCE";
 export const NETLIFY_GIT_PROVENANCE = "NETLIFY_GIT_DEPLOY";
 export const DIRECT_BUILD_PROVENANCE = "DIRECT_BUILD";
@@ -22,14 +38,31 @@ function sealedTestedSourceCommit(environment, existingMetadata) {
 function netlifyGitPreviewCommit(environment) {
   if (String(environment.NETLIFY || "").trim().toLowerCase() !== "true") return null;
   const context = String(environment.CONTEXT || "").trim();
-  const repositoryUrl = String(environment.REPOSITORY_URL || "").trim().replace(/\.git$/, "");
-  if (repositoryUrl !== "https://github.com/Winters111222/3dsk-radar") return null;
+  const repositoryUrl = normalizedRepository(environment.REPOSITORY_URL);
+  if (repositoryUrl !== normalizedRepository(RADAR_REPOSITORY_URL)) return null;
   if (context === "deploy-preview") {
     if (String(environment.PULL_REQUEST || "").trim().toLowerCase() !== "true" || !String(environment.REVIEW_ID || "").trim()) return null;
   } else if (context === "branch-deploy") {
     if (!String(environment.BRANCH || "").trim()) return null;
   } else return null;
   return validCommit(environment.COMMIT_REF);
+}
+
+function expectedRepositoryUrl(environment, existingMetadata) {
+  const repositoryUrl = normalizedRepository(environment.REPOSITORY_URL);
+  return repositoryUrl || normalizedRepository(existingMetadata?.repository_url) || RADAR_REPOSITORY_URL;
+}
+
+function expectedBranch(environment, existingMetadata) {
+  return normalizedOptionalString(environment.BRANCH || existingMetadata?.branch);
+}
+
+function expectedSiteName(environment, existingMetadata) {
+  return normalizedOptionalString(environment.SITE_NAME || existingMetadata?.site_name || RADAR_NETLIFY_SITE_NAME);
+}
+
+function expectedSiteId(environment, existingMetadata) {
+  return normalizedOptionalString(environment.SITE_ID || existingMetadata?.site_id || RADAR_NETLIFY_SITE_ID);
 }
 
 function acceptanceProfile(environment, existingMetadata) {
@@ -57,6 +90,10 @@ export function createBuildMetadata({ environment = process.env, gitFallback = n
     service:"3dsk-opportunity-radar",
     commit_ref:resolveBuildCommit(environment, gitFallback, existingMetadata),
     deploy_context:String(environment.CONTEXT || "local"),
+    repository_url:expectedRepositoryUrl(environment, existingMetadata),
+    branch:expectedBranch(environment, existingMetadata),
+    site_name:expectedSiteName(environment, existingMetadata),
+    site_id:expectedSiteId(environment, existingMetadata),
     generated_at:nowIso,
     acceptance_profile:acceptanceProfile(environment, existingMetadata),
     artifact_provenance:provenance

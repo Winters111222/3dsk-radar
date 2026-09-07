@@ -35,6 +35,7 @@ export default async function handler(request, context) {
       context:configuration.deploy_context,
       branch:configuration.branch,
       commit_ref:configuration.commit_ref,
+      artifact_provenance:configuration.artifact_provenance || null,
       deploy_id:configuration.deploy_id || null,
       deploy_url:configuration.deploy_url,
       repository_url:configuration.repository_url || null
