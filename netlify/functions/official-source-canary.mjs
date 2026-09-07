@@ -1,6 +1,5 @@
-import { authorizeRequest } from "../../src/server/auth.mjs";
 import { envValue } from "../../src/server/runtime.mjs";
-import { OFFICIAL_SOURCE_CANARY_CONFIRMATION, officialSourceCanaryConfiguration } from "../../src/server/official-source-canary-policy.mjs";
+import { OFFICIAL_SOURCE_CANARY_CONFIRMATION, authorizeOfficialSourceCanaryRequest, officialSourceCanaryConfiguration } from "../../src/server/official-source-canary-policy.mjs";
 import { runOfficialWideDiscovery, summarizeOfficialWideDiscovery } from "../../src/server/official-source-run.mjs";
 
 function json(payload, status = 200) {
@@ -9,12 +8,12 @@ function json(payload, status = 200) {
 
 export default async function handler(request, context) {
   if (request.method !== "POST") return json({ ok:false, error:{ code:"METHOD_NOT_ALLOWED", message:"Use POST /api/official-source-canary." } }, 405);
-  const auth = authorizeRequest(request, envValue("RADAR_INTERNAL_ACCESS_SECRET"));
+  const configuration = officialSourceCanaryConfiguration({ context, getEnv:envValue });
+  const auth = authorizeOfficialSourceCanaryRequest({ request, configuration, getEnv:envValue });
   if (!auth.ok) return json({ ok:false, error:{ code:auth.code, message:"Official source canary authorization failed." } }, auth.status);
   if (request.headers.get("x-radar-official-source-confirmation") !== OFFICIAL_SOURCE_CANARY_CONFIRMATION) {
     return json({ ok:false, error:{ code:"OFFICIAL_SOURCE_CANARY_CONFIRMATION_REQUIRED", message:"Exact source canary confirmation is required." } }, 409);
   }
-  const configuration = officialSourceCanaryConfiguration({ context, getEnv:envValue });
   if (!configuration.ok) return json({ ok:false, error:{ code:configuration.code, message:"Official source canary is not ready.", blocked_sources:configuration.blocked_sources || [] } }, 423);
   let result;
   try {

@@ -16,8 +16,8 @@ Readiness pro LinkedIn, Telegram a Discord navíc neuváděla společný gate `R
 
 ## Repository-only oprava
 
-- `POST /api/official-source-canary` je dostupný pouze v `deploy-preview` contextu.
-- Vyžaduje interní Bearer autorizaci, exact confirmation header a dočasný default-off gate.
+- `POST /api/official-source-canary` je dostupný pouze v `deploy-preview` nebo v explicitně povoleném Git-backed `branch-deploy` contextu.
+- Vyžaduje exact confirmation header, dočasný default-off gate a Bearer autorizaci. Vedle stávajícího interního secretu může pouze tato canary cesta použít dočasný `RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN` o délce nejméně 32 znaků.
 - `BLUESKY_ONLY` dovolí přesně 1 source request.
 - `BLUESKY_MASTODON` dovolí přesně 2 source requesty a vyžaduje skutečně připravený Mastodon origin + token.
 - Endpoint nepoužívá OpenAI, hosted web search, Firecrawl ani persistence a neprovádí retry.
@@ -31,10 +31,12 @@ Pokud Netlify PR webhook nevytvoří `deploy-preview`, lze použít výhradně G
 
 Fallback nepovoluje placenou Phase E acceptance, databázové zápisy ani obecnou source collection. Po jediném canary requestu se všechny dočasné `deploy-preview`/`branch-deploy` gates odstraní a readback musí znovu potvrdit `LOCKED`.
 
+Dočasný canary token je timing-safe porovnán a je uznán až poté, co projde celý context, provenance, live-AI, enabled, profile, request-limit a connector-readiness policy. V produkčním contextu jej endpoint nikdy nepřijme. Token se nesmí objevit v odpovědi ani logu a musí být po jediném pokusu odstraněn spolu s ostatními dočasnými gates. Ostatní interní endpointy nadále přijímají výhradně `RADAR_INTERNAL_ACCESS_SECRET`.
+
 ## Doporučený aktivační sled
 
 1. Deploy Preview nového exact HEADu a zero-cost locked acceptance.
-2. Dočasně pouze pro Deploy Preview nastavit `RADAR_LIVE_AI_ENABLED=false`, canary gate, exact profil a exact request limit.
+2. Dočasně pouze pro Deploy Preview nebo povolený exact branch deploy nastavit `RADAR_LIVE_AI_ENABLED=false`, canary gate, exact profil, exact request limit a nový náhodný `RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN` s nejméně 32 znaky.
 3. Nejprve jednou spustit `BLUESKY_ONLY`.
 4. Pokud je k dispozici Mastodon `read:search` token a schválená instance, v novém samostatně potvrzeném cyklu lze jednou použít `BLUESKY_MASTODON`; nikdy ne jako automatický retry prvního běhu.
 5. Okamžitě přečíst `/api/health` a canary výsledek, zkontrolovat počty a discovery-only zámky.
