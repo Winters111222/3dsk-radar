@@ -10,7 +10,7 @@ Datum: 2026-09-06
 
 ## Zjištění
 
-Čtyři přímé adaptéry (Upwork, Reddit, Bluesky a Mastodon) už byly implementované jako discovery-only, jeden request na adaptér, bez retry a bez ukládání raw payloadu. Chyběl však samostatný zero-cost endpoint, takže produkční cesta spojovala official-source discovery až s placeným WIDE V3 OpenAI během.
+Čtyři přímé adaptéry (Upwork, Reddit, Bluesky a Mastodon) už byly implementované jako discovery-only, bez retry a bez ukládání raw payloadu. Původní Bluesky varianta předpokládala jeden anonymní request; po live 403 byla nahrazena podporovanou app-password session + search dvojicí. Chyběl však samostatný zero-cost endpoint, takže produkční cesta spojovala official-source discovery až s placeným WIDE V3 OpenAI během.
 
 Readiness pro LinkedIn, Telegram a Discord navíc neuváděla společný gate `RADAR_SOURCE_SIGNAL_INGEST_ENABLED`; Telegram a Discord nevyžadovaly ve svém sanitizovaném readiness výstupu společný podpisový secret. X mohl po vyplnění tokenu vypadat jako `CONFIG_READY`, přestože placený runtime adaptér záměrně není implementovaný.
 
@@ -18,8 +18,8 @@ Readiness pro LinkedIn, Telegram a Discord navíc neuváděla společný gate `R
 
 - `POST /api/official-source-canary` je dostupný pouze v `deploy-preview` nebo v explicitně povoleném Git-backed `branch-deploy` contextu.
 - Vyžaduje exact confirmation header, dočasný default-off gate a Bearer autorizaci. Vedle stávajícího interního secretu může pouze tato canary cesta použít dočasný `RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN` o délce nejméně 32 znaků.
-- `BLUESKY_ONLY` dovolí přesně 1 source request.
-- `BLUESKY_MASTODON` dovolí přesně 2 source requesty a vyžaduje skutečně připravený Mastodon origin + token.
+- `BLUESKY_ONLY` dovolí přesně 2 source requesty: session a search.
+- `BLUESKY_MASTODON` dovolí přesně 3 source requesty a vyžaduje skutečně připravený Mastodon origin + token.
 - Endpoint nepoužívá OpenAI, hosted web search, Firecrawl ani persistence a neprovádí retry.
 - Odpověď vrací pouze sanitizovaný summary a nejvýše 10 discovery-only, outreach-locked hintů na zdroj.
 - X readiness nyní pravdivě hlásí chybějící runtime adaptér a nemůže se tvářit jako aktivovatelný.
@@ -27,7 +27,7 @@ Readiness pro LinkedIn, Telegram a Discord navíc neuváděla společný gate `R
 
 ## Git-backed branch-deploy fallback
 
-Pokud Netlify PR webhook nevytvoří `deploy-preview`, lze použít výhradně Git-backed `branch-deploy` z explicitně zadané review větve. Fallback je samostatně default-off a server před jediným source requestem vyžaduje přesnou shodu read-only Netlify/Git provenance: `REPOSITORY_URL`, `SITE_ID`, `SITE_NAME`, `BRANCH` a čtyřicetiznakový `COMMIT_REF`. Dočasně se zadává pouze očekávaná větev a commit. Immutable URL se ověřuje bez kruhové závislosti přímo z read-only `DEPLOY_ID`: `DEPLOY_URL` musí být přesně `https://<DEPLOY_ID>--3dsk-opportunity-radar.netlify.app`. Produkční kontext, jiný web/repozitář, jiná větev, jiný commit, branch alias nebo manuální deploy bez Git provenance skončí fail-closed.
+Pokud Netlify PR webhook nevytvoří `deploy-preview`, lze použít výhradně Git-backed `branch-deploy` z explicitně zadané review větve. Fallback je samostatně default-off a server před prvním source requestem vyžaduje přesnou shodu read-only Netlify/Git provenance: `REPOSITORY_URL`, `SITE_ID`, `SITE_NAME`, `BRANCH` a čtyřicetiznakový `COMMIT_REF`. Dočasně se zadává pouze očekávaná větev a commit. Immutable URL se ověřuje bez kruhové závislosti přímo z read-only `DEPLOY_ID`: `DEPLOY_URL` musí být přesně `https://<DEPLOY_ID>--3dsk-opportunity-radar.netlify.app`. Produkční kontext, jiný web/repozitář, jiná větev, jiný commit, branch alias nebo manuální deploy bez Git provenance skončí fail-closed.
 
 Fallback nepovoluje placenou Phase E acceptance, databázové zápisy ani obecnou source collection. Po jediném canary requestu se všechny dočasné `deploy-preview`/`branch-deploy` gates odstraní a readback musí znovu potvrdit `LOCKED`.
 
@@ -36,11 +36,12 @@ Dočasný canary token je timing-safe porovnán a je uznán až poté, co projde
 ## Doporučený aktivační sled
 
 1. Deploy Preview nového exact HEADu a zero-cost locked acceptance.
-2. Dočasně pouze pro Deploy Preview nebo povolený exact branch deploy nastavit `RADAR_LIVE_AI_ENABLED=false`, canary gate, exact profil, exact request limit a nový náhodný `RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN` s nejméně 32 znaky.
-3. Nejprve jednou spustit `BLUESKY_ONLY`.
-4. Pokud je k dispozici Mastodon `read:search` token a schválená instance, v novém samostatně potvrzeném cyklu lze jednou použít `BLUESKY_MASTODON`; nikdy ne jako automatický retry prvního běhu.
-5. Okamžitě přečíst `/api/health` a canary výsledek, zkontrolovat počty a discovery-only zámky.
-6. Odstranit dočasné canary proměnné a vrátit oba source gates do `false`.
+2. Ručně vytvořit nebo zvolit samostatný Bluesky účet, v jeho nastavení vytvořit odvolatelné app password a uložit handle + app password pouze jako server-side `BLUESKY_IDENTIFIER` a secret `BLUESKY_APP_PASSWORD`. Hlavní heslo účtu se nepoužívá.
+3. Dočasně pouze pro Deploy Preview nebo povolený exact branch deploy nastavit `RADAR_LIVE_AI_ENABLED=false`, canary gate, exact profil, exact request limit a nový náhodný `RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN` s nejméně 32 znaky.
+4. Nejprve jednou spustit `BLUESKY_ONLY`.
+5. Pokud je k dispozici Mastodon `read:search` token a schválená instance, v novém samostatně potvrzeném cyklu lze jednou použít `BLUESKY_MASTODON`; nikdy ne jako automatický retry prvního běhu.
+6. Okamžitě přečíst `/api/health` a canary výsledek, zkontrolovat počty a discovery-only zámky.
+7. Odstranit dočasné canary proměnné a vrátit oba source gates do `false`.
 
 Reddit a Upwork zůstávají další vrstvou až po uživatelem dokončeném oficiálním approval/OAuth procesu. LinkedIn zůstává pouze alert/public-index signál s povinným přechodem na originální buyer/ATS URL. Telegram a Discord pouze pro boty pozvané do explicitně allowlisted kanálů. X zůstává mimo aktivaci do samostatného cenového a implementačního schválení.
 

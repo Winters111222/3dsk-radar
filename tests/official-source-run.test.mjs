@@ -16,6 +16,8 @@ const enabledEnv = (key) => ({
   RADAR_REDDIT_API_ENABLED:"true",
   REDDIT_OAUTH_ACCESS_TOKEN:"rd-secret",
   RADAR_BLUESKY_SEARCH_ENABLED:"true",
+  BLUESKY_IDENTIFIER:"radar.bsky.social",
+  BLUESKY_APP_PASSWORD:"bsky-app-secret",
   RADAR_MASTODON_SEARCH_ENABLED:"true",
   MASTODON_API_ORIGIN:"https://mastodon.social",
   MASTODON_ACCESS_TOKEN:"md-secret"
@@ -23,7 +25,8 @@ const enabledEnv = (key) => ({
 
 test("official discovery plan includes only ready free adapters and never returns credentials", () => {
   const plan = officialSourceRunPlan(enabledEnv);
-  assert.equal(plan.length, OFFICIAL_SOURCE_MAX_REQUESTS);
+  assert.equal(plan.length, 4);
+  assert.equal(OFFICIAL_SOURCE_MAX_REQUESTS, 5);
   assert.deepEqual(plan.map((item) => item.source_id), ["upwork_official", "reddit_official", "bluesky_public", "mastodon_official"]);
   assert.equal(JSON.stringify(plan).includes("up-secret"), true);
   assert.equal(JSON.stringify(plan.map(({ config:ignored, ...item }) => item)).includes("secret"), false);
@@ -36,12 +39,13 @@ test("official discovery makes exactly one no-retry request per ready source and
     const value = String(url);
     if (value.includes("oauth.reddit.com")) return new Response("blocked", { status:403 });
     if (value.includes("api.upwork.com")) return new Response(JSON.stringify({ data:{ marketplaceJobPostingsSearch:{ edges:[{ node:{ id:"u1", ciphertext:"~u1", title:"Character scan cleanup", description:"Paid vendor project" } }] } } }), { status:200 });
-    if (value.includes("bsky")) return new Response(JSON.stringify({ posts:[{ uri:"at://did:plc:a/app.bsky.feed.post/p1", author:{handle:"buyer.bsky.social"}, record:{text:"Need a 3D team",createdAt:"2026-09-06T12:00:00Z"} }] }), { status:200 });
+    if (value.includes("createSession")) return new Response(JSON.stringify({ accessJwt:"bsky-access-jwt" }), { status:200 });
+    if (value.includes("app.bsky.feed.searchPosts")) return new Response(JSON.stringify({ posts:[{ uri:"at://did:plc:a/app.bsky.feed.post/p1", author:{handle:"buyer.bsky.social"}, record:{text:"Need a 3D team",createdAt:"2026-09-06T12:00:00Z"} }] }), { status:200 });
     return new Response(JSON.stringify({ statuses:[] }), { status:200 });
   };
   const result = await runOfficialWideDiscovery({ getEnv:enabledEnv, fetchImpl });
-  assert.equal(calls, 4);
-  assert.equal(result.requests, 4);
+  assert.equal(calls, 5);
+  assert.equal(result.requests, 5);
   assert.equal(result.status, "PARTIAL");
   assert.equal(result.sources.find((item) => item.source_id === "reddit_official").error_code, "OFFICIAL_SOURCE_HTTP_403");
   assert.equal(result.hints.length, 2);
@@ -64,15 +68,42 @@ test("official discovery canary scope calls only the explicitly selected free ad
   const result = await runOfficialWideDiscovery({
     getEnv:enabledEnv,
     sourceIds:["bluesky_public"],
-    fetchImpl:async () => {
+    fetchImpl:async (url) => {
       calls += 1;
+      if (String(url).includes("createSession")) return new Response(JSON.stringify({ accessJwt:"bsky-access-jwt" }), { status:200 });
       return new Response(JSON.stringify({ posts:[] }), { status:200 });
     }
   });
-  assert.equal(calls, 1);
-  assert.equal(result.requests, 1);
+  assert.equal(calls, 2);
+  assert.equal(result.requests, 2);
   assert.deepEqual(result.sources.map((item) => item.source_id), ["bluesky_public"]);
   assert.throws(() => officialSourceRunPlan(enabledEnv, { sourceIds:["x_official"] }), /OFFICIAL_SOURCE_SCOPE_INVALID/);
+});
+
+test("Bluesky failures report only the request phase and status with exact request counts", async () => {
+  const sessionRejected = await runOfficialWideDiscovery({
+    getEnv:enabledEnv,
+    sourceIds:["bluesky_public"],
+    fetchImpl:async () => new Response(JSON.stringify({ error:"AuthenticationRequired", message:"contains upstream detail" }), { status:401 })
+  });
+  assert.equal(sessionRejected.requests, 1);
+  assert.equal(sessionRejected.sources[0].error_code, "BLUESKY_SESSION_HTTP_401");
+  assert.equal(JSON.stringify(sessionRejected).includes("contains upstream detail"), false);
+
+  let calls = 0;
+  const searchRejected = await runOfficialWideDiscovery({
+    getEnv:enabledEnv,
+    sourceIds:["bluesky_public"],
+    fetchImpl:async (url) => {
+      calls += 1;
+      if (String(url).includes("createSession")) return Response.json({ accessJwt:"bsky-access-jwt" });
+      return new Response("Request forbidden by administrative rules", { status:403 });
+    }
+  });
+  assert.equal(calls, 2);
+  assert.equal(searchRejected.requests, 2);
+  assert.equal(searchRejected.sources[0].error_code, "BLUESKY_SEARCH_HTTP_403");
+  assert.equal(JSON.stringify(searchRejected).includes("administrative rules"), false);
 });
 
 test("recent signed social signals join only social shards and stale signals are ignored", () => {

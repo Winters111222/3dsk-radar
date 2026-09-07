@@ -25,6 +25,8 @@ test("WIDE V3 splits discovery into eight bounded source groups", () => {
 test("connector readiness is fail-closed and never reports secret values", () => {
   const env = new Map([
     ["RADAR_BLUESKY_SEARCH_ENABLED", "true"],
+    ["BLUESKY_IDENTIFIER", "radar.bsky.social"],
+    ["BLUESKY_APP_PASSWORD", "bsky-app-secret"],
     ["RADAR_UPWORK_API_ENABLED", "true"],
     ["UPWORK_OAUTH_ACCESS_TOKEN", "secret-token"]
   ]);
@@ -33,6 +35,7 @@ test("connector readiness is fail-closed and never reports secret values", () =>
   assert.equal(result.find((item) => item.id === "bluesky_public").status, "CONFIG_READY");
   assert.deepEqual(result.find((item) => item.id === "upwork_official").missing_configuration, ["UPWORK_API_TENANT_ID"]);
   assert.equal(JSON.stringify(result).includes("secret-token"), false);
+  assert.equal(JSON.stringify(result).includes("bsky-app-secret"), false);
   assert.equal(result.find((item) => item.id === "x_official").status, "LOCKED");
   assert.equal(result.find((item) => item.id === "x_official").paid, true);
   assert.equal(result.find((item) => item.id === "x_official").runtime_available, false);

@@ -29,12 +29,12 @@ stealth proxy ani reverzně odvozené neveřejné endpointy.
 - `src/server/official-source-discovery.mjs`
   - Upwork GraphQL `marketplaceJobPostingsSearch`, OAuth2 a tenant header,
   - Reddit OAuth search omezený na `r/gameDevClassifieds`, poslední měsíc,
-  - Bluesky veřejný `app.bsky.feed.searchPosts`, řazení `latest`,
+  - Bluesky autentizovaný `app.bsky.feed.searchPosts` přes PDS a oficiální AppView proxy, řazení `latest`,
   - Mastodon `/api/v2/search`, pouze `statuses`, čistý HTTPS origin,
-  - jeden request na volání, žádný retry, 25 výsledků maximum, 2 MB odpověď,
+  - jeden request na každý běžný adaptér; Bluesky používá jeden session request a jeden search request, žádný retry, 25 výsledků maximum, 2 MB odpověď,
   - normalizace pouze na discovery hints; žádný hint sám neodemkne outreach.
 - `src/server/official-source-run.mjs`
-  - nejvýše 4 official-source requesty, jeden na každý připravený adaptér,
+  - nejvýše 5 official-source HTTP requestů: po jednom pro Upwork, Reddit a Mastodon a dva pro Bluesky,
   - paralelní izolace chyb bez retry,
   - rozdělení hintů do odpovídajících vyhledávacích shardů,
   - do durable run logu ukládá jen agregované stavy a počty, ne cizí text ani token.
@@ -47,11 +47,15 @@ stealth proxy ani reverzně odvozené neveřejné endpointy.
     social/multilingual shardu; po ověření je nesmí vrátit se sociální URL jako
     výsledným sales zdrojem.
 
-Lokální public Bluesky canary z CZ execution regionu vrátil 6. 9. 2026 HTTP
-403 z CDN a adaptér správně skončil bez retry. Nejde o důvod zdroj zahodit:
-produkční aktivace musí nejdřív provést read-only canary z Netlify regionu a při
-stejném výsledku použít hosted-index fallback. Health proto nesmí odvozovat
-živou dostupnost pouze z toho, že API nevyžaduje token.
+Anonymní Bluesky `searchPosts` vrátil lokálně i z Netlify HTTP 403. Oficiální
+Lexicon upozorňuje, že endpoint může vyžadovat autentizaci, a správci Bluesky
+potvrdili, že veřejný fulltext search dočasně vypnuli kvůli nákladným bot
+requestům. Adaptér proto už anonymní endpoint nepoužívá. Vytvoří krátkou session
+přes samostatně odvolatelné app password, zahodí refresh token a autentizovaný
+GET směruje přes uživatelův PDS s `atproto-proxy:
+did:web:api.bsky.app#bsky_appview`. Session i search mají jeden pokus bez retry;
+sanitizovaná diagnostika rozlišuje jejich fázi a HTTP status bez upstream textu,
+tokenu nebo hesla.
 - `/api/health`
   - vrací pouze `CONFIG_READY | LOCKED | CONFIG_REQUIRED`, access method a názvy
     chybějících proměnných,
@@ -59,7 +63,7 @@ stejném výsledku použít hosted-index fallback. Health proto nesmí odvozovat
 
 Produkční dispatcher zná WIDE V3, ale profil je default-off a fail-closed.
 Aktivuje se pouze přesným nastavením 3 USD / 32 výsledků, osmi OpenAI requestů,
-24 hosted-search calls a nejvýše čtyř official-source requestů. Používá
+24 hosted-search calls a nejvýše pěti official-source requestů. Používá
 `gpt-5.6-sol`; volitelný Firecrawl zůstává na samostatném limitu 5 requestů a
 26 kreditů. Celý běh sdílí jeden atomický daily claim a budget settlement, bez
 retry. Tento commit nic z toho v Netlify nezapíná.
@@ -71,7 +75,7 @@ retry. Tento commit nic z toho v Netlify nezapíná.
 | Upwork | Schválené GraphQL API + OAuth2 | Hosted index detailů | Pouze buyer job detail; raw API cache nejvýše 24 h |
 | Reddit | Schválené Data API OAuth | Veřejný index konkrétního subredditu | Pouze aktuální paid/hiring post, nikdy `FOR HIRE` |
 | LinkedIn | Uživatelův job/post alert + veřejný index | Přechod na employer/ATS URL | LinkedIn post je jen signal; originál je povinný |
-| Bluesky | Veřejné AT Protocol search API | Hosted public index | Signal do ruční/originální verifikace |
+| Bluesky | AT Protocol app-password session + AppView proxy | Hosted public index | Signal do ruční/originální verifikace |
 | Mastodon | Instance API + `read:search` token | Vybrané veřejné hashtag/feed URL | Signal do ruční/originální verifikace |
 | X | Oficiální consumption-billed search API | Veřejný index | Default-off paid signal; samostatný budget |
 | Telegram | Bot přidaný do allowlisted kanálu/skupiny | Ruční forward do ingestu | Jen zprávy skutečně doručené autorizovanému botovi |
@@ -106,11 +110,12 @@ Před live aktivací je potřeba získat a vložit pouze podporované přístupy
 
 1. schválený Upwork API OAuth token a tenant ID,
 2. schválený Reddit OAuth token pro daný účel,
-3. Mastodon `read:search` token a vybranou instanci,
-4. pozvat vlastní boty do konkrétních Telegram/Discord kanálů a nastavit jejich
+3. samostatný Bluesky účet/handle a odvolatelné app password; nikdy ne hlavní heslo účtu,
+4. Mastodon `read:search` token a vybranou instanci,
+5. pozvat vlastní boty do konkrétních Telegram/Discord kanálů a nastavit jejich
    ID do allowlistu,
-5. připojit LinkedIn alert relay k podepsanému ingestu,
-6. provést zero-cost Deploy Preview acceptance a až potom samostatně schválit
+6. připojit LinkedIn alert relay k podepsanému ingestu,
+7. provést zero-cost Deploy Preview acceptance a až potom samostatně schválit
    Git-backed produkční deploy, environment a jeden placený WIDE V3 běh.
 
 Raw Upwork/Reddit payloady se neukládají; pipeline je používá pouze v paměti
@@ -128,6 +133,9 @@ změnou environmentu ani placeným search během.
 - [LinkedIn Talent API catalog](https://developer.linkedin.com/product-catalog/talent)
 - [LinkedIn Job Posting API](https://learn.microsoft.com/en-us/linkedin/talent/job-postings/api/overview?view=li-lts-2026-04)
 - [Bluesky feed API documentation](https://docs.bsky.app/docs/tutorials/viewing-feeds)
+- [Bluesky API authentication](https://atproto.com/guides/sdk-auth)
+- [AT Protocol XRPC service proxying](https://atproto.com/specs/xrpc#service-proxying)
+- [Bluesky `searchPosts` Lexicon](https://github.com/bluesky-social/atproto/blob/main/lexicons/app/bsky/feed/searchPosts.json)
 - [Mastodon search API](https://docs.joinmastodon.org/methods/search/)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 - [Discord API reference](https://docs.discord.com/developers/reference)

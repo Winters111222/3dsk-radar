@@ -122,6 +122,8 @@ test("health exposes Firecrawl WIDE v2 only behind the exact server gate", async
 test("health reports WIDE V3 connector readiness without exposing credentials", async t => {
   runtime(t, {
     RADAR_BLUESKY_SEARCH_ENABLED:"true",
+    BLUESKY_IDENTIFIER:"radar.bsky.social",
+    BLUESKY_APP_PASSWORD:"private-bsky-app-password",
     RADAR_UPWORK_API_ENABLED:"true",
     UPWORK_OAUTH_ACCESS_TOKEN:"private-upwork-token"
   });
@@ -132,6 +134,7 @@ test("health reports WIDE V3 connector readiness without exposing credentials", 
   assert.equal(upwork.status, "CONFIG_REQUIRED");
   assert.deepEqual(upwork.missing_configuration, ["UPWORK_API_TENANT_ID"]);
   assert.equal(JSON.stringify(status).includes("private-upwork-token"), false);
+  assert.equal(JSON.stringify(status).includes("private-bsky-app-password"), false);
 });
 
 test("health exposes WIDE V3 exact limits without dispatching official or paid requests", async t => {
@@ -142,8 +145,10 @@ test("health exposes WIDE V3 exact limits without dispatching official or paid r
     RADAR_PRODUCTION_SEARCH_MAX_USD:"3.00",
     RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"32",
     RADAR_OFFICIAL_SOURCE_DISCOVERY_ENABLED:"true",
-    RADAR_OFFICIAL_SOURCE_MAX_REQUESTS:"4",
-    RADAR_BLUESKY_SEARCH_ENABLED:"true"
+    RADAR_OFFICIAL_SOURCE_MAX_REQUESTS:"5",
+    RADAR_BLUESKY_SEARCH_ENABLED:"true",
+    BLUESKY_IDENTIFIER:"radar.bsky.social",
+    BLUESKY_APP_PASSWORD:"private-bsky-app-password"
   });
   const network = t.mock.method(globalThis, "fetch", () => { throw new Error("Health must not dispatch"); });
   const status = await (await health(undefined, {deploy:{context:"production"}})).json();
@@ -154,7 +159,7 @@ test("health exposes WIDE V3 exact limits without dispatching official or paid r
   assert.equal(status.production_search_openai_request_limit, 8);
   assert.equal(status.production_search_web_call_limit, 24);
   assert.equal(status.official_source_discovery, "READY");
-  assert.equal(status.official_source_request_limit, 4);
+  assert.equal(status.official_source_request_limit, 5);
   assert.equal(network.mock.callCount(), 0);
 });
 

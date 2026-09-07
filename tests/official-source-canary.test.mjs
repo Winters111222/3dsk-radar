@@ -37,8 +37,10 @@ function values(overrides = {}) {
     RADAR_LIVE_AI_ENABLED:"false",
     RADAR_OFFICIAL_SOURCE_CANARY_ENABLED:"true",
     RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"BLUESKY_ONLY",
-    RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"1",
+    RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2",
     RADAR_BLUESKY_SEARCH_ENABLED:"true",
+    BLUESKY_IDENTIFIER:"radar.bsky.social",
+    BLUESKY_APP_PASSWORD:"bsky-app-secret",
     SITE_NAME:RADAR_SITE_NAME,
     SITE_ID:RADAR_SITE_ID,
     ...overrides
@@ -207,20 +209,25 @@ test("branch-deploy request target rejects aliases, mismatches and unsafe URL fo
 test("Bluesky only profile requires ready adapters and exact request limit", () => {
   const configuration = officialSourceCanaryConfiguration({
     context:previewContext(),
-    getEnv:values({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"BLUESKY_MASTODON", RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2" }),
+    getEnv:values({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"BLUESKY_MASTODON", RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"3" }),
     getBuildMetadata:() => ({ ...TEST_METADATA_BASE, deploy_context:"deploy-preview", commit_ref:COMMIT, artifact_provenance:"DIRECT_BUILD" })
   });
   assert.equal(configuration.code, "OFFICIAL_SOURCE_CANARY_CONNECTOR_NOT_READY");
   assert.deepEqual(configuration.blocked_sources, ["mastodon_official"]);
 });
 
-test("temporary token performs exactly one mocked Bluesky request with exact branch-deploy provenance", async () => {
+test("temporary token performs exactly one mocked Bluesky session and search with exact branch-deploy provenance", async () => {
   let calls = 0;
   const logs = [];
   const previousConsoleError = console.error;
-  const fetchImpl = async (url) => {
+  const fetchImpl = async (url, options) => {
     calls += 1;
-    assert.match(String(url), /public\.api\.bsky\.app/);
+    assert.match(String(url), /bsky\.social/);
+    if (String(url).includes("createSession")) {
+      assert.equal(options.body.includes("bsky-app-secret"), true);
+      return Response.json({ accessJwt:"bsky-access-jwt", refreshJwt:"refresh-must-not-escape" });
+    }
+    assert.equal(options.headers.authorization, "Bearer bsky-access-jwt");
     return new Response(JSON.stringify({ posts:[{
       uri:"at://did:plc:buyer/app.bsky.feed.post/p1",
       author:{handle:"buyer.bsky.social"},
@@ -233,8 +240,8 @@ test("temporary token performs exactly one mocked Bluesky request with exact bra
       const response = await handler(request(EPHEMERAL_TOKEN), functionRuntimeContext());
       const payload = await response.json();
       assert.equal(response.status, 200);
-      assert.equal(calls, 1);
-      assert.deepEqual(payload.counters, { source_requests:1, openai_requests:0, hosted_search_calls:0, writes:0, retries:0, cost_usd:0 });
+      assert.equal(calls, 2);
+      assert.deepEqual(payload.counters, { source_requests:2, openai_requests:0, hosted_search_calls:0, writes:0, retries:0, cost_usd:0 });
       assert.equal(payload.deployment_provenance.artifact_provenance, "NETLIFY_GIT_DEPLOY");
       assert.equal(payload.discovery_hints[0].outreach_locked, true);
       assert.equal(payload.deployment_provenance.context, "branch-deploy");
@@ -242,6 +249,8 @@ test("temporary token performs exactly one mocked Bluesky request with exact bra
       assert.equal(payload.deployment_provenance.deploy_url, DEPLOY_URL);
       assert.equal(JSON.stringify(payload).includes(EPHEMERAL_TOKEN), false);
       assert.equal(JSON.stringify(payload).includes("team-secret"), false);
+      assert.equal(JSON.stringify(payload).includes("bsky-app-secret"), false);
+      assert.equal(JSON.stringify(payload).includes("refresh-must-not-escape"), false);
       assert.equal(logs.join("\n").includes(EPHEMERAL_TOKEN), false);
       assert.equal(logs.join("\n").includes("team-secret"), false);
     }, TEST_METADATA_BASE);
@@ -252,15 +261,16 @@ test("temporary token performs exactly one mocked Bluesky request with exact bra
 
 test("existing internal secret remains a supported canary authorization path", async () => {
   let calls = 0;
-  await withRuntime(values({ RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN:"" }), async () => {
+  await withRuntime(values({ RADAR_OFFICIAL_SOURCE_CANARY_ACCESS_TOKEN:"" }), async (url) => {
     calls += 1;
+    if (String(url).includes("createSession")) return Response.json({ accessJwt:"bsky-access-jwt" });
     return Response.json({ posts:[] });
   }, async () => {
     const response = await handler(request("team-secret"), previewContext());
     const payload = await response.json();
     assert.equal(response.status, 200);
-    assert.equal(calls, 1);
-    assert.deepEqual(payload.counters, { source_requests:1, openai_requests:0, hosted_search_calls:0, writes:0, retries:0, cost_usd:0 });
+    assert.equal(calls, 2);
+    assert.deepEqual(payload.counters, { source_requests:2, openai_requests:0, hosted_search_calls:0, writes:0, retries:0, cost_usd:0 });
     assert.equal(JSON.stringify(payload).includes("team-secret"), false);
   }, { ...TEST_METADATA_BASE, deploy_context:"deploy-preview", artifact_provenance:"DIRECT_BUILD" });
 });
@@ -303,7 +313,7 @@ test("temporary token cannot bypass request-origin, production, provenance, live
     { label:"sealed artifact provenance mismatch", context:functionRuntimeContext(), env:branchDeployValues(), metadata:{ ...TEST_METADATA_BASE, artifact_provenance:"DIRECT_BUILD" } },
     { label:"live AI enabled", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_LIVE_AI_ENABLED:"true" }), metadata:TEST_METADATA_BASE },
     { label:"invalid profile", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_PROFILE:"INVALID" }), metadata:TEST_METADATA_BASE },
-    { label:"invalid request limit", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2" }), metadata:TEST_METADATA_BASE },
+    { label:"invalid request limit", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"1" }), metadata:TEST_METADATA_BASE },
     { label:"Bluesky connector locked", context:functionRuntimeContext(), env:branchDeployValues({ RADAR_BLUESKY_SEARCH_ENABLED:"false" }), metadata:TEST_METADATA_BASE }
   ];
   for (const item of cases) {
