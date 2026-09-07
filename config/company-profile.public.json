@@ -1,0 +1,46 @@
+{
+  "company": "3D.sk",
+  "profile_version": "0.1.0",
+  "visibility": "PUBLIC_SAFE",
+  "capabilities": [
+    {"id":"human_photogrammetry_capture","label":"Professional human photogrammetry capture","status":"APPROVED","outbound_safe":true},
+    {"id":"talent_rights_workflow","label":"Talent and commercial-rights workflow according to project scope","status":"APPROVED","outbound_safe":true,"guardrail":"Never promise specific legal terms without human confirmation."},
+    {"id":"realitycapture_reconstruction","label":"RealityCapture photogrammetry reconstruction and scan processing","status":"APPROVED","outbound_safe":true},
+    {"id":"scan_cleanup_zbrush","label":"Human scan cleanup and ZBrush cleanup","status":"APPROVED","outbound_safe":true},
+    {"id":"wrap_client_basemesh","label":"R3DS Wrap / Wrap3D conforming to client-provided production basemesh","status":"APPROVED","outbound_safe":true},
+    {"id":"aaa_neutral_preparation","label":"AAA neutral human character preparation and production QC","status":"APPROVED","outbound_safe":true},
+    {"id":"facial_facs_processing","label":"Facial scan and FACS/expression processing according to client pipeline","status":"APPROVED","outbound_safe":true,"guardrail":"Do not claim a proprietary rigging or runtime facial solution."},
+    {"id":"character_finishing","label":"ZBrush finishing and Substance/texture finishing through team specialists","status":"APPROVED","outbound_safe":true},
+    {"id":"aaa_character_pipeline","label":"Partial or end-to-end AAA human character production according to agreed scope","status":"APPROVED","outbound_safe":true},
+    {"id":"batch_overflow","label":"Batch and overflow human-character production","status":"APPROVED","outbound_safe":true},
+    {"id":"client_pipeline_adaptation","label":"Production adapted to the client's own pipeline and handoff requirements","status":"APPROVED","outbound_safe":true},
+    {"id":"visual_ai_motion","label":"High-end Photoshop and generative-AI visual workflows; motion/After Effects as a secondary lane","status":"APPROVED","outbound_safe":true}
+  ],
+  "credentials": [],
+  "restricted_claims": [
+    {"id":"unapproved_clients_projects","rule":"Never mention client or project names unless the credential is explicitly PUBLIC_APPROVED and has a verification URL."},
+    {"id":"unconfirmed_specialties","rule":"Do not promise hair, rigging, cloth simulation, engine integration, shader authoring, proprietary facial systems, exact capacity, price, or deadline without human confirmation."},
+    {"id":"nda_data","rule":"Never expose NDA, private production, internal pricing, contract, talent personal-data, or non-public hardware details."}
+  ],
+  "preferred_opportunities": [
+    "FULL_PIPELINE","CAPTURE","PHOTOGRAMMETRY_PROCESSING","SCAN_CLEANUP","WRAP_BASEMESH","FACIAL_FACS","CHARACTER_FINISHING","CHARACTER_OUTSOURCING","EXTERNAL_DEVELOPMENT","PRODUCTION_OVERFLOW","PIPELINE_CONSULTING"
+  ],
+  "excluded_opportunities": ["VISUAL_AI_MOTION_SEARCH","AUTO_SEND_EMAIL","LOGIN_BYPASS_SCRAPING"],
+  "reply_rules": {
+    "default_language":"en",
+    "target_words_min":120,
+    "target_words_max":220,
+    "allowed_ctas":["short_call","review_sample_data","small_test_batch","discuss_pipeline_requirements","provide_scope_for_quotation"]
+  },
+  "scoring_weights": {
+    "capability_match":25,
+    "relevant_proof":15,
+    "end_to_end_scope":15,
+    "buyer_fit":10,
+    "remote_worldwide":10,
+    "commercial_attractiveness":10,
+    "freshness":5,
+    "contactability":5,
+    "competition_friction":5
+  }
+}

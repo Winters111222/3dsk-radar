@@ -1,0 +1,29 @@
+{
+  "totalNoticeCount": 2,
+  "notices": [
+    {
+      "publication-number": "612345-2026",
+      "publication-date": "2026-09-01+02:00",
+      "notice-title": { "eng": "Human photogrammetry and digital-double production services" },
+      "buyer-name": { "fin": ["Synthetic European Museum Buyer"] },
+      "buyer-country": ["DEU"],
+      "notice-type": { "value": "cn-standard" },
+      "form-type": "competition",
+      "procedure-identifier": "11111111-2222-3333-4444-555555555555",
+      "links": {
+        "html": { "ENG": "https://ted.europa.eu/en/notice/-/detail/612345-2026" },
+        "xml": { "MUL": "https://ted.europa.eu/en/notice/612345-2026/xml" }
+      }
+    },
+    {
+      "publication-number": "612346-2026",
+      "publication-date": "2026-08-30",
+      "notice-title": ["3D character production framework"],
+      "buyer-name": { "ENG": "Synthetic Public Media Buyer" },
+      "buyer-country": { "value": "FRA" },
+      "notice-type": "pin-cfc-standard",
+      "form-type": { "value": "planning" },
+      "procedure-identifier": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    }
+  ]
+}
