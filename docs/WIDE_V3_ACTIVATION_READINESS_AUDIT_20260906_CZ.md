@@ -25,6 +25,12 @@ Readiness pro LinkedIn, Telegram a Discord navíc neuváděla společný gate `R
 - X readiness nyní pravdivě hlásí chybějící runtime adaptér a nemůže se tvářit jako aktivovatelný.
 - Signal bridge readiness nyní kontroluje společný ingest gate, HMAC secret a příslušné allowlisty/credentials.
 
+## Git-backed branch-deploy fallback
+
+Pokud Netlify PR webhook nevytvoří `deploy-preview`, lze použít výhradně Git-backed `branch-deploy` z explicitně zadané review větve. Fallback je samostatně default-off a server před jediným source requestem vyžaduje přesnou shodu built-in `BRANCH`, čtyřicetiznakového `COMMIT_REF` a immutable `DEPLOY_URL` s dočasnými očekávanými hodnotami. Produkční kontext, jiná větev, jiný commit, branch alias nebo manuální deploy bez provenance skončí fail-closed.
+
+Fallback nepovoluje placenou Phase E acceptance, databázové zápisy ani obecnou source collection. Po jediném canary requestu se všechny dočasné `deploy-preview`/`branch-deploy` gates odstraní a readback musí znovu potvrdit `LOCKED`.
+
 ## Doporučený aktivační sled
 
 1. Deploy Preview nového exact HEADu a zero-cost locked acceptance.

@@ -29,6 +29,33 @@ test("canary policy is preview-only, exact-cap and live-AI locked", () => {
   assert.equal(officialSourceCanaryConfiguration({ context:{deploy:{context:"deploy-preview"}}, getEnv:values({RADAR_OFFICIAL_SOURCE_CANARY_MAX_REQUESTS:"2"}) }).code, "OFFICIAL_SOURCE_CANARY_REQUEST_LIMIT_INVALID");
 });
 
+test("branch-deploy fallback requires exact branch, commit and immutable deploy URL", () => {
+  const context = {deploy:{context:"branch-deploy"}};
+  const commit = "6".repeat(40);
+  const branch = "audit/wide-v3-git-branch-canary-fallback-20260907";
+  const deployUrl = "https://1234567890abcdef12345678--3dsk-opportunity-radar.netlify.app";
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values() }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_LOCKED");
+  const base = {
+    RADAR_OFFICIAL_SOURCE_CANARY_BRANCH_DEPLOY_ENABLED:"true",
+    NETLIFY:"true",
+    CONTEXT:"branch-deploy",
+    REPOSITORY_URL:"https://github.com/Winters111222/3dsk-radar",
+    RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_BRANCH:branch,
+    RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_COMMIT:commit,
+    RADAR_OFFICIAL_SOURCE_CANARY_EXPECTED_DEPLOY_URL:deployUrl,
+    BRANCH:branch,
+    COMMIT_REF:commit,
+    DEPLOY_URL:deployUrl
+  };
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, REPOSITORY_URL:""}) }).code, "OFFICIAL_SOURCE_CANARY_GIT_PROVENANCE_REQUIRED");
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, BRANCH:"wrong"}) }).code, "OFFICIAL_SOURCE_CANARY_BRANCH_MISMATCH");
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, COMMIT_REF:"7".repeat(40)}) }).code, "OFFICIAL_SOURCE_CANARY_COMMIT_MISMATCH");
+  assert.equal(officialSourceCanaryConfiguration({ context, getEnv:values({...base, DEPLOY_URL:"https://branch--3dsk-opportunity-radar.netlify.app"}) }).code, "OFFICIAL_SOURCE_CANARY_DEPLOY_URL_MISMATCH");
+  const ready = officialSourceCanaryConfiguration({ context, getEnv:values(base) });
+  assert.equal(ready.ok, true);
+  assert.deepEqual({context:ready.deploy_context, branch:ready.branch, commit_ref:ready.commit_ref, deploy_url:ready.deploy_url, repository_url:ready.repository_url}, {context:"branch-deploy", branch, commit_ref:commit, deploy_url:deployUrl, repository_url:"https://github.com/Winters111222/3dsk-radar"});
+});
+
 test("Bluesky plus Mastodon profile requires an actually ready Mastodon adapter", () => {
   const configuration = officialSourceCanaryConfiguration({
     context:{deploy:{context:"deploy-preview"}},

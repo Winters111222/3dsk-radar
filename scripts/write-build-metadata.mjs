@@ -21,9 +21,14 @@ function sealedTestedSourceCommit(environment, existingMetadata) {
 
 function netlifyGitPreviewCommit(environment) {
   if (String(environment.NETLIFY || "").trim().toLowerCase() !== "true") return null;
-  if (String(environment.CONTEXT || "").trim() !== "deploy-preview") return null;
-  if (String(environment.PULL_REQUEST || "").trim().toLowerCase() !== "true") return null;
-  if (!String(environment.REPOSITORY_URL || "").trim() || !String(environment.REVIEW_ID || "").trim()) return null;
+  const context = String(environment.CONTEXT || "").trim();
+  const repositoryUrl = String(environment.REPOSITORY_URL || "").trim().replace(/\.git$/, "");
+  if (repositoryUrl !== "https://github.com/Winters111222/3dsk-radar") return null;
+  if (context === "deploy-preview") {
+    if (String(environment.PULL_REQUEST || "").trim().toLowerCase() !== "true" || !String(environment.REVIEW_ID || "").trim()) return null;
+  } else if (context === "branch-deploy") {
+    if (!String(environment.BRANCH || "").trim()) return null;
+  } else return null;
   return validCommit(environment.COMMIT_REF);
 }
 

@@ -32,6 +32,13 @@ export default async function handler(request, context) {
   return json({
     ok:true,
     profile:configuration.profile,
+    deployment_provenance:{
+      context:configuration.deploy_context,
+      branch:configuration.branch,
+      commit_ref:configuration.commit_ref,
+      deploy_url:configuration.deploy_url,
+      repository_url:configuration.repository_url || null
+    },
     source_ids:configuration.source_ids,
     request_limit:configuration.request_limit,
     summary:summarizeOfficialWideDiscovery(result),
