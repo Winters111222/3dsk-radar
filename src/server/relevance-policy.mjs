@@ -1,8 +1,14 @@
 const EXCLUDED_WORKFLOW_PATTERNS = Object.freeze([
   /\breallusion\b/i,
   /\biclone\b/i,
-  /\bcharacter\s+creator\s*(?:3|4|cc3|cc4)\b/i,
+  /\bcharacter\s+creator(?:\s*(?:3|4|cc3|cc4))?\b/i,
   /\bdaz(?:\s*3d|\s+studio)\b/i
+]);
+
+const EXCLUDED_WORKFLOW_NEGATION_PATTERNS = Object.freeze([
+  /\b(?:do not|don't|without)\s+(?:use|require|accept)?\s*(?:reallusion|iclone|character\s+creator|daz(?:\s*3d|\s+studio)?)\b/i,
+  /\b(?:replace|remove)\s+(?:the\s+)?(?:supplied\s+|existing\s+|current\s+)?(?:reallusion|iclone|character\s+creator|daz(?:\s*3d|\s+studio)?)\b/i,
+  /\b(?:migrate|convert)\s+away\s+from\s+(?:reallusion|iclone|character\s+creator|daz(?:\s*3d|\s+studio)?)\b/i
 ]);
 
 const INACTIVE_SOURCE_PATTERNS = Object.freeze([
@@ -11,6 +17,13 @@ const INACTIVE_SOURCE_PATTERNS = Object.freeze([
   /\bapplications?\s+(?:are\s+)?closed\b/i,
   /\b(?:position|role|vacancy)\s+(?:has\s+been\s+)?filled\b/i,
   /\b(?:closed|archived)\s+(?:job|role|listing|opportunity|thread|post)\b/i
+  ,/\b(?:geschlossen|besetzt|abgelaufen|archiviert)\b/i
+  ,/\b(?:ferm[ée]|pourvu[e]?|expir[ée]|archiv[ée])\b/i
+  ,/\b(?:cerrad[oa]|cubiert[oa]|expirad[oa]|archivad[oa])\b/i
+  ,/\b(?:chius[oa]|scadut[oa]|archiviat[oa])\b/i
+  ,/\b(?:zamkni[eę]t[ay]|obsadzon[ay]|wygas[łl][ay]?|archiwaln[ay])\b/i
+  ,/\b(?:uzav[řr]en[oaé]|obsazen[oaé]|expirovan[oaé]|archivov[aá]n[oaé])\b/i
+  ,/\b(?:uzavret[áýé]|obsaden[áýé]|expirovan[áýé]|archivovan[áýé])\b/i
 ]);
 
 const INDIVIDUAL_EMPLOYMENT_PATTERNS = Object.freeze([
@@ -25,6 +38,13 @@ const STUDIO_BUYER_PATTERNS = Object.freeze([
   /\b(?:rfp|rfq|request for proposal|request for quotation|tender|procurement)\b/i,
   /\b(?:batch|volume|recurring|ongoing) (?:human |face |body |character |3d )?(?:scans?|assets?|production|deliverables?)\b/i,
   /\bpaid (?:test|pilot)\b/i
+  ,/\b(?:suchen|gesucht)\b.{0,80}\b(?:dienstleister|lieferant|partner|unterauftragnehmer)\b/i
+  ,/\b(?:recherch(?:e|ons|ent|ez)|cherchons)\b.{0,80}\b(?:prestataire|fournisseur|partenaire|sous-traitant)\b/i
+  ,/\b(?:buscamos|se busca)\b.{0,80}\b(?:proveedor|socio|subcontratista)\b/i
+  ,/\b(?:cerchiamo|si cerca)\b.{0,80}\b(?:fornitore|partner|subappaltatore)\b/i
+  ,/\b(?:szukamy|poszukiwany)\b.{0,80}\b(?:wykonawc|dostawc|partner|podwykonawc)/i
+  ,/\b(?:hled[aá]me|popt[aá]v[aá]me)\b.{0,80}\b(?:dodavatel|partner|subdodavatel)/i
+  ,/\b(?:h[ľl]ad[aá]me|dopytujeme)\b.{0,80}\b(?:dod[aá]vate[ľl]|partner|subdod[aá]vate[ľl])/i
 ]);
 
 const SOFTWARE_PIPELINE_PATTERNS = Object.freeze([
@@ -36,7 +56,12 @@ const SOFTWARE_PIPELINE_PATTERNS = Object.freeze([
 const PRODUCTION_DELIVERABLE_PATTERNS = Object.freeze([
   /\b(?:scan cleanup|mesh cleanup|retopolog(?:y|ize)|basemesh|wrap3d|r3ds wrap|topology transfer)\b/i,
   /\b(?:reconstruct(?:ion)?|texture cleanup|texture reprojection|substance painter|zbrush)\b/i,
-  /\b(?:facial scans?|body scans?|digital doubles?|realistic human characters?)\b/i
+  /\b(?:facial scans?|body scans?|digital doubles?|realistic human characters?)\b/i,
+  /\b(?:actor likeness|recognisable face|modular humans?|interchangeable (?:heads?|bodies|hair)|character roster)\b/i,
+  /\b(?:animation-ready|deformation-ready|production-ready|game-ready)\s+(?:heads?|humans?|characters?|meshes?|assets?)\b/i,
+  /\b(?:fused|missing|damaged)\s+(?:fingers?|hands?|hair)|\b(?:mesh )?holes?\b/i,
+  /\b(?:consistent|shared|standardized)\s+topolog(?:y|ies)|\b(?:pbr maps?|de-lighting|texture seams?)\b/i,
+  /\b(?:glb|usdz)\b.{0,60}\b(?:human|character|hair|asset)\b/i
 ]);
 
 const HERITAGE_PATTERNS = Object.freeze([
@@ -102,7 +127,11 @@ export function evaluateCandidateRelevance(candidate) {
   if (["BUYER", "PARTNER", "EMPLOYER"].includes(commercialRole) && matchesAny(INACTIVE_SOURCE_PATTERNS, text)) {
     return { ok:false, rejection:"inactive_source_evidence" };
   }
-  if (matchesAny(EXCLUDED_WORKFLOW_PATTERNS, text)) {
+  const workflowEvidence = EXCLUDED_WORKFLOW_NEGATION_PATTERNS.reduce(
+    (remaining, explicitException) => remaining.replace(explicitException, " "),
+    text
+  );
+  if (matchesAny(EXCLUDED_WORKFLOW_PATTERNS, workflowEvidence)) {
     return { ok:false, rejection:"excluded_workflow" };
   }
   if (commercialRole === "EMPLOYER") {

@@ -1,5 +1,6 @@
 import { WIDE_MAX_SEARCH_SHARDS } from "./wide-max-search-plan.mjs";
 import { WIDE_V3_SEARCH_SHARDS } from "./wide-v3-source-plan.mjs";
+import { semanticIntentHintForShard } from "./semantic-intent-taxonomy.mjs";
 
 export const ULTRA_ADAPTIVE_OBSERVED_PHASE_IDS = Object.freeze([
   "CORE_DISCOVERY",
@@ -48,7 +49,7 @@ function followupFocus(source,reason,urls) {
     DIVERSIFY_SUCCESSFUL_SHARD:"The earlier shard had candidates; search a distinct adjacent buyer vocabulary and exact detail paths to uncover non-duplicate demand."
   }[reason];
   const exclusions=urls.length?` Do not return these already accepted URLs: ${urls.join(" ")}`:"";
-  return `${source.focus} ADAPTIVE_FOLLOWUP: ${reasonInstruction} Open and cite the exact original buyer detail; reject indexes, search pages, sellers and employee-only vacancies.${exclusions}`;
+  return `${source.focus} ADAPTIVE_FOLLOWUP: ${reasonInstruction} LATENT_INTENT_EXPANSION: ${semanticIntentHintForShard(source.id)} Open and cite the exact original buyer detail; reject indexes, search pages, sellers and employee-only vacancies.${exclusions}`;
 }
 
 export function buildUltraAdaptiveFollowupPlan({phasePayloads,maxShards=ULTRA_ADAPTIVE_MAX_SHARDS}={}) {

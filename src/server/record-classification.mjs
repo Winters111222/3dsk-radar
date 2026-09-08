@@ -58,7 +58,14 @@ const CONCRETE_BUYER_PATTERNS = [
   /\b(?:vendor|supplier) (?:application|registration|onboarding|submission)s?\b/i,
   /\b(?:seek(?:s|ing)?|looking for|need(?:s|ed)?|request(?:s|ing)?|invite(?:s|d)?) (?:an? |additional )?(?:external )?(?:subcontracting|subcontractor|production overflow|overflow capacity|overflow support)\b/i,
   /\bapply (?:to become|as) (?:a |our )?(?:vendor|supplier|production partner)\b/i,
-  /\b(?:procurement|tender|contract notice)\b/i
+  /\b(?:procurement|tender|contract notice)\b/i,
+  /\b(?:suchen|gesucht)\b.{0,80}\b(?:dienstleister|lieferant|partner|unterauftragnehmer)\b/i,
+  /\b(?:recherch(?:e|ons|ent|ez)|cherchons)\b.{0,80}\b(?:prestataire|fournisseur|partenaire|sous-traitant)\b/i,
+  /\b(?:buscamos|se busca)\b.{0,80}\b(?:proveedor|socio|subcontratista)\b/i,
+  /\b(?:cerchiamo|si cerca)\b.{0,80}\b(?:fornitore|partner|subappaltatore)\b/i,
+  /\b(?:szukamy|poszukiwany)\b.{0,80}\b(?:wykonawc|dostawc|partner|podwykonawc)/i,
+  /\b(?:hled[aá]me|popt[aá]v[aá]me)\b.{0,80}\b(?:dodavatel|partner|subdodavatel)/i,
+  /\b(?:h[ľl]ad[aá]me|dopytujeme)\b.{0,80}\b(?:dod[aá]vate[ľl]|partner|subdod[aá]vate[ľl])/i
 ];
 
 const CONCRETE_FUNDING_PARTNERSHIP_PATTERNS = [

@@ -3,14 +3,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const read = async (name) => JSON.parse(await readFile(new URL(`../config/${name}`, import.meta.url), "utf8"));
-const [catalog, queries, evidence, qualification, deepResearchWatchlist, deepResearchQueries, deepResearchAliases] = await Promise.all([
+const [catalog, queries, evidence, qualification, deepResearchWatchlist, deepResearchQueries, deepResearchAliases, semanticResearch] = await Promise.all([
   read("opportunity-sources.v1.json"),
   read("search-query-packs.v1.json"),
   read("source-evidence-cases.v1.json"),
   read("source-historical-qualification.v1.json"),
   read("deep-research-watchlist.v1.json"),
   read("deep-research-query-shards.v1.json"),
-  read("deep-research-source-aliases.v1.json")
+  read("deep-research-source-aliases.v1.json"),
+  read("semantic-research-derived.v1.json")
 ]);
 const lanes = new Set(["DIRECT_BUYER", "HIRING_SIGNAL", "PROCUREMENT", "PARTNERSHIP", "DISABLED"]);
 const observations = new Set(["HTML_OBSERVED", "DOCUMENTATION_OBSERVED", "INDEX_ONLY", "PARTIAL_ACCESS", "UNVERIFIED", "UNAVAILABLE"]);
@@ -69,6 +70,7 @@ const publicUrl = (value) => {
 };
 for (const artifact of [catalog, queries, evidence, qualification]) assert.equal(artifact.schema_version, 1);
 for (const artifact of [deepResearchWatchlist, deepResearchQueries, deepResearchAliases]) assert.equal(artifact.schema_version, 1);
+assert.equal(semanticResearch.schema_version, 1);
 assert.equal(catalog.status, "RESEARCH_CATALOG_NOT_RUNTIME_CONFIG");
 assert.match(catalog.based_on_sha, /^[a-f0-9]{40}$/);
 assert.equal(queries.status, "PROPOSED_NOT_RUNTIME_CONFIG");
@@ -89,6 +91,15 @@ assert.equal(deepResearchQueries.automatic_paid_execution_enabled, false);
 assert.equal(deepResearchQueries.queries.length, 52);
 assert.equal(deepResearchAliases.status, "RESEARCH_DEDUP_ONLY");
 assert.equal(deepResearchAliases.aliases.length, 19);
+assert.equal(semanticResearch.status, "RESEARCH_ONLY_RUNTIME_LOCKED");
+assert.match(semanticResearch.source_manifest_sha256, /^[a-f0-9]{64}$/);
+assert.equal(semanticResearch.scheduled_collection_enabled, false);
+assert.equal(semanticResearch.automatic_paid_execution_enabled, false);
+assert.equal(semanticResearch.production_import_enabled, false);
+assert.deepEqual(semanticResearch.counts, {
+  sources: 47, queries: 64, candidates: 107, partners: 5, watchlist: 32,
+  rejected: 70, A: 0, B: 0, C: 5, D: 32
+});
 unique(catalog.sources.map(x => x.id), "source ID");
 unique(qualification.sources.map(x => x.source_id), "qualified source ID");
 unique(catalog.sources.flatMap(x => x.seed_urls), "source seed URL");
@@ -99,6 +110,9 @@ unique(deepResearchWatchlist.sources.map(x => x.id), "deep research source ID");
 unique(deepResearchWatchlist.sources.flatMap(x => x.watchlist_urls), "deep research watchlist URL");
 unique(deepResearchQueries.queries.map(x => x.query_id), "deep research query ID");
 unique(deepResearchAliases.aliases.map(x => x.research_source_id), "deep research alias source ID");
+unique(semanticResearch.sources.map(x => x.id), "semantic research source ID");
+unique(semanticResearch.queries.map(x => x.query_id), "semantic research query ID");
+unique(semanticResearch.evaluation_cases.map(x => x.id), "semantic research evaluation ID");
 const packIds = new Set(queries.packs.map(x => x.id));
 const catalogSourceIds = new Set(catalog.sources.map(x => x.id));
 const qualifiedSourceIds = new Set(qualification.sources.map(x => x.source_id));
@@ -158,6 +172,44 @@ for (const alias of deepResearchAliases.aliases) {
   assert.ok(catalogSourceIds.has(alias.canonical_source_id), `Unknown canonical alias source: ${alias.canonical_source_id}`);
   assert.ok(["SAME_SOURCE", "BROADER_RESEARCH_SCOPE"].includes(alias.relation));
 }
+const semanticLanguages = new Set(["CS", "DE", "EN", "ES", "FR", "IT", "PL", "SK"]);
+const semanticCategories = new Set([
+  "AI_DATASET_CAPTURE", "HERITAGE_FUNDED", "HUMAN_DIGITAL_DOUBLE", "MUSEUM_DIGITISATION",
+  "PHOTOGRAMMETRY_ASSETS", "REMOTE_OVERFLOW", "SCAN_CLEANUP_WRAP", "TENDER_PLAN_AWARD"
+]);
+assert.equal(semanticResearch.sources.length, semanticResearch.counts.sources);
+assert.equal(semanticResearch.queries.length, semanticResearch.counts.queries);
+assert.equal(semanticResearch.evaluation_cases.length, semanticResearch.counts.candidates);
+assert.equal(semanticResearch.partner_watchlist.length, semanticResearch.counts.partners);
+for (const source of semanticResearch.sources) {
+  assert.match(source.id, /^[a-z0-9_]+$/);
+  if (source.activation_state === "DISABLED_NO_APPROVED_WATCHLIST") {
+    assert.deepEqual(source.watchlist_urls, []);
+  } else {
+    assert.ok(source.watchlist_urls.length > 0);
+  }
+  source.watchlist_urls.forEach(publicUrl);
+}
+for (const query of semanticResearch.queries) {
+  assert.equal(query.enabled, false, `Semantic query must remain default-off: ${query.query_id}`);
+  assert.ok(semanticLanguages.has(query.language), `Unknown semantic language: ${query.query_id}`);
+  assert.ok(semanticCategories.has(query.category), `Unknown semantic category: ${query.query_id}`);
+  assert.ok(query.native_query && query.web_discovery_query && query.followup_query);
+}
+assert.deepEqual([...new Set(semanticResearch.queries.map(query => query.language))].sort(), [...semanticLanguages].sort());
+assert.deepEqual([...new Set(semanticResearch.queries.map(query => query.category))].sort(), [...semanticCategories].sort());
+for (const partner of semanticResearch.partner_watchlist) {
+  assert.equal(partner.class, "C");
+  assert.equal(partner.accepting_external_bids_verified, false);
+  assert.equal(partner.outreach_locked, true);
+  assert.equal(partner.sales_use, "PARTNER_QUALIFICATION_AFTER_MANUAL_REVIEW");
+  publicUrl(partner.original_url);
+  partner.evidence_urls.forEach(publicUrl);
+}
+assert.equal(semanticResearch.evaluation_cases.filter(item => item.class === "C").length, 5);
+assert.equal(semanticResearch.evaluation_cases.filter(item => item.class === "D").length, 32);
+assert.equal(semanticResearch.evaluation_cases.filter(item => item.class === "A" || item.class === "B").length, 0);
+assert.doesNotMatch(JSON.stringify(semanticResearch), /(?:contact_email|email_address|\"email\")/i, "Derived research must not contain contact fields");
 for (const profile of queries.run_profiles) {
   for (const key of ["max_sources", "max_list_pages", "max_detail_pages", "max_ai_candidates", "max_hosted_web_search_calls"]) {
     assert.ok(Number.isSafeInteger(profile[key]) && profile[key] > 0, `${profile.id}.${key}`);
@@ -223,6 +275,10 @@ console.log(JSON.stringify({
   deep_research_watchlist_urls: deepResearchWatchlist.sources.reduce((n, source) => n + source.watchlist_urls.length, 0),
   deep_research_query_shards: deepResearchQueries.queries.length,
   deep_research_aliases: deepResearchAliases.aliases.length,
+  semantic_research_sources: semanticResearch.sources.length,
+  semantic_research_queries: semanticResearch.queries.length,
+  semantic_evaluation_cases: semanticResearch.evaluation_cases.length,
+  semantic_partner_watchlist: semanticResearch.partner_watchlist.length,
   runtime_eligible_sources: runtimeEligible.length,
   enabled_crawlers: 0, network_requests: 0, openai_requests: 0
 }, null, 2));

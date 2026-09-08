@@ -45,6 +45,8 @@ Závazný Search scope: [`docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md`](docs/PRODUC
 
 Deep Research source gap, deduplikace a CZ/SK grantová lane: [`docs/DEEP_RESEARCH_SOURCE_GAP_AND_ACTIVATION_20260908_CZ.md`](docs/DEEP_RESEARCH_SOURCE_GAP_AND_ACTIVATION_20260908_CZ.md). Import drží 50 zdrojů, 71 watchlist URL a 52 query shardů default-off. Aktivní grant s explicitním 3D scope nebo konkrétní podpořený příjemce se může zobrazit jen jako `FUNDING / PARTNERSHIP` / `POTENTIAL_LEAD`; grant ani jeho částka nejsou buyer objednávka ani buyer project budget.
 
+Navazující sémantický výzkum Astry a jeho fail-closed integrace: [`docs/SEMANTIC_RESEARCH_INTEGRATION_20260908_CZ.md`](docs/SEMANTIC_RESEARCH_INTEGRATION_20260908_CZ.md). Přidává latentní buyer-intent taxonomii a evaluační matici 47 zdrojů / 64 dotazů / 107 kandidátů; 5 partnerských C a 32 signálů D zůstává mimo sales a všechny konkrétní source dotazy jsou default-off.
+
 Maximum hosted-index profil `WIDE_MAX` (25 shardů / 75 web calls / 100 výsledků / 5 USD): [`docs/WIDE_MAX_SEARCH_CZ.md`](docs/WIDE_MAX_SEARCH_CZ.md)
 
 Roadmapa vícekolového `ULTRA_MAX` root-runu: [`docs/ULTRA_MAX_ROADMAP_CZ.md`](docs/ULTRA_MAX_ROADMAP_CZ.md). První code-only milník zavádí sedm perzistentních, přesně omezených fází pod jedním root capem; neaktivuje síť, placené hledání ani produkční endpoint.

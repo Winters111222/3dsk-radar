@@ -1,8 +1,10 @@
+import { semanticIntentHintForShard } from "./semantic-intent-taxonomy.mjs";
+
 const shard = (id, label, allowedDomains, focus) => Object.freeze({
   id,
   label,
   allowed_domains:Object.freeze(allowedDomains),
-  focus
+  focus:`${focus} SEMANTIC_BUYER_INTENT: ${semanticIntentHintForShard(id)}`
 });
 
 const MARKETPLACES = ["upwork.com", "freelancer.com", "peopleperhour.com", "guru.com"];
@@ -20,7 +22,7 @@ const rejectNoise = "Require an active buyer purchasing a concrete production de
 // Bump this whenever the deployed shard set or its acceptance semantics change.
 // Paid-operation identity includes this version so a newly released plan cannot
 // replay results produced by an older plan on the same UTC date.
-export const WIDE_MAX_PLAN_VERSION = "deep-source-layer-v2";
+export const WIDE_MAX_PLAN_VERSION = "semantic-buyer-intent-v3";
 
 export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
   shard("human_face_body_marketplaces", "Human face/body capture · marketplaces", MARKETPLACES,
