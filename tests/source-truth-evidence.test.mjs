@@ -16,13 +16,13 @@ const fixtures = {
   metahuman_old:{ expected:"stale_or_unverified", publishedDate:"2026-07-08" },
   polycount_us_only:{ expected:"studio_ineligible", studioEligibility:"NO", scopeFit:"CHARACTER_ADJACENT", publishedDate:"2026-08-22" },
   freelancer_bid:{ expected:"POTENTIAL_LEAD", noticeStatus:"UNKNOWN" },
-  unfold_related_price:{ expected:"POTENTIAL_LEAD", commercialRole:"EMPLOYER", studioEligibility:"UNKNOWN" },
+  unfold_related_price:{ expected:"individual_employment", commercialRole:"EMPLOYER", studioEligibility:"UNKNOWN" },
   kindred_closed:{ expected:"inactive_notice", commercialRole:"EMPLOYER", noticeStatus:"CLOSED", studioEligibility:"NO", publishedDate:"2024-08-14" },
   gebiz_closed:{ expected:"inactive_notice", noticeStatus:"AWARDED", scopeFit:"CHARACTER_ADJACENT", publishedDate:"2026-05-04" },
   ungm_sites:{ expected:"inactive_notice", noticeStatus:"CLOSED", scopeFit:"OUT_OF_SCOPE", publishedDate:"2024-02-27" },
   pcs_hardware:{ expected:"out_of_scope", noticeStatus:"UNKNOWN", scopeFit:"EQUIPMENT" },
   een_seller:{ expected:"seller_not_opportunity", commercialRole:"SELLER", scopeFit:"OUT_OF_SCOPE" },
-  riot_outsourcing_job:{ expected:"POTENTIAL_LEAD", commercialRole:"EMPLOYER", studioEligibility:"UNKNOWN", scopeFit:"CHARACTER_ADJACENT" }
+  riot_outsourcing_job:{ expected:"individual_employment", commercialRole:"EMPLOYER", studioEligibility:"UNKNOWN", scopeFit:"CHARACTER_ADJACENT" }
 };
 
 test("all 11 research evidence cases have a sanitized executable truth fixture", () => {

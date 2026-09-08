@@ -5,6 +5,7 @@ import { extractWebSourceUrls, normalizeCandidate, normalizeSearchResponse, norm
 const NOW = "2026-09-05T10:00:00.000Z";
 const PRIMARY = "https://studio.example/jobs/vendor?utm_source=test";
 const CONTACT = "https://studio.example/contact";
+const GRANT = "https://www.mk.gov.cz/digitalizace-kulturnich-statku-a-narodnich-kulturnich-pamatek-cs-2941";
 
 function candidate(overrides = {}) {
   return {
@@ -113,11 +114,56 @@ test("same normalized opportunity is deduplicated within one search run", () => 
   assert.equal(normalized.opportunities[0].win_score, 89);
 });
 
+test("WIDE_MAX normalization can evaluate 150 candidates and return up to 100 sales records", () => {
+  const sources = Array.from({length:100}, (_, index) => `https://buyer-${index}.example/rfp`);
+  const candidates = sources.map((sourceUrl, index) => candidate({
+    source_url:sourceUrl,
+    apply_url:sourceUrl,
+    company:`Buyer ${index}`,
+    title:`Human scan batch ${index}`,
+    source_evidence:[{type:"PRIMARY_SOURCE",url:sourceUrl,note:"Buyer brief"}]
+  }));
+  const normalized = normalizeSearchResponse(response(candidates, sources), {
+    nowIso:NOW,
+    maxResults:100,
+    maxCandidates:150
+  });
+  assert.equal(normalized.counters.candidates_seen, 100);
+  assert.equal(normalized.opportunities.length, 100);
+});
+
 test("visual AI motion-only results are rejected instead of falling back to Other Relevant", () => {
   const verified = new Set([normalizeUrl(PRIMARY)]);
   const result = normalizeCandidate(candidate({categories:["VISUAL_AI_MOTION"]}), verified, NOW);
   assert.equal(result.opportunity, null);
   assert.equal(result.rejection, "excluded_search_category");
+});
+
+test("a recent funded CZ museum project normalizes only as a partner lead without grant budget", () => {
+  const verified = new Set([normalizeUrl(GRANT)]);
+  const result = normalizeCandidate(candidate({
+    title:"Funded museum 3D digitisation project",
+    company:"Example Czech Museum",
+    summary:"A funded museum project explicitly includes photogrammetry and 3D scanning of collection objects.",
+    opportunity_kind:"POTENTIAL_LEAD",
+    commercial_role:"PARTNER",
+    notice_status:"AWARDED",
+    categories:["CULTURAL_HERITAGE_3D", "CAPTURE", "HERITAGE_FUNDING_PARTNERSHIP"],
+    location:"Czech Republic",
+    remote_scope:"ONSITE",
+    source_url:GRANT,
+    apply_url:GRANT,
+    source_evidence:[{type:"SIGNAL_SOURCE",url:GRANT,note:"Official award source"}],
+    budget_type:"PUBLISHED",
+    budget_published:"CZK 10,000,000 grant award",
+    budget_basis:"UNKNOWN"
+  }), verified, NOW);
+  assert.equal(result.rejection, null);
+  assert.equal(result.opportunity.opportunity_kind, "POTENTIAL_LEAD");
+  assert.equal(result.opportunity.commercial_role, "PARTNER");
+  assert.equal(result.opportunity.categories.includes("HERITAGE_FUNDING_PARTNERSHIP"), true);
+  assert.equal(result.opportunity.budget_type, "UNKNOWN");
+  assert.equal(result.opportunity.budget_published, null);
 });
 
 test("hard truth gates reject stale listings and accept old listings only with current source evidence", () => {
@@ -151,14 +197,31 @@ test("excluded workflows and non-CZ/SK physical heritage capture fail closed", (
   assert.equal(normalizeCandidate(outside, verified, NOW).rejection, "heritage_capture_outside_cz_sk");
 });
 
-test("normalizer classifies sellers as competitors and demotes employment signals to Potential Lead", () => {
+test("normalizer classifies sellers as competitors and rejects employment signals", () => {
   const verified = new Set([normalizeUrl(PRIMARY)]);
   const seller = normalizeCandidate(candidate({commercial_role:"SELLER"}), verified, NOW).opportunity;
   assert.equal(seller.record_kind, "COMPETITOR");
   assert.equal(seller.opportunity_kind, null);
-  const employment = normalizeCandidate(candidate({commercial_role:"EMPLOYER",studio_eligibility:"UNKNOWN"}), verified, NOW).opportunity;
-  assert.equal(employment.record_kind, "SALES_OPPORTUNITY");
-  assert.equal(employment.opportunity_kind, "POTENTIAL_LEAD");
+  const employment = normalizeCandidate(candidate({commercial_role:"EMPLOYER",studio_eligibility:"UNKNOWN"}), verified, NOW);
+  assert.equal(employment.opportunity, null);
+  assert.equal(employment.rejection, "individual_employment");
+});
+
+test("normalizer requires positive studio eligibility and rejects inactive source text", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  assert.equal(normalizeCandidate(candidate({studio_eligibility:"UNKNOWN"}), verified, NOW).rejection, "studio_eligibility_unproven");
+  assert.equal(normalizeCandidate(candidate({summary:"This job is no longer available."}), verified, NOW).rejection, "inactive_source_evidence");
+});
+
+test("software pipeline engineering without production assets is rejected", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  const result = normalizeCandidate(candidate({
+    title:"Adapt a video-to-3D pipeline",
+    summary:"Develop a local Python automation tool and adapt our application pipeline.",
+    categories:["PIPELINE_CONSULTING"],
+    why_it_fits:[]
+  }), verified, NOW);
+  assert.equal(result.rejection, "software_pipeline_project");
 });
 
 test("normalization reports measured rejection and duplicate counters", () => {

@@ -6,7 +6,8 @@ export const CATEGORIES = {
   CHARACTER_FINISHING: "Character Finishing", CHARACTER_OUTSOURCING: "Character Outsourcing",
   EXTERNAL_DEVELOPMENT: "External Development", PRODUCTION_OVERFLOW: "Production Overflow",
   PIPELINE_CONSULTING: "Pipeline Consulting", CULTURAL_HERITAGE_3D: "Cultural Heritage 3D",
-  HERITAGE_POSTPROCESSING: "Heritage Post-production", OTHER_RELEVANT: "Other Relevant"
+  HERITAGE_POSTPROCESSING: "Heritage Post-production",
+  HERITAGE_FUNDING_PARTNERSHIP: "Heritage Funding / Partnership", OTHER_RELEVANT: "Other Relevant"
 };
 export const SORTS = {
   fit_score: "Fit", win_score: "Win", title: "Opportunity", company: "Company",

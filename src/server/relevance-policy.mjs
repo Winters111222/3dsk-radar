@@ -5,10 +5,38 @@ const EXCLUDED_WORKFLOW_PATTERNS = Object.freeze([
   /\bdaz(?:\s*3d|\s+studio)\b/i
 ]);
 
-const EXTERNAL_VENDOR_PATTERNS = Object.freeze([
-  /\b(?:contract|freelance|outsourc(?:e|ing)|external\s+development|vendor|supplier|subcontract|production\s+overflow|rfp|rfq)\b/i,
-  /\b(?:zak[aá]zk(?:a|y)|popt[aá]vk(?:a|y)|dodavatel|extern[ií]\s+t[yý]m|ve[řr]ejn[aá]\s+zak[aá]zka)\b/i,
-  /\b(?:z[aá]kazk(?:a|y)|dopyt|dod[aá]vate[ľl]|extern[yý]\s+t[ií]m|verejn[eé]\s+obstar[aá]vanie)\b/i
+const INACTIVE_SOURCE_PATTERNS = Object.freeze([
+  /\b(?:job|role|position|listing|opportunity)\s+is\s+no\s+longer\s+(?:available|accepting\s+applications)\b/i,
+  /\bno\s+longer\s+accepting\s+applications\b/i,
+  /\bapplications?\s+(?:are\s+)?closed\b/i,
+  /\b(?:position|role|vacancy)\s+(?:has\s+been\s+)?filled\b/i,
+  /\b(?:closed|archived)\s+(?:job|role|listing|opportunity|thread|post)\b/i
+]);
+
+const INDIVIDUAL_EMPLOYMENT_PATTERNS = Object.freeze([
+  /\b(?:full[- ]time|permanent|employment|employee|staff position|entry[- ]level)\b/i,
+  /\b(?:annual salary|employee benefits|health insurance|paid vacation|work authorization|visa sponsorship)\b/i,
+  /\b(?:submit|send|upload) (?:your )?(?:cv|resume|r[eé]sum[eé])\b/i,
+  /\b(?:lead|senior|junior) (?:3d |character |technical )?(?:artist|producer|developer)\b/i
+]);
+
+const STUDIO_BUYER_PATTERNS = Object.freeze([
+  /\b(?:external|outsourcing|subcontract(?:or|ing)?|vendor|supplier|studio|agency|production overflow|overflow capacity)\b/i,
+  /\b(?:rfp|rfq|request for proposal|request for quotation|tender|procurement)\b/i,
+  /\b(?:batch|volume|recurring|ongoing) (?:human |face |body |character |3d )?(?:scans?|assets?|production|deliverables?)\b/i,
+  /\bpaid (?:test|pilot)\b/i
+]);
+
+const SOFTWARE_PIPELINE_PATTERNS = Object.freeze([
+  /\b(?:build|develop|adapt|automate|code|program) (?:an? |the |our )?(?:software|script|tool|app|application|pipeline|api)\b/i,
+  /\b(?:software|pipeline|automation|computer vision|machine learning) engineer(?:ing)?\b/i,
+  /\b(?:python|javascript|typescript|c\+\+) (?:application|script|tool|pipeline|developer|development|automation)\b/i
+]);
+
+const PRODUCTION_DELIVERABLE_PATTERNS = Object.freeze([
+  /\b(?:scan cleanup|mesh cleanup|retopolog(?:y|ize)|basemesh|wrap3d|r3ds wrap|topology transfer)\b/i,
+  /\b(?:reconstruct(?:ion)?|texture cleanup|texture reprojection|substance painter|zbrush)\b/i,
+  /\b(?:facial scans?|body scans?|digital doubles?|realistic human characters?)\b/i
 ]);
 
 const HERITAGE_PATTERNS = Object.freeze([
@@ -70,16 +98,27 @@ export function freshnessConfidence(freshnessBasis) {
 
 export function evaluateCandidateRelevance(candidate) {
   const text = candidateText(candidate);
+  const commercialRole = String(candidate?.commercial_role || "").toUpperCase();
+  if (["BUYER", "PARTNER", "EMPLOYER"].includes(commercialRole) && matchesAny(INACTIVE_SOURCE_PATTERNS, text)) {
+    return { ok:false, rejection:"inactive_source_evidence" };
+  }
   if (matchesAny(EXCLUDED_WORKFLOW_PATTERNS, text)) {
     return { ok:false, rejection:"excluded_workflow" };
   }
-  if (String(candidate?.commercial_role || "").toUpperCase() === "EMPLOYER"
-    && !matchesAny(EXTERNAL_VENDOR_PATTERNS, text)) {
+  if (commercialRole === "EMPLOYER") {
     return { ok:false, rejection:"individual_employment" };
+  }
+  if (matchesAny(INDIVIDUAL_EMPLOYMENT_PATTERNS, text) && !matchesAny(STUDIO_BUYER_PATTERNS, text)) {
+    return { ok:false, rejection:"individual_employment" };
+  }
+  if (matchesAny(SOFTWARE_PIPELINE_PATTERNS, text) && !matchesAny(PRODUCTION_DELIVERABLE_PATTERNS, text)) {
+    return { ok:false, rejection:"software_pipeline_project" };
   }
 
   const categories = new Set(Array.isArray(candidate?.categories) ? candidate.categories : []);
-  const heritage = categories.has("CULTURAL_HERITAGE_3D") || matchesAny(HERITAGE_PATTERNS, text);
+  const heritage = categories.has("CULTURAL_HERITAGE_3D")
+    || categories.has("HERITAGE_FUNDING_PARTNERSHIP")
+    || matchesAny(HERITAGE_PATTERNS, text);
   const physicalCapture = categories.has("CAPTURE") || matchesAny(PHYSICAL_CAPTURE_PATTERNS, text);
   const remotePostprocess = categories.has("HERITAGE_POSTPROCESSING")
     || ((categories.has("PHOTOGRAMMETRY_PROCESSING") || categories.has("SCAN_CLEANUP"))

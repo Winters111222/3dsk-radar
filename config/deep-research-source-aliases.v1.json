@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-08T11:57:39Z",
+  "status": "RESEARCH_DEDUP_ONLY",
+  "notes": "Machine-readable deduplication between the imported deep-research watchlist and the existing source catalog. It does not enable collection or network access.",
+  "aliases": [
+    {"research_source_id":"upwork","canonical_source_id":"upwork","relation":"SAME_SOURCE"},
+    {"research_source_id":"ted","canonical_source_id":"ted_eu","relation":"SAME_SOURCE"},
+    {"research_source_id":"nen_culture","canonical_source_id":"nen_cz","relation":"SAME_SOURCE"},
+    {"research_source_id":"vvz_isvz","canonical_source_id":"isvz_vvz_cz","relation":"SAME_SOURCE"},
+    {"research_source_id":"freelancer","canonical_source_id":"freelancer_3d","relation":"SAME_SOURCE"},
+    {"research_source_id":"polycount_paid","canonical_source_id":"polycount_paid","relation":"SAME_SOURCE"},
+    {"research_source_id":"blender_artists_paid","canonical_source_id":"blender_paid","relation":"SAME_SOURCE"},
+    {"research_source_id":"epic_contract","canonical_source_id":"unreal_job_offerings","relation":"SAME_SOURCE"},
+    {"research_source_id":"een_requests","canonical_source_id":"een_requests","relation":"SAME_SOURCE"},
+    {"research_source_id":"public_contracts_scotland","canonical_source_id":"pcs_scotland","relation":"SAME_SOURCE"},
+    {"research_source_id":"sam_gov","canonical_source_id":"sam_us","relation":"SAME_SOURCE"},
+    {"research_source_id":"undp_notices","canonical_source_id":"undp","relation":"SAME_SOURCE"},
+    {"research_source_id":"ungm","canonical_source_id":"ungm","relation":"SAME_SOURCE"},
+    {"research_source_id":"find_a_tender_uk","canonical_source_id":"find_tender_uk","relation":"SAME_SOURCE"},
+    {"research_source_id":"peopleperhour","canonical_source_id":"peopleperhour_3d","relation":"SAME_SOURCE"},
+    {"research_source_id":"guru","canonical_source_id":"guru_3d","relation":"SAME_SOURCE"},
+    {"research_source_id":"eu_partner_search","canonical_source_id":"eu_funding_partner_search","relation":"SAME_SOURCE"},
+    {"research_source_id":"sony_pictures_suppliers","canonical_source_id":"sony_pictures_supplier","relation":"SAME_SOURCE"},
+    {"research_source_id":"reddit_buyer_communities","canonical_source_id":"reddit_gamedevclassifieds","relation":"BROADER_RESEARCH_SCOPE"}
+  ]
+}

@@ -61,6 +61,20 @@ const CONCRETE_BUYER_PATTERNS = [
   /\b(?:procurement|tender|contract notice)\b/i
 ];
 
+const CONCRETE_FUNDING_PARTNERSHIP_PATTERNS = [
+  /\b(?:open|active|current) (?:grant|funding) call\b/i,
+  /\b(?:grant|funding|dota[cč]n[ií]|dota[cč]n[aá]) (?:call|v[yý]zva|program)\b/i,
+  /\b(?:funded|podpo[řr]en[yý]|podporen[yý]|p[řr][ií]jemce|prij[ií]mate[ľl]) (?:museum|gallery|project|institution|muzeum|galerie|projekt|in[sš]tit[uú]cia)\b/i
+];
+
+const HERITAGE_3D_DELIVERABLE_PATTERNS = [
+  /\b3d\s+(?:digitization|digitisation|digitaliz(?:ace|aci|ácia|ácie|áciu)|documentation|dokument(?:ace|aci|ácia|ácie|áciu)|scan(?:ning)?|skenov[aá]n[ií]|skenovanie)\b/i,
+  /\b(?:photogrammetr|fotogrammetr|fotogrametr)(?:y|ic|ie|ick[éa]|ia|iu|ick[ée])\b/i,
+  /\b(?:trojrozm[eě]rn[aá]|trojrozmern[aá])\s+(?:digitaliz(?:ace|aci|ácia|ácie|áciu)|dokument(?:ace|aci|ácia|ácie|áciu))\b/i
+];
+
+const CZ_SK_FUNDING_DOMAINS = new Set(["mk.gov.cz", "fpu.sk", "culture.gov.sk", "ds.culture.gov.sk", "eeagrants.org"]);
+
 function normalizedText(value) {
   return String(value || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").trim();
 }
@@ -120,6 +134,22 @@ export function classifyRecordCandidate(candidate) {
   const servicePageSignal = matchesAny(SERVICE_PATH_PATTERNS, sourcePath);
   const sellerSignal = matchesAny(SELLER_TEXT_PATTERNS, combined) || sellerMarketplacePage(sourceHost, sourcePath);
   const role = String(candidate?.commercial_role || "UNKNOWN").toUpperCase();
+  const fundingPartnership = Array.isArray(candidate?.categories)
+    && candidate.categories.includes("HERITAGE_FUNDING_PARTNERSHIP");
+  const concreteFundingSignal = fundingPartnership
+    && CZ_SK_FUNDING_DOMAINS.has(sourceHost)
+    && matchesAny(CONCRETE_FUNDING_PARTNERSHIP_PATTERNS, combined)
+    && matchesAny(HERITAGE_3D_DELIVERABLE_PATTERNS, combined);
+
+  if (role === "EMPLOYER" && !concreteBuyerSignal) {
+    return {
+      record_kind:null,
+      rejection:"individual_employment",
+      reason:"EMPLOYMENT_IS_NOT_VENDOR_DEMAND",
+      effective_commercial_role:"EMPLOYER",
+      concrete_buyer_signal:false
+    };
+  }
 
   if (sourcePlatformIdentity(candidate, sourceHost, company) || (platformSignal && !concreteBuyerSignal)) {
     return {
@@ -128,6 +158,15 @@ export function classifyRecordCandidate(candidate) {
         ? "SOURCE_PLATFORM_IDENTITY"
         : "SOURCE_PLATFORM_DESCRIPTION",
       effective_commercial_role:"UNKNOWN",
+      concrete_buyer_signal:false
+    };
+  }
+
+  if (role === "PARTNER" && concreteFundingSignal) {
+    return {
+      record_kind:"SALES_OPPORTUNITY",
+      reason:"ACTIVE_HERITAGE_FUNDING_OR_PARTNERSHIP_SIGNAL",
+      effective_commercial_role:"PARTNER",
       concrete_buyer_signal:false
     };
   }

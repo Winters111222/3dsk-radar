@@ -32,13 +32,20 @@ export function evaluateSourceTruth({
   publishedDate,
   sourceUpdatedDate,
   acceptanceVerified,
+  fundingPartnership = false,
   nowIso,
   maxAgeDays = 30
 }) {
   if (commercialRole === "SELLER") return { ok:false, rejection:"seller_not_opportunity" };
+  const awardedFundingLead = fundingPartnership
+    && requestedKind === "POTENTIAL_LEAD"
+    && commercialRole === "PARTNER"
+    && noticeStatus === "AWARDED";
+  if (INACTIVE_NOTICE_STATUSES.has(noticeStatus) && !awardedFundingLead) return { ok:false, rejection:"inactive_notice" };
+  if (commercialRole === "EMPLOYER") return { ok:false, rejection:"individual_employment" };
   if (commercialRole === "UNKNOWN") return { ok:false, rejection:"unknown_commercial_role" };
-  if (INACTIVE_NOTICE_STATUSES.has(noticeStatus)) return { ok:false, rejection:"inactive_notice" };
   if (studioEligibility === "NO") return { ok:false, rejection:"studio_ineligible" };
+  if (studioEligibility !== "YES") return { ok:false, rejection:"studio_eligibility_unproven" };
   if (EXCLUDED_SCOPE_FITS.has(scopeFit)) return { ok:false, rejection:"out_of_scope" };
 
   const recentPublished = isRecentSourceDate(publishedDate, nowIso, maxAgeDays);

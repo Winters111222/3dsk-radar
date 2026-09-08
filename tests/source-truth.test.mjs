@@ -37,9 +37,17 @@ test("seller, inactive, ineligible and out-of-scope records fail closed", () => 
 });
 
 test("employment and partnership signals cannot become open buyer requests", () => {
-  for (const commercialRole of ["EMPLOYER","PARTNER"]) {
-    const result = evaluateSourceTruth({...base,commercialRole});
-    assert.equal(result.ok, true);
-    assert.equal(result.opportunityKind, "POTENTIAL_LEAD");
-  }
+  const employment = evaluateSourceTruth({...base,commercialRole:"EMPLOYER"});
+  assert.equal(employment.rejection, "individual_employment");
+  const partnership = evaluateSourceTruth({...base,commercialRole:"PARTNER"});
+  assert.equal(partnership.ok, true);
+  assert.equal(partnership.opportunityKind, "POTENTIAL_LEAD");
+});
+
+test("a recent awarded heritage grant may remain a potential partner lead only with the explicit funding flag", () => {
+  const withoutFlag = evaluateSourceTruth({...base,requestedKind:"POTENTIAL_LEAD",commercialRole:"PARTNER",noticeStatus:"AWARDED"});
+  assert.equal(withoutFlag.rejection, "inactive_notice");
+  const fundedRecipient = evaluateSourceTruth({...base,requestedKind:"POTENTIAL_LEAD",commercialRole:"PARTNER",noticeStatus:"AWARDED",fundingPartnership:true});
+  assert.equal(fundedRecipient.ok, true);
+  assert.equal(fundedRecipient.opportunityKind, "POTENTIAL_LEAD");
 });

@@ -251,7 +251,13 @@ export async function runWideOpportunitySearch({
 
   const combined = syntheticResponse(successful, model);
   const firecrawlVerifiedUrls = new Set(preDiscovery?.verified_urls || []);
-  const normalized = normalizeSearchResponse(combined, { nowIso, maxResults, indexDiscovery:true, additionalVerifiedSourceUrls:[...firecrawlVerifiedUrls] });
+  const normalized = normalizeSearchResponse(combined, {
+    nowIso,
+    maxResults,
+    maxCandidates:Math.min(150, shards.length * maxResultsPerShard),
+    indexDiscovery:true,
+    additionalVerifiedSourceUrls:[...firecrawlVerifiedUrls]
+  });
   normalized.records = normalized.records.map((record) => firecrawlVerifiedUrls.has(normalizeUrl(record.source_url)) ? {
     ...record,
     discovery_mode:"HYBRID_WIDE_SEARCH",

@@ -75,7 +75,7 @@ test("Outscal-like archived aggregator is a source platform, never a buyer", () 
   assert.equal(result.record_kind, "SOURCE_PLATFORM");
 });
 
-test("an ATS detail with a distinct employer remains a sales candidate", () => {
+test("an ATS employee detail is not a sales candidate without concrete vendor procurement", () => {
   const result = classifyRecordCandidate(record({
     source_url:"https://jobs.lever.co/buyer-studio/abc123",
     company:"Buyer Studio",
@@ -83,7 +83,8 @@ test("an ATS detail with a distinct employer remains a sales candidate", () => {
     title:"Character production contract",
     summary:"The employer needs external character production support."
   }));
-  assert.equal(result.record_kind, "SALES_OPPORTUNITY");
+  assert.equal(result.record_kind, null);
+  assert.equal(result.rejection, "individual_employment");
 });
 
 test("a competitor with a concrete current subcontract signal can become a lead", () => {
@@ -100,6 +101,57 @@ test("generic partner label without a current buyer signal is rejected", () => {
   const result = classifyRecordCandidate(record({commercial_role:"PARTNER",summary:"A general co-development partnership announcement."}));
   assert.equal(result.record_kind, null);
   assert.equal(result.rejection, "partner_without_buyer_signal");
+});
+
+test("active CZ/SK 3D heritage funding is a partner lead, never buyer demand", () => {
+  const result = classifyRecordCandidate(record({
+    source_url:"https://www.mk.gov.cz/digitalizace-kulturnich-statku-a-narodnich-kulturnich-pamatek-cs-2941",
+    company:"Ministerstvo kultury ČR",
+    commercial_role:"PARTNER",
+    categories:["CULTURAL_HERITAGE_3D", "HERITAGE_FUNDING_PARTNERSHIP"],
+    summary:"Active grant call for 3D digitisation of museum collections and national cultural monuments."
+  }));
+  assert.equal(result.record_kind, "SALES_OPPORTUNITY");
+  assert.equal(result.effective_commercial_role, "PARTNER");
+  assert.equal(result.concrete_buyer_signal, false);
+  assert.equal(result.reason, "ACTIVE_HERITAGE_FUNDING_OR_PARTNERSHIP_SIGNAL");
+});
+
+test("generic heritage grant information without a concrete call or recipient stays rejected", () => {
+  const result = classifyRecordCandidate(record({
+    commercial_role:"PARTNER",
+    categories:["CULTURAL_HERITAGE_3D", "HERITAGE_FUNDING_PARTNERSHIP"],
+    summary:"General information about cultural policy and digitisation strategy."
+  }));
+  assert.equal(result.record_kind, null);
+  assert.equal(result.rejection, "partner_without_buyer_signal");
+});
+
+test("a funding label without explicit 3D scope or an approved CZ/SK funding source stays rejected", () => {
+  const no3d = classifyRecordCandidate(record({
+    source_url:"https://www.fpu.sk/sk/vyzvy/",
+    commercial_role:"PARTNER",
+    categories:["HERITAGE_FUNDING_PARTNERSHIP"],
+    summary:"Active grant call for general museum operations."
+  }));
+  assert.equal(no3d.rejection, "partner_without_buyer_signal");
+  const wrongSource = classifyRecordCandidate(record({
+    source_url:"https://example.com/grants/3d-museum",
+    commercial_role:"PARTNER",
+    categories:["HERITAGE_FUNDING_PARTNERSHIP"],
+    summary:"Active grant call for museum 3D digitisation."
+  }));
+  assert.equal(wrongSource.rejection, "partner_without_buyer_signal");
+});
+
+test("Czech and Slovak inflections for 3D heritage work count as explicit grant scope", () => {
+  for (const summary of [
+    "Aktivní dotační výzva podporuje 3D digitalizaci sbírkových předmětů.",
+    "Otvorená dotačná výzva podporuje fotogrametriu zbierkových predmetov."
+  ]) {
+    const source_url = summary.startsWith("Aktivní") ? "https://www.mk.gov.cz/digitalizace-kulturnich-statku-a-narodnich-kulturnich-pamatek-cs-2941" : "https://www.fpu.sk/sk/vyzvy/";
+    assert.equal(classifyRecordCandidate(record({source_url,commercial_role:"PARTNER",categories:["HERITAGE_FUNDING_PARTNERSHIP"],summary})).record_kind, "SALES_OPPORTUNITY");
+  }
 });
 
 test("legacy records fall back to sales until an explicit reclassification is applied", () => {

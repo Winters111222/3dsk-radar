@@ -18,6 +18,8 @@ export const INDEX_DISCOVERY_SOURCE_POLICIES = Object.freeze([
   policy("unreal_job_offerings", "Unreal Engine Forums", "forums.unrealengine.com", "/t/.../<id>", /^\/t\/[^/]+\/\d+\/?$/i, "COMMUNITY"),
   policy("polycount_paid", "Polycount", "polycount.com", "/discussion/<id>/...", /^\/discussion\/\d+(?:\/[^/]+)?\/?$/i, "COMMUNITY"),
   policy("blender_paid", "Blender Artists", "blenderartists.org", "/t/.../<id>", /^\/t\/[^/]+\/\d+\/?$/i, "COMMUNITY"),
+  policy("unity_commercial", "Unity Commercial Job Offering", "discussions.unity.com", "/t/.../<id>", /^\/t\/[^/]+\/\d+\/?$/i, "COMMUNITY"),
+  policy("codeur", "Codeur buyer projects", "codeur.com", "/projects/<id>-...", /^\/projects\/\d+-[^/]+\/?$/i, "MARKETPLACE"),
 
   policy("workwithindies", "Work With Indies", "workwithindies.com", "/careers/...", /^\/careers\/[^/]+\/?$/i, "CONTRACT_JOBS"),
   policy("remote_game_jobs", "Remote Game Jobs", "remotegamejobs.com", "/jobs/...", /^\/jobs\/[^/]+\/?$/i, "CONTRACT_JOBS"),
@@ -43,7 +45,16 @@ export const INDEX_DISCOVERY_SOURCE_POLICIES = Object.freeze([
   policy("undp", "UNDP Procurement Notices", "procurement-notices.undp.org", "/view_negotiation.cfm?nego_id=...", /^\/view_negotiation\.cfm$/i, "PROCUREMENT"),
   policy("world_bank", "World Bank Procurement", "worldbank.org", "/.../procurement-detail/...", /^\/en\/projects-operations\/procurement-detail\/[^/]+\/?$/i, "PROCUREMENT"),
   policy("nen_cz", "Czech NEN", "nen.nipez.cz", "/verejne-zakazky/detail-zakazky/N006-...", /^\/verejne-zakazky\/detail-zakazky\/N006-\d{2}-V\d+\/?$/i, "PROCUREMENT"),
-  policy("uvo_sk", "Slovak UVO", "uvo.gov.sk", "/vestnik/oznamenie/detail/<id>", /^\/vestnik\/oznamenie\/detail\/\d+\/?$/i, "PROCUREMENT")
+  policy("zakazky_gov", "Zakazky GOV", "zakazky.gov.cz", "/verejne-zakazky/detail-zakazky/RVZ...", /^\/verejne-zakazky\/detail-zakazky\/RVZ\d+\/?$/i, "PROCUREMENT"),
+  policy("ezak_south_moravia", "E-ZAK South Moravia museums", "zakazky.krajbezkorupce.cz", "/contract_display_<id>.html", /^\/contract_display_\d+\.html$/i, "PROCUREMENT"),
+  policy("ezak_central_bohemia", "E-ZAK Central Bohemia museums", "zakazky.kr-stredocesky.cz", "/contract_display_<id>.html", /^\/contract_display_\d+\.html$/i, "PROCUREMENT"),
+  policy("uvo_sk", "Slovak UVO", "uvo.gov.sk", "/vyhladavanie/vyhladavanie-zakaziek/detail/<id>", /^\/(?:vestnik\/oznamenie|vyhladavanie\/vyhladavanie-zakaziek)\/detail\/\d+\/?$/i, "PROCUREMENT"),
+  policy("josephine", "JOSEPHINE public tenders", "josephine.proebiz.com", "/sk/tender/<id>/summary", /^\/sk\/tender\/\d+\/summary\/?$/i, "PROCUREMENT"),
+  policy("mk_cz_heritage_grants", "MK CR heritage grants", "mk.gov.cz", "/<approved 3D heritage grant page>-cs-<id>", /^\/(?:digitalizace-kulturnich-statku-a-narodnich-kulturnich-pamatek-cs-2941|integrovany-system-ochrany-moviteho-kulturniho-dedictvi-cs-525)\/?$/i, "FUNDING"),
+  policy("fpu_sk_heritage_grants", "FPU Slovakia calls", "fpu.sk", "/sk/vyzvy/", /^\/sk\/vyzvy\/?$/i, "FUNDING"),
+  policy("mk_sr_heritage_grants", "Ministry of Culture Slovakia grants", "culture.gov.sk", "/sk/dotacie-<year>", /^\/sk\/dotacie-\d{4}\/?$/i, "FUNDING"),
+  policy("eea_sk_culture_grants", "EEA Slovakia culture calls", "eeagrants.org", "/sk/slovakia/programmes/culture-local-development/<call-detail>", /^\/sk\/slovakia\/programmes\/culture-local-development\/(?:news|open-calls)\/[^/]+\/?$/i, "FUNDING"),
+  policy("een_requests", "Enterprise Europe Network requests", "een.ec.europa.eu", "/partnering-opportunities/<request-slug>", /^\/partnering-opportunities\/[^/]+\/?$/i, "PARTNER_REQUEST")
 ]);
 
 export const INDEX_DISCOVERY_ALLOWED_DOMAINS = Object.freeze(
