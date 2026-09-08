@@ -50,7 +50,7 @@ test("both paid API endpoints remain locked before key use", () => {
 test("browser enables paid controls only from their dedicated health states", () => {
   assert.match(app, /h\.production_search==="READY"/);
   assert.match(app, /h\.production_reply==="READY"/);
-  assert.match(app, /one paid run per UTC day/);
+  assert.match(app, /duplicate-charge protection active/);
   assert.match(app, /Today's search loaded without a second charge/);
 });
 

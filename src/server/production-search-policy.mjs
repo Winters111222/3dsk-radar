@@ -18,6 +18,7 @@ import { OFFICIAL_SOURCE_MAX_REQUESTS, officialSourceRunPlan } from "./official-
 import {
   WIDE_MAX_MAX_CONCURRENCY,
   WIDE_MAX_OPENAI_REQUEST_LIMIT,
+  WIDE_MAX_PLAN_VERSION,
   WIDE_MAX_RESULTS_PER_SHARD,
   WIDE_MAX_SEARCH_SHARDS,
   WIDE_MAX_TOTAL_TOOL_CALL_LIMIT,
@@ -103,12 +104,12 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
     run_id:wideV3
       ? `prod-wide-v3-search-${windowUtc.replaceAll("-", "")}`
       : wideMax
-      ? `prod-wide-max-search-${windowUtc.replaceAll("-", "")}`
+      ? `prod-wide-max-search-${windowUtc.replaceAll("-", "")}-${WIDE_MAX_PLAN_VERSION}`
       : wideV2
       ? `prod-wide-index-search-${windowUtc.replaceAll("-", "")}${recovery ? `-recovery-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : ""}`
       : `prod-search-${windowUtc.replaceAll("-", "")}`,
-    operation_id:wideV3 ? "daily-wide-v3-search" : wideMax ? "daily-wide-max-search" : wideV2 ? (recovery ? `approved-wide-recovery-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-search") : "daily-focused-search",
-    reservation_id:wideV3 ? "daily-wide-v3-budget" : wideMax ? "daily-wide-max-budget" : wideV2 ? (recovery ? `approved-wide-recovery-budget-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-budget") : "daily-focused-budget",
+    operation_id:wideV3 ? "daily-wide-v3-search" : wideMax ? `wide-max-search-${WIDE_MAX_PLAN_VERSION}` : wideV2 ? (recovery ? `approved-wide-recovery-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-search") : "daily-focused-search",
+    reservation_id:wideV3 ? "daily-wide-v3-budget" : wideMax ? `wide-max-budget-${WIDE_MAX_PLAN_VERSION}` : wideV2 ? (recovery ? `approved-wide-recovery-budget-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-budget") : "daily-focused-budget",
     window_utc:windowUtc,
     cap_microusd:capMicrousd,
     max_results:maxResults,

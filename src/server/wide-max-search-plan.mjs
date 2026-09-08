@@ -17,6 +17,11 @@ const CZ_SK_HERITAGE_FUNDING = ["mk.gov.cz", "fpu.sk", "culture.gov.sk", "eeagra
 
 const rejectNoise = "Require an active buyer purchasing a concrete production deliverable that a Czech/European external studio or team can deliver. Reject every employee vacancy even if it says contract, B2B or external development; also reject sellers, portfolios, training, hardware, unpaid/rev-share work, software/pipeline development, Reallusion Character Creator/CC3/CC4, iClone and Daz3D.";
 
+// Bump this whenever the deployed shard set or its acceptance semantics change.
+// Paid-operation identity includes this version so a newly released plan cannot
+// replay results produced by an older plan on the same UTC date.
+export const WIDE_MAX_PLAN_VERSION = "deep-source-layer-v2";
+
 export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
   shard("human_face_body_marketplaces", "Human face/body capture · marketplaces", MARKETPLACES,
     `Find worldwide paid requests for face, head, body or full-person photogrammetry and 3D scanning, including multi-person capture. ${rejectNoise}`),
