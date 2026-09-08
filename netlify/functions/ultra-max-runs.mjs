@@ -8,6 +8,7 @@ import { ultraMaxNextOperationId } from "../../src/server/ultra-max-run-contract
 import { executeUltraMaxPhase, requestUltraMaxCancel, startUltraMaxRun } from "../../src/server/ultra-max-run-service.mjs";
 import { createUltraNativeCollectionExecutor } from "../../src/server/ultra-native-collection.mjs";
 import { validClientId } from "../../src/server/source-run-contract.mjs";
+import { prepareUltraMaxPaidPhase } from "./_shared/ultra-max-paid-phase.mjs";
 
 function json(payload, status = 200) {
   return Response.json(payload, { status, headers:{ "cache-control":"no-store" } });
@@ -35,7 +36,7 @@ function sourceDetailFetch(sourceId) {
 
 function safeError(error) {
   const code = String(error?.code || error?.message || "ULTRA_MAX_REQUEST_FAILED").split(":")[0];
-  const known = /^(?:ULTRA_MAX|ULTRA_NATIVE|SOURCE_RUN|HERITAGE_GRANT|STATE_ID)_[A-Z0-9_]+$/.test(code);
+  const known = /^(?:ULTRA_MAX|ULTRA_NATIVE|ULTRA_PAID|ULTRA_FINALIZE|PAID_COORDINATOR|SOURCE_RUN|HERITAGE_GRANT|STATE_ID)_[A-Z0-9_]+$/.test(code);
   return { code:known ? code : "ULTRA_MAX_REQUEST_FAILED", status:Number(error?.status) || (known ? 400 : 500) };
 }
 
@@ -68,6 +69,10 @@ export default async function handler(request, context) {
       return json({ ok:true, replayed:result.replayed, run:result.run, next_operation:null });
     }
     if (!enabled("RADAR_ULTRA_MAX_ENABLED")) return json({ ok:false, error:{ code:"ULTRA_MAX_LOCKED", message:"ULTRA MAX is disabled." } }, 423);
+    if (action === "PREPARE_PAID") {
+      const prepared=await prepareUltraMaxPaidPhase({body,context,repository});
+      return json({ok:true,run:prepared.run,next_operation:nextOperation(prepared.run),background_path:"/api/ultra-max-phase-background",retry_allowed:false});
+    }
     if (!sourceCollectionEnabled()) return json({ ok:false, error:{ code:"SOURCE_COLLECTION_LOCKED", message:"Native source collection is disabled." } }, 423);
     if (!anyRuntimeSourceEligible()) return json({ ok:false, qualification:runtimeQualificationSummary(), error:{ code:"SOURCE_RELEVANCE_LOCKED", message:"No source is runtime-qualified." } }, 423);
 
@@ -75,7 +80,7 @@ export default async function handler(request, context) {
       const result = await startUltraMaxRun({ repository, requestId:body.request_id, nowIso });
       return json({ ok:true, replayed:result.replayed, run:result.run, next_operation:nextOperation(result.run) }, result.replayed ? 200 : 201);
     }
-    if (action !== "CONTINUE_NATIVE") return json({ ok:false, error:{ code:"ULTRA_MAX_ACTION_INVALID", message:"Choose START, CONTINUE_NATIVE or CANCEL." } }, 400);
+    if (action !== "CONTINUE_NATIVE") return json({ ok:false, error:{ code:"ULTRA_MAX_ACTION_INVALID", message:"Choose START, CONTINUE_NATIVE, PREPARE_PAID or CANCEL." } }, 400);
     if (!validClientId(body.run_id) || !validClientId(body.operation_id)) return json({ ok:false, error:{ code:"ULTRA_MAX_ID_INVALID", message:"run_id and operation_id are required." } }, 400);
     const grantRecords = Array.isArray(body.grant_records) ? body.grant_records : [];
     if (grantRecords.length && !enabled("RADAR_HERITAGE_GRANT_IMPORT_ENABLED")) {

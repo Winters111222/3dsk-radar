@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createStateRepository } from "../src/server/state-repository.mjs";
 import { memoryStore } from "./helpers/memory-store.mjs";
+import { ULTRA_MAX_PAID_CONFIRMATION } from "../src/server/ultra-max-paid-policy.mjs";
 
 const tedFixture = JSON.parse(await readFile(new URL("../fixtures/collectors/ted-search-response.json", import.meta.url), "utf8"));
 
@@ -78,4 +79,22 @@ test("CANCEL stays available after the ULTRA gate is disabled", async t => {
   const response = await handler(request("POST",{action:"CANCEL",run_id:started.run.run_id,operation_id:"operation_cancel_ultra"}),{});
   assert.equal(response.status, 200);
   assert.equal((await response.json()).run.status, "CANCELLED");
+});
+
+test("PREPARE_PAID reports the independent default-off gate before coordinator or search dispatch", async t => {
+  install(t,{RADAR_ULTRA_MAX_PAID_ENABLED:"false",RADAR_LIVE_AI_ENABLED:"true",OPENAI_API_KEY:"test-key"});
+  let calls=0;
+  globalThis.__RADAR_TEST_ULTRA_SEARCH_RUNNER__=async()=>{calls+=1;throw new Error("must not dispatch");};
+  t.after(()=>delete globalThis.__RADAR_TEST_ULTRA_SEARCH_RUNNER__);
+  const handler=await load("paid-locked");
+  const response=await handler(request("POST",{
+    action:"PREPARE_PAID",
+    run_id:"valid-run-id",
+    phase_id:"CORE_DISCOVERY",
+    operation_id:"valid-operation-id",
+    paid_confirmation:ULTRA_MAX_PAID_CONFIRMATION
+  }),{deploy:{context:"production"}});
+  assert.equal(response.status,423);
+  assert.equal((await response.json()).error.code,"ULTRA_MAX_PAID_LOCKED");
+  assert.equal(calls,0);
 });

@@ -17,6 +17,7 @@ test("env example contains secret names but no secret values", () => {
   assert.match(envExample, /^RADAR_SOURCE_COLLECTION_ENABLED=false$/m);
   assert.match(envExample, /^RADAR_HERITAGE_GRANT_IMPORT_ENABLED=false$/m);
   assert.match(envExample, /^RADAR_ULTRA_MAX_ENABLED=false$/m);
+  assert.match(envExample, /^RADAR_ULTRA_MAX_PAID_ENABLED=false$/m);
   assert.doesNotMatch(envExample, /sk-[A-Za-z0-9_-]{10,}/);
 });
 

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { continueUltraNativeLoop, isUltraNativeTerminal, ultraNativeProgress } from "../src/lib/ultra-max-view.mjs";
+import { continueUltraMaxLoop, continueUltraNativeLoop, isUltraNativeTerminal, ultraNativeProgress } from "../src/lib/ultra-max-view.mjs";
 
 function snapshot({status = "READY", phaseStatus = "PENDING", chunks = 0, next = 1} = {}) {
   return {
@@ -14,6 +14,40 @@ function snapshot({status = "READY", phaseStatus = "PENDING", chunks = 0, next =
     next_operation:phaseStatus === "COMPLETED" ? {phase_id:"CORE_DISCOVERY",operation_id:"paid-not-allowed"} : {phase_id:"NATIVE_COLLECTION",operation_id:`native-${next}`}
   };
 }
+
+test("one ULTRA loop advances native and paid phases without redispatching an operation", async () => {
+  const phases=["NATIVE_COLLECTION","CORE_DISCOVERY","DETAIL_VERIFICATION"];
+  const calls=[];
+  const payload=(index)=>({
+    run:{run_id:"ultra-ui",status:index===phases.length?"COMPLETED":"PAUSED"},
+    next_operation:index===phases.length?null:{phase_id:phases[index],operation_id:`operation-${index}`}
+  });
+  const result=await continueUltraMaxLoop({
+    initialPayload:payload(0),
+    paidReady:()=>true,
+    continueNative:async(runId,operationId)=>{calls.push(["native",runId,operationId]);return payload(1);},
+    continuePaid:async(runId,next)=>{calls.push(["paid",runId,next.operation_id]);return payload(next.phase_id==="CORE_DISCOVERY"?2:3);}
+  });
+  assert.equal(result.reason,"COMPLETED");
+  assert.equal(result.operations,3);
+  assert.deepEqual(calls,[
+    ["native","ultra-ui","operation-0"],
+    ["paid","ultra-ui","operation-1"],
+    ["paid","ultra-ui","operation-2"]
+  ]);
+});
+
+test("ULTRA loop pauses before paid work when the independent gate is locked", async () => {
+  let paidCalls=0;
+  const result=await continueUltraMaxLoop({
+    initialPayload:{run:{run_id:"ultra-ui",status:"PAUSED"},next_operation:{phase_id:"CORE_DISCOVERY",operation_id:"operation-paid"}},
+    paidReady:()=>false,
+    continueNative:async()=>{throw new Error("native must not run");},
+    continuePaid:async()=>{paidCalls+=1;}
+  });
+  assert.equal(result.reason,"PAID_PHASE_LOCKED");
+  assert.equal(paidCalls,0);
+});
 
 test("ULTRA native progress exposes hard-cap denominators", () => {
   const progress = ultraNativeProgress(snapshot({chunks:2}).run);

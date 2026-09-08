@@ -39,15 +39,18 @@ test("operator controls have responsive layouts and the collection lock is accep
   assert.match(app, /prelive_lock_check/);
 });
 
-test("ULTRA MAX operator UI runs only replay-safe native chunks from one click", () => {
-  for (const marker of ["ultra-max-panel","Maximum native radar","RUN ULTRA MAX · NATIVE LOCKED","CANCEL ULTRA RUN","Future hosted-search phases remain separately locked"]) {
+test("ULTRA MAX operator UI advances native and independently gated paid phases from one click", () => {
+  for (const marker of ["ultra-max-panel","Ultra maximum radar","RUN ULTRA MAX · LOCKED","CANCEL ULTRA RUN","all seven persisted phases"]) {
     assert.match(`${html}\n${app}`,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")));
   }
-  assert.match(app,/continueUltraNativeLoop/);
+  assert.match(app,/continueUltraMaxLoop/);
   assert.match(app,/action:"CONTINUE_NATIVE"/);
-  assert.match(app,/maxChunks:50/);
+  assert.match(app,/action:"PREPARE_PAID"/);
+  assert.match(app,/prepared\.background_path/);
+  assert.match(app,/maxOperations:56/);
   assert.match(app,/no automatic retry/i);
   assert.match(app,/h\.ultra_max_native==="READY"/);
+  assert.match(app,/h\.ultra_max_paid==="READY"/);
   assert.match(styles,/\.ultra-max-controls/);
 });
 

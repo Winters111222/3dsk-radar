@@ -17,6 +17,10 @@ export function isUltraNativeTerminal(run) {
   return TERMINAL_STATUSES.has(run?.status) || phase?.status === "COMPLETED";
 }
 
+export function isUltraMaxTerminal(run) {
+  return TERMINAL_STATUSES.has(run?.status);
+}
+
 export function ultraNativeProgress(run) {
   const phase = ultraNativePhase(run);
   const usage = run?.usage || {};
@@ -58,4 +62,31 @@ export async function continueUltraNativeLoop({
       ? ultraNativePhase(payload.run)?.status === "COMPLETED" ? "NATIVE_COMPLETED" : payload.run.status
       : "UI_CHUNK_CAP_REACHED";
   return { ...payload, chunks, reason };
+}
+
+export async function continueUltraMaxLoop({
+  initialPayload,
+  continueNative,
+  continuePaid,
+  onUpdate=async()=>{},
+  shouldStop=()=>false,
+  paidReady=()=>false,
+  maxOperations=56
+}={}) {
+  if (!initialPayload?.run?.run_id||typeof continueNative!=="function"||typeof continuePaid!=="function") throw new Error("ULTRA_MAX_UI_DEPENDENCY_MISSING");
+  let payload=initialPayload;
+  let operations=0;
+  while (!isUltraMaxTerminal(payload.run)&&operations<maxOperations&&!shouldStop()) {
+    const next=payload.next_operation;
+    if (!next?.phase_id||!next.operation_id) return {...payload,operations,reason:"NEXT_OPERATION_UNAVAILABLE"};
+    if (next.phase_id==="NATIVE_COLLECTION") payload=await continueNative(payload.run.run_id,next.operation_id);
+    else {
+      if (!paidReady()) return {...payload,operations,reason:"PAID_PHASE_LOCKED"};
+      payload=await continuePaid(payload.run.run_id,next);
+    }
+    operations+=1;
+    await onUpdate(payload,operations);
+  }
+  const reason=shouldStop()?"STOP_REQUESTED":isUltraMaxTerminal(payload.run)?payload.run.status:"UI_OPERATION_CAP_REACHED";
+  return {...payload,operations,reason};
 }

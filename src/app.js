@@ -1,13 +1,14 @@
 import { CATEGORIES, SORTS, visibleResults } from "./lib/result-view.mjs";
 import { bandForScore, contactDisplay, STATUS_VALUES } from "./lib/domain.mjs";
 import { continueSourceRunLoop, isTerminalSourceRun, sourceCandidateView, sourceRunProgress } from "./lib/source-run-view.mjs";
-import { continueUltraNativeLoop, isUltraNativeTerminal, ultraNativePhase, ultraNativeProgress } from "./lib/ultra-max-view.mjs";
+import { continueUltraMaxLoop, isUltraMaxTerminal, ultraNativePhase, ultraNativeProgress } from "./lib/ultra-max-view.mjs";
 import { isSalesOpportunityRecord, recordKindOf } from "./server/record-classification.mjs";
 
 const acceptanceWorkspace = new URLSearchParams(location.search).get("workspace") === "acceptance";
 const STATUS_STORAGE_KEY = "3dsk-radar-fixture-status-v2";
 const ACCESS_SESSION_KEY = "3dsk-radar-access-v2";
-const state = { opportunities:[], companies:new Map(), selectedId:null, view:"ALL", status:"ALL", minFit:0, datasetMode:"DISCONNECTED", lastRun:null, categories:[], sortKey:"win_score", sortDirection:"desc", sourceRun:null, sourceCandidates:[], sourceRunBusy:false, sourceRunStop:false, sourceRunMessage:null, collectionEnabled:false, ultraRun:null, ultraNextOperation:null, ultraBusy:false, ultraStop:false, ultraMessage:null, ultraEnabled:false, searchEnabled:false, searchProfile:null, replyEnabled:false };
+const state = { opportunities:[], companies:new Map(), selectedId:null, view:"ALL", status:"ALL", minFit:0, datasetMode:"DISCONNECTED", lastRun:null, categories:[], sortKey:"win_score", sortDirection:"desc", sourceRun:null, sourceCandidates:[], sourceRunBusy:false, sourceRunStop:false, sourceRunMessage:null, collectionEnabled:false, ultraRun:null, ultraNextOperation:null, ultraBusy:false, ultraStop:false, ultraMessage:null, ultraEnabled:false, ultraPaidEnabled:false, searchEnabled:false, searchProfile:null, replyEnabled:false };
+const ULTRA_PAID_CONFIRMATION="RUN_ULTRA_MAX_15_USD_NO_RETRY";
 const els = {
   body:document.querySelector("#opportunity-body"), detail:document.querySelector("#detail-panel"), summary:document.querySelector("#summary-grid"), count:document.querySelector("#result-count"),
   find:document.querySelector("#find-button"), connect:document.querySelector("#connect-button"), scanNote:document.querySelector("#scan-note"), statusFilter:document.querySelector("#status-filter"), fitFilter:document.querySelector("#fit-filter"),
@@ -78,14 +79,15 @@ function renderSourceRun(){
   els.sourceRunNote.textContent=state.sourceRunMessage||(!state.collectionEnabled?"Source collection is server-locked. Enabling it later requires deployed zero-cost acceptance; this UI cannot change environment settings.":run?`Run ${run.run_id} · ${run.phase||"COLLECTION"} · ${run.completion_reason||"ready"} · only truth-gated records are promoted.`:"Choose a bounded profile. One click collects, enriches and truth-reviews through up to 25 persisted chunks; long runs can be resumed safely.");
 }
 function renderUltraMax(){
-  const run=state.ultraRun,progress=ultraNativeProgress(run),native=ultraNativePhase(run),terminal=isUltraNativeTerminal(run),active=Boolean(run&&!terminal);
-  els.ultraMaxStatus.textContent=!state.ultraEnabled?"LOCKED":native?.status||run?.status||"READY";
-  els.ultraMaxStatus.dataset.state=!state.ultraEnabled?"LOCKED":native?.status||run?.status||"READY";
+  const run=state.ultraRun,progress=ultraNativeProgress(run),native=ultraNativePhase(run),terminal=isUltraMaxTerminal(run),active=Boolean(run&&!terminal),phase=run?.plan_snapshot?.phases?.find((item)=>item.phase_id===(run.current_phase_id||state.ultraNextOperation?.phase_id))||native;
+  const available=state.ultraEnabled||(active&&state.ultraPaidEnabled),status=!available?"LOCKED":phase?.status||run?.status||"READY";
+  els.ultraMaxStatus.textContent=status;
+  els.ultraMaxStatus.dataset.state=status;
   els.ultraMaxProgress.innerHTML=[progressCard("NATIVE CHUNKS",progress.chunks),progressCard("SOURCE REQUESTS",progress.sourceRequests),progressCard("CANDIDATES",progress.candidates),progressCard("ACCEPTED",progress.accepted)].join("");
-  els.ultraMaxButton.disabled=state.ultraBusy||!state.ultraEnabled;
-  els.ultraMaxButton.textContent=state.ultraBusy?"RUNNING ULTRA MAX…":active?"RESUME ULTRA MAX · NATIVE":"RUN ULTRA MAX · NATIVE";
+  els.ultraMaxButton.disabled=state.ultraBusy||!available;
+  els.ultraMaxButton.textContent=state.ultraBusy?"RUNNING ULTRA MAX…":active?"RESUME ULTRA MAX":state.ultraPaidEnabled?"RUN ULTRA MAX · UP TO $15":"RUN ULTRA MAX · NATIVE";
   els.ultraMaxCancel.disabled=!run||terminal;
-  els.ultraMaxNote.textContent=state.ultraMessage||(!state.ultraEnabled?"ULTRA MAX is server-locked. The browser cannot enable sources, paid phases or environment settings.":run?`Root ${run.run_id} · native ${native?.status||"unknown"} · ${progress.sourceRequests.value} source requests · ${progress.accepted.value} accepted.`:"One click executes up to 50 persisted native chunks. No automatic retry; cancel remains available after the execution gate is locked.");
+  els.ultraMaxNote.textContent=state.ultraMessage||(!available?"ULTRA MAX is server-locked. The browser cannot enable sources, paid phases or environment settings.":run?`Root ${run.run_id} · ${phase?.phase_id||"complete"} ${phase?.status||run.status} · ${run.usage?.openai_requests||0}/100 OpenAI · ${run.usage?.web_search_calls||0}/300 web · $${((run.usage?.cost_microusd||0)/1_000_000).toFixed(4)}/$15 cap.`:state.ultraPaidEnabled?"One click runs seven persisted phases through background execution. Every paid phase is no-retry and the exact source is reverified before persistence.":"One click completes native collection and pauses before independently locked paid phases.");
 }
 function renderTable(){ const items=filtered(),salesTotal=state.opportunities.filter(isSalesOpportunityRecord).length,competitorTotal=state.opportunities.filter((item)=>recordKindOf(item)==="COMPETITOR").length; if(!items.some(x=>x.id===state.selectedId))state.selectedId=items[0]?.id||null; renderSort(); renderDetail(); els.count.textContent=`${items.length} shown · ${salesTotal} sales · ${competitorTotal} competitors`; if(!items.length){els.body.innerHTML=`<tr class="empty-row"><td colspan="15">${state.datasetMode==="DISCONNECTED"?"Enter your team access code to load saved opportunities.":state.opportunities.length?"No records match these filters. Clear categories or adjust Status and Minimum fit.":"No saved opportunities yet. New searches will be saved here."}</td></tr>`;return;} els.body.innerHTML=items.map((item)=>{const budget=budgetView(item),sales=isSalesOpportunityRecord(item);return`<tr data-id="${escapeHtml(item.id)}" class="${item.id===state.selectedId?"is-selected":""}">
 <td data-label="Select"><input class="select-radio" type="radio" name="selected-opportunity" aria-label="Select ${escapeHtml(item.title)}" ${item.id===state.selectedId?"checked":""}></td>
@@ -183,34 +185,55 @@ async function loadUltraSnapshot(){
   try{applyUltraSnapshot(await api("/api/ultra-max-runs"));}
   catch(error){if(error.code==="ULTRA_MAX_RUN_NOT_FOUND"){state.ultraRun=null;state.ultraNextOperation=null;renderUltraMax();return;}throw error;}
 }
-async function runUltraMaxNative(){
+async function waitForUltraPaidPhase(runId,phaseId){
+  const startedAt=Date.now(),deadline=startedAt+16*60*1000;
+  while(Date.now()<deadline){
+    await new Promise(resolve=>setTimeout(resolve,2000));
+    const payload=await api(`/api/ultra-max-runs?run_id=${encodeURIComponent(runId)}`);
+    applyUltraSnapshot(payload);
+    const phase=payload.run?.plan_snapshot?.phases?.find((item)=>item.phase_id===phaseId);
+    if(isUltraMaxTerminal(payload.run)||phase?.status==="COMPLETED")return payload;
+    if(phase?.status==="PENDING"&&Date.now()-startedAt>30_000)throw new Error("ULTRA background phase did not start. It was not dispatched again.");
+  }
+  throw new Error("ULTRA background phase timed out. It was not dispatched again.");
+}
+async function continueUltraPaid(runId,next){
+  const body={action:"PREPARE_PAID",run_id:runId,phase_id:next.phase_id,operation_id:next.operation_id,paid_confirmation:ULTRA_PAID_CONFIRMATION};
+  const prepared=await api("/api/ultra-max-runs",{method:"POST",body:JSON.stringify(body)});
+  const response=await fetch(prepared.background_path,{method:"POST",headers:{...authHeaders(),"content-type":"application/json"},body:JSON.stringify({...body,action:undefined})});
+  if(!response.ok){const payload=await response.json().catch(()=>({}));const error=new Error(payload?.error?.message||`ULTRA background dispatch failed (${response.status})`);error.code=payload?.error?.code||"ULTRA_BACKGROUND_DISPATCH_FAILED";throw error;}
+  return waitForUltraPaidPhase(runId,next.phase_id);
+}
+async function runUltraMax(){
   if(!accessCode()){showToast("Enter team access code first.");els.accessCode.focus();return;}
-  if(!state.ultraEnabled){showToast("ULTRA MAX is server-locked.");return;}
+  if(!state.ultraEnabled&&!(state.ultraRun&&!isUltraMaxTerminal(state.ultraRun)&&state.ultraPaidEnabled)){showToast("ULTRA MAX is server-locked.");return;}
   if(state.ultraBusy)return;
   sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode());state.ultraBusy=true;state.ultraStop=false;state.ultraMessage=null;renderUltraMax();
   try{
     let initial={run:state.ultraRun,next_operation:state.ultraNextOperation};
-    if(!state.ultraRun||isUltraNativeTerminal(state.ultraRun)){
+    if(!state.ultraRun||isUltraMaxTerminal(state.ultraRun)){
       initial=await api("/api/ultra-max-runs",{method:"POST",body:JSON.stringify({action:"START",request_id:clientOperationId("ultra_request")})});
       applyUltraSnapshot(initial);
     }
-    const result=await continueUltraNativeLoop({
+    const result=await continueUltraMaxLoop({
       initialPayload:initial,
       shouldStop:()=>state.ultraStop,
-      maxChunks:50,
-      continueChunk:(runId,operationId)=>api("/api/ultra-max-runs",{method:"POST",body:JSON.stringify({action:"CONTINUE_NATIVE",run_id:runId,operation_id:operationId})}),
+      maxOperations:56,
+      paidReady:()=>state.ultraPaidEnabled,
+      continueNative:(runId,operationId)=>api("/api/ultra-max-runs",{method:"POST",body:JSON.stringify({action:"CONTINUE_NATIVE",run_id:runId,operation_id:operationId})}),
+      continuePaid:continueUltraPaid,
       onUpdate:async(payload)=>applyUltraSnapshot(payload)
     });
     applyUltraSnapshot(result);
-    const messages={NATIVE_COMPLETED:"ULTRA native collection completed. Paid phases remain locked.",CANCELLED:"ULTRA run cancelled; completed chunks were preserved.",UNCERTAIN:"ULTRA stopped in UNCERTAIN state; the failed chunk was not retried.",UI_CHUNK_CAP_REACHED:"50 native chunks completed. Progress is saved; resume manually.",STOP_REQUESTED:"Cancel requested; completed chunks are preserved.",NATIVE_PHASE_UNAVAILABLE:"ULTRA paused before a non-native phase. No paid work was dispatched."};
+    const messages={COMPLETED:"ULTRA MAX completed. Only detail-verified results were saved.",CANCELLED:"ULTRA run cancelled; completed phases were preserved.",UNCERTAIN:"ULTRA stopped in UNCERTAIN state; the failed operation was not retried.",UI_OPERATION_CAP_REACHED:"56 operations completed. Progress is saved; resume manually.",STOP_REQUESTED:"Cancel requested; completed operations are preserved.",PAID_PHASE_LOCKED:"Native collection completed. Paid ULTRA phases remain independently locked.",NEXT_OPERATION_UNAVAILABLE:"ULTRA paused because the server did not issue a next operation."};
     state.ultraMessage=messages[result.reason]||`ULTRA progress saved · ${result.reason}`;
-    if(result.reason==="NATIVE_COMPLETED")applyTeamSnapshot(await api("/api/opportunities"));
+    if(result.reason==="COMPLETED")applyTeamSnapshot(await api("/api/opportunities"));
     showToast(messages[result.reason]||"ULTRA progress saved");
   }catch(error){state.ultraMessage=`ULTRA stopped safely · ${error.message} · no automatic retry`;showToast(error.message);}
   finally{state.ultraBusy=false;renderUltraMax();}
 }
 async function cancelUltraMax(){
-  if(!state.ultraRun||isUltraNativeTerminal(state.ultraRun)||!accessCode())return;
+  if(!state.ultraRun||isUltraMaxTerminal(state.ultraRun)||!accessCode())return;
   state.ultraStop=true;state.ultraMessage="Cancel requested…";renderUltraMax();
   try{const payload=await api("/api/ultra-max-runs",{method:"POST",body:JSON.stringify({action:"CANCEL",run_id:state.ultraRun.run_id,operation_id:clientOperationId("ultra_cancel")})});applyUltraSnapshot(payload);state.ultraMessage="ULTRA cancel marker persisted.";showToast("ULTRA run cancelled");}
   catch(error){showToast(error.message);}
@@ -257,7 +280,7 @@ els.body.addEventListener("click",(event)=>{const star=event.target.closest("[da
 els.body.addEventListener("change",(event)=>{if(event.target.matches(".status-select"))setStatus(event.target.dataset.statusId,event.target.value);if(event.target.matches(".select-radio"))selectOpportunity(event.target.closest("tr").dataset.id);});
 els.detail.addEventListener("click",(event)=>{const star=event.target.closest("[data-bookmark-company]");if(star){toggleBookmark(star.dataset.bookmarkCompany);return;}const item=state.opportunities.find((x)=>x.id===state.selectedId),sales=item&&isSalesOpportunityRecord(item);if(event.target.dataset.copy==="email"&&sales&&item.contact_email)copyText(item.contact_email,"Email");if(event.target.dataset.copySubject&&sales&&item.reply_subject)copyText(item.reply_subject,"Subject");if(event.target.dataset.copyResponse&&sales&&item.reply_body)copyText(item.reply_body,"Response");if(event.target.dataset.verifySource&&sales)verifySource();if(event.target.dataset.markSent)markEmailSent();if(event.target.dataset.generateResponse)generateResponse();});
 document.querySelectorAll("[data-view]").forEach((button)=>button.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach((x)=>x.classList.remove("is-active"));button.classList.add("is-active");state.view=button.dataset.view;renderTable();}));
-els.statusFilter.addEventListener("change",()=>{state.status=els.statusFilter.value;renderTable();}); els.fitFilter.addEventListener("change",()=>{state.minFit=Number(els.fitFilter.value);renderTable();}); els.connect.addEventListener("click",loadTeamState);els.find.addEventListener("click",runLiveSearch);els.sourceRunButton.addEventListener("click",runSourceCollection);els.sourceRunCancel.addEventListener("click",cancelSourceCollection);els.ultraMaxButton.addEventListener("click",runUltraMaxNative);els.ultraMaxCancel.addEventListener("click",cancelUltraMax);
+els.statusFilter.addEventListener("change",()=>{state.status=els.statusFilter.value;renderTable();}); els.fitFilter.addEventListener("change",()=>{state.minFit=Number(els.fitFilter.value);renderTable();}); els.connect.addEventListener("click",loadTeamState);els.find.addEventListener("click",runLiveSearch);els.sourceRunButton.addEventListener("click",runSourceCollection);els.sourceRunCancel.addEventListener("click",cancelSourceCollection);els.ultraMaxButton.addEventListener("click",runUltraMax);els.ultraMaxCancel.addEventListener("click",cancelUltraMax);
 
 
 const sortSelect=document.querySelector("#sort-select"), sortDirection=document.querySelector("#sort-direction"), categoryOptions=document.querySelector("#category-options");
@@ -322,7 +345,7 @@ async function init(){
   els.accessCode.value=sessionStorage.getItem(ACCESS_SESSION_KEY)||"";
   renderAll();
   document.querySelector("#prelive-tools").hidden=!acceptanceWorkspace;
-  try{const h=await(await fetch("/api/health")).json();state.collectionEnabled=h.source_collection==="ENABLED";state.ultraEnabled=h.ultra_max_native==="READY";state.searchEnabled=h.production_search==="READY";state.searchProfile=h.production_search_profile||null;state.replyEnabled=h.production_reply==="READY";const wide=["WIDE_INDEX","WIDE_MAX","WIDE_V3"].includes(state.searchProfile);document.querySelector("#ai-state").textContent=state.searchEnabled?`${wide?(state.searchProfile==="WIDE_V3"?"Worldwide source + social search":state.searchProfile==="WIDE_MAX"?"Worldwide maximum search":"Worldwide wide search"):"Production search"} ready · duplicate-charge protection active`:h.paid_ai_state==="LOCKED"?"Live AI locked until final acceptance":"Live AI enabled · production search locked";els.find.disabled=!state.searchEnabled;els.find.textContent=state.searchEnabled?(wide?"FIND WORLDWIDE OPPORTUNITIES":"FIND NEW OPPORTUNITIES"):"FIND NEW OPPORTUNITIES · PAID LOCKED";renderSourceRun();renderUltraMax();renderDetail();}catch{document.querySelector("#ai-state").textContent="Server status unavailable";}
+  try{const h=await(await fetch("/api/health")).json();state.collectionEnabled=h.source_collection==="ENABLED";state.ultraEnabled=h.ultra_max_native==="READY";state.ultraPaidEnabled=h.ultra_max_paid==="READY";state.searchEnabled=h.production_search==="READY";state.searchProfile=h.production_search_profile||null;state.replyEnabled=h.production_reply==="READY";const wide=["WIDE_INDEX","WIDE_MAX","WIDE_V3"].includes(state.searchProfile);document.querySelector("#ai-state").textContent=state.searchEnabled?`${wide?(state.searchProfile==="WIDE_V3"?"Worldwide source + social search":state.searchProfile==="WIDE_MAX"?"Worldwide maximum search":"Worldwide wide search"):"Production search"} ready · duplicate-charge protection active`:h.paid_ai_state==="LOCKED"?"Live AI locked until final acceptance":"Live AI enabled · production search locked";els.find.disabled=!state.searchEnabled;els.find.textContent=state.searchEnabled?(wide?"FIND WORLDWIDE OPPORTUNITIES":"FIND NEW OPPORTUNITIES"):"FIND NEW OPPORTUNITIES · PAID LOCKED";renderSourceRun();renderUltraMax();renderDetail();}catch{document.querySelector("#ai-state").textContent="Server status unavailable";}
   if(els.accessCode.value)await loadTeamState();
   else if(new URLSearchParams(location.search).get("demo")==="1")await loadDemo();
 }
