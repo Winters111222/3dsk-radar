@@ -28,10 +28,43 @@ function terminalFailure(status) {
   return failure;
 }
 
-export function createUltraNativeCollectionExecutor({ repository, nowIso, collectPage, fetchDetail = null, grantRecords = [], maxPages = 4 } = {}) {
-  if (!repository || typeof collectPage !== "function") throw new Error("ULTRA_NATIVE_DEPENDENCY_MISSING");
+export function createUltraNativeCollectionExecutor({
+  repository,
+  nowIso,
+  collectPage,
+  fetchDetail = null,
+  grantRecords = [],
+  maxPages = 4,
+  runtimeSourcesAvailable = true,
+  qualificationSummary = null
+} = {}) {
+  if (!repository || (runtimeSourcesAvailable && typeof collectPage !== "function")) throw new Error("ULTRA_NATIVE_DEPENDENCY_MISSING");
   return async function executeNativeCollection({ run, phase }) {
     if (phase?.phase_id !== "NATIVE_COLLECTION") throw new Error("ULTRA_NATIVE_PHASE_INVALID");
+    if (!runtimeSourcesAvailable) {
+      const grantResult = grantRecords.length
+        ? await importHeritageGrantBatch({ repository, records:grantRecords, nowIso })
+        : { imported_count:0, replayed_count:0, opportunity_ids:[] };
+      return {
+        complete:true,
+        usage:{
+          source_requests:0,
+          candidates_seen:0,
+          results_accepted:grantResult.imported_count
+        },
+        checkpoint:null,
+        payload:{
+          child_run_id:null,
+          child_status:"SKIPPED_NO_RUNTIME_ELIGIBLE_SOURCES",
+          native_mode:"PAID_ONLY_SAFE_FALLBACK",
+          qualification:qualificationSummary,
+          grants_imported:grantResult.imported_count,
+          grants_replayed:grantResult.replayed_count,
+          grant_opportunity_ids:grantResult.opportunity_ids,
+          source_counters:null
+        }
+      };
+    }
     const identity = childIdentity(run.run_id);
     const checkpoint = phase.checkpoint || {};
     if (checkpoint.child_run_id && checkpoint.child_run_id !== identity.runId) throw new Error("ULTRA_NATIVE_CHILD_ID_MISMATCH");
