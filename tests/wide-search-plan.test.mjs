@@ -22,4 +22,15 @@ test("every accepted detail domain belongs to a required shard and LinkedIn is e
   const planned = new Set(WIDE_SEARCH_SHARDS.flatMap((item) => item.allowed_domains));
   assert.deepEqual([...INDEX_DISCOVERY_ALLOWED_DOMAINS].sort(), [...planned].sort());
   assert.equal(planned.has("linkedin.com"), false);
+  assert.deepEqual(WIDE_SEARCH_SHARDS.map((item) => item.id), [
+    "human_data_capture_worldwide",
+    "scan_postproduction_worldwide",
+    "character_vendor_pipeline",
+    "cultural_heritage_cz_sk",
+    "worldwide_multilingual_buyer_sweep"
+  ]);
+  const heritage = WIDE_SEARCH_SHARDS.find((item) => item.id === "cultural_heritage_cz_sk");
+  assert.deepEqual(heritage.allowed_domains, ["ted.europa.eu", "nen.nipez.cz", "uvo.gov.sk"]);
+  assert.match(heritage.focus, /only in Czechia or Slovakia/);
+  assert.doesNotMatch(JSON.stringify(WIDE_SEARCH_SHARDS), /ordinary employee roles.*POTENTIAL_LEAD/i);
 });

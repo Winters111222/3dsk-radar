@@ -141,7 +141,7 @@ test("wide search dispatches every required shard once and deduplicates their re
   assert.equal(result.coverage.length, 5);
   assert.equal(result.coverage.every((item) => item.status === "COMPLETE"), true);
   assert.equal(result.opportunities.length, 1);
-  assert.equal(result.counters.duplicates_removed, 1);
+  assert.equal(result.counters.duplicates_removed, 2);
   assert.equal(requests.every((request) => request.tool_choice === "required" && request.max_tool_calls === 3), true);
   assert.equal(requests.some((request) => request.tools[0].filters.allowed_domains.includes("linkedin.com")), false);
 });
@@ -152,7 +152,7 @@ test("wide search records a failed shard as partial without retrying it", async 
   const fakeFetch = async (_url, options) => {
     calls += 1;
     const request = JSON.parse(options.body);
-    if (request.tools[0].filters.allowed_domains[0] === "reddit.com") {
+    if (request.instructions.includes("Worldwide scan post-production")) {
       return new Response(JSON.stringify({
         id:"resp_malformed",
         model:"gpt-5.6-luna",

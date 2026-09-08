@@ -14,13 +14,18 @@
         "RealityCapture",
         "retopology",
         "R3DS Wrap",
-        "basemesh conforming"
+        "basemesh conforming",
+        "human casting",
+        "multi-ethnicity human dataset",
+        "computer vision data capture"
       ],
       "queries": [
         "\"human scan\" \"cleanup\" (looking OR needed OR hiring)",
         "\"full body\" \"photogrammetry\" (contract OR paid OR project)",
         "\"scan cleanup\" (batch OR ongoing OR team)",
-        "\"R3DS Wrap\" (freelance OR contract OR seeking)"
+        "\"R3DS Wrap\" (freelance OR contract OR seeking)",
+        "\"human dataset\" (photogrammetry OR \"face scanning\" OR \"body scanning\") (vendor OR contract OR RFP)",
+        "\"human casting\" \"3D scanning\" (supplier OR production OR contract)"
       ]
     },
     {
@@ -38,7 +43,7 @@
         "groom"
       ],
       "queries": [
-        "\"character artist\" (freelance OR outsourcing) (needed OR hiring)",
+        "\"realistic character\" (vendor OR outsourcing OR external studio) (needed OR seeking)",
         "\"digital double\" (brief OR RFP OR seeking)",
         "\"realistic character\" (commission OR contract OR vendor)",
         "\"game ready\" \"character\" (paid OR project)"
@@ -83,19 +88,19 @@
     },
     {
       "id": "contract_art",
-      "lane": "HIRING_SIGNAL",
+      "lane": "BUYER_SIGNAL",
       "language": "en",
       "terms": [
-        "character artist contract",
-        "technical animator",
-        "rigging artist",
-        "freelance animator"
+        "character production vendor",
+        "external character studio",
+        "realistic human subcontract",
+        "production overflow"
       ],
       "queries": [
-        "\"character artist\" (contract OR freelance) remote",
-        "\"rigging artist\" (contract OR freelance)",
-        "\"technical animator\" contract remote",
-        "\"humanoid animation\" (contract OR freelance)"
+        "\"character production\" (vendor OR outsourcing OR subcontract) realistic",
+        "\"external character studio\" (RFP OR RFQ OR seeking)",
+        "\"realistic human\" \"production overflow\"",
+        "\"digital double\" (vendor OR supplier OR outsourcing)"
       ]
     },
     {
@@ -124,13 +129,16 @@
         "digital human",
         "facial capture services",
         "character animation production",
-        "photogrammetry services"
+        "photogrammetry services",
+        "museum collection 3D digitization",
+        "cultural heritage photogrammetry"
       ],
       "queries": [
         "\"3D scanning services\" (tender OR RFP OR procurement)",
         "\"digital human\" (tender OR RFP OR procurement)",
         "\"character animation production\" (tender OR RFQ)",
-        "\"photogrammetry\" (tender OR RFQ) (human OR artefact)"
+        "\"photogrammetry\" (tender OR RFQ) (human OR artefact)",
+        "\"3D digitization\" (museum OR \"collection objects\" OR \"cultural heritage\") (tender OR procurement) (Czechia OR Slovakia)"
       ]
     }
   ],
@@ -144,7 +152,13 @@
     {
       "language": "cs",
       "pack_id": "service_tenders",
-      "query": "\"3D animace postav\" \"veřejná zakázka\"",
+      "query": "(\"3D digitalizace\" OR fotogrammetrie) (muzeum OR \"sbírkových předmětů\" OR \"kulturní dědictví\") \"veřejná zakázka\"",
+      "validation": "UNBENCHMARKED_QUERY_DRAFT"
+    },
+    {
+      "language": "sk",
+      "pack_id": "service_tenders",
+      "query": "(\"3D digitalizácia\" OR fotogrametria) (múzeum OR \"zbierkových predmetov\" OR \"kultúrne dedičstvo\") (zákazka OR \"verejné obstarávanie\")",
       "validation": "UNBENCHMARKED_QUERY_DRAFT"
     },
     {
@@ -249,7 +263,10 @@
       "revshare_only",
       "equipment_only",
       "geospatial_or_bim_only",
-      "geo_ineligible"
+      "geo_ineligible",
+      "reallusion_or_daz_workflow",
+      "individual_employment_without_vendor_route",
+      "heritage_physical_capture_outside_cz_sk"
     ],
     "notes": "Do not globally minus paid/for hire/closed words: mixed headings, negations and useful stale buyer signals require body-level classification."
   },

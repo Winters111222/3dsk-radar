@@ -127,6 +127,28 @@ test("hard truth gates reject stale listings and accept old listings only with c
   const active = normalizeCandidate(candidate({published_date:"2026-07-08",acceptance_source_url:PRIMARY}), verified, NOW);
   assert.equal(active.opportunity.freshness_basis, "ACTIVE_ACCEPTANCE_EVIDENCE");
   assert.equal(active.opportunity.acceptance_verified_at, NOW);
+  assert.equal(active.opportunity.freshness_confidence, "low");
+  assert.equal(active.opportunity.win_score, 69);
+});
+
+test("freshness confidence distinguishes published and source-updated evidence", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  assert.equal(normalizeCandidate(candidate(), verified, NOW).opportunity.freshness_confidence, "high");
+  const updated = normalizeCandidate(candidate({published_date:null,source_updated_date:"2026-09-04"}), verified, NOW).opportunity;
+  assert.equal(updated.freshness_confidence, "medium");
+});
+
+test("excluded workflows and non-CZ/SK physical heritage capture fail closed", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  assert.equal(normalizeCandidate(candidate({summary:"Character Creator 4 and Reallusion production."}), verified, NOW).rejection, "excluded_workflow");
+  const outside = candidate({
+    title:"Museum object 3D scanning",
+    summary:"Onsite photogrammetry capture of museum artefacts.",
+    categories:["CULTURAL_HERITAGE_3D","CAPTURE"],
+    location:"Berlin, Germany",
+    remote_scope:"ONSITE"
+  });
+  assert.equal(normalizeCandidate(outside, verified, NOW).rejection, "heritage_capture_outside_cz_sk");
 });
 
 test("normalizer classifies sellers as competitors and demotes employment signals to Potential Lead", () => {

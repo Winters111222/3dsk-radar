@@ -37,6 +37,13 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.ok(body.instructions.includes("INDEX_DISCOVERY_MANUAL_VERIFY"));
   assert.ok(body.instructions.includes("requires a person to open the original source"));
   assert.ok(body.instructions.includes("Do not sign in, use cookies or sessions"));
+  assert.ok(body.instructions.includes("RealityCapture, ZBrush, Substance Painter and Faceform Wrap3D"));
+  assert.ok(body.instructions.includes("Hard exclusions: omit every Reallusion"));
+  assert.ok(body.instructions.includes("physical scanning of museum objects"));
+  assert.ok(body.instructions.includes("LOW confidence"));
+  for (const category of ["HUMAN_DATA_CAPTURE", "CULTURAL_HERITAGE_3D", "HERITAGE_POSTPROCESSING"]) {
+    assert.ok(OPPORTUNITY_CATEGORIES.includes(category));
+  }
 });
 
 test("search schema clamps result count and covers required opportunity kinds", () => {
@@ -45,6 +52,9 @@ test("search schema clamps result count and covers required opportunity kinds", 
   assert.deepEqual(kindEnum, ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"]);
   assert.ok(SEARCH_INTENTS.includes("character production overflow"));
   assert.ok(SEARCH_INTENTS.includes("facial scan processing contract"));
+  assert.ok(SEARCH_INTENTS.includes("AI human dataset photogrammetry capture vendor"));
+  assert.ok(SEARCH_INTENTS.includes("3D digitalizace sbírkových předmětů veřejná zakázka"));
+  assert.ok(SEARCH_INTENTS.includes("3D digitalizácia zbierkových predmetov verejné obstarávanie"));
 });
 
 test("instructions expose no credentials unless explicitly PUBLIC_APPROVED", () => {

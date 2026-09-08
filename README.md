@@ -41,6 +41,8 @@ Závazné company-memory rozhodnutí: [`docs/PRODUCT_DECISION_COMPANY_MEMORY_CZ.
 
 Závazný Search scope: [`docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md`](docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md)
 
+Široká relevance Human Capture + Cultural Heritage: [`docs/PRODUCT_DECISION_WIDE_RELEVANCE_20260908_CZ.md`](docs/PRODUCT_DECISION_WIDE_RELEVANCE_20260908_CZ.md)
+
 Search Phase A — truth/freshness acceptance: [`docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md`](docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md)
 
 Search Phase B — read-only source collection: [`docs/PHASE_B_SOURCE_COLLECTION_CZ.md`](docs/PHASE_B_SOURCE_COLLECTION_CZ.md)

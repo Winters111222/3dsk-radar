@@ -1,10 +1,12 @@
 export const CATEGORIES = {
   FULL_PIPELINE: "Full Character Pipeline", CAPTURE: "Capture / Scanning",
+  HUMAN_DATA_CAPTURE: "Human Data Capture / Casting",
   PHOTOGRAMMETRY_PROCESSING: "Photogrammetry", SCAN_CLEANUP: "Scan Cleanup",
   WRAP_BASEMESH: "Wrap / Basemesh", FACIAL_FACS: "Facial / FACS",
   CHARACTER_FINISHING: "Character Finishing", CHARACTER_OUTSOURCING: "Character Outsourcing",
   EXTERNAL_DEVELOPMENT: "External Development", PRODUCTION_OVERFLOW: "Production Overflow",
-  PIPELINE_CONSULTING: "Pipeline Consulting", OTHER_RELEVANT: "Other Relevant"
+  PIPELINE_CONSULTING: "Pipeline Consulting", CULTURAL_HERITAGE_3D: "Cultural Heritage 3D",
+  HERITAGE_POSTPROCESSING: "Heritage Post-production", OTHER_RELEVANT: "Other Relevant"
 };
 export const SORTS = {
   fit_score: "Fit", win_score: "Win", title: "Opportunity", company: "Company",

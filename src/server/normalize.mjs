@@ -9,6 +9,7 @@ import {
   indexDiscoveryPolicyForUrl
 } from "./index-discovery.mjs";
 import { classifyRecordCandidate, isSalesOpportunityRecord } from "./record-classification.mjs";
+import { evaluateCandidateRelevance, freshnessConfidence } from "./relevance-policy.mjs";
 
 const TRACKING_PARAMS = new Set([
   "fbclid", "gclid", "mc_cid", "mc_eid", "ref", "referrer", "source"
@@ -181,7 +182,10 @@ const DIAGNOSTIC_REJECTION_CODES = new Set([
   "studio_ineligible",
   "out_of_scope",
   "stale_or_unverified",
-  "excluded_search_category"
+  "excluded_search_category",
+  "excluded_workflow",
+  "individual_employment",
+  "heritage_capture_outside_cz_sk"
 ]);
 
 function diagnosticRejectionCode(value) {
@@ -273,6 +277,9 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
   const summary = safeString(candidate.summary);
   if (!title || !company || !summary) return { opportunity: null, rejection: "missing_core_identity" };
 
+  const relevance = evaluateCandidateRelevance(candidate);
+  if (!relevance.ok) return { opportunity:null, rejection:relevance.rejection };
+
   const requestedKind = candidate.opportunity_kind === "OPEN_OPPORTUNITY" ? "OPEN_OPPORTUNITY"
     : candidate.opportunity_kind === "POTENTIAL_LEAD" ? "POTENTIAL_LEAD" : null;
   if (!requestedKind) return { opportunity: null, rejection: "invalid_opportunity_kind" };
@@ -323,7 +330,8 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
   if (!categories.length) categories.push("OTHER_RELEVANT");
 
   const fitScore = safeScore(candidate.fit_score);
-  const winScore = safeScore(candidate.win_score);
+  const rawWinScore = safeScore(candidate.win_score);
+  const winScore = freshnessBasis === "ACTIVE_ACCEPTANCE_EVIDENCE" ? Math.min(rawWinScore, 69) : rawWinScore;
   const budget = recordKind === "SALES_OPPORTUNITY"
     ? normalizeBudget(candidate, usableSourceUrls)
     : normalizeBudget({ budget_type:"UNKNOWN", budget_reason:"Not applicable to a non-sales intelligence record." }, usableSourceUrls);
@@ -389,6 +397,7 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
     published_date: publishedDate,
     source_updated_date: sourceUpdatedDate,
     freshness_basis: freshnessBasis,
+    freshness_confidence: freshnessConfidence(freshnessBasis),
     acceptance_source_url: recordKind === "SALES_OPPORTUNITY" && acceptanceVerified ? acceptanceSourceUrl : null,
     acceptance_verified_at: recordKind === "SALES_OPPORTUNITY" && acceptanceVerified ? nowIso : null,
     first_seen: nowIso,
