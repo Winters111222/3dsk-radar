@@ -47,6 +47,8 @@ Deep Research source gap, deduplikace a CZ/SK grantová lane: [`docs/DEEP_RESEAR
 
 Maximum hosted-index profil `WIDE_MAX` (25 shardů / 75 web calls / 100 výsledků / 5 USD): [`docs/WIDE_MAX_SEARCH_CZ.md`](docs/WIDE_MAX_SEARCH_CZ.md)
 
+Roadmapa vícekolového `ULTRA_MAX` root-runu: [`docs/ULTRA_MAX_ROADMAP_CZ.md`](docs/ULTRA_MAX_ROADMAP_CZ.md). První code-only milník zavádí sedm perzistentních, přesně omezených fází pod jedním root capem; neaktivuje síť, placené hledání ani produkční endpoint.
+
 Relevance a yield optimalizace po prvním WIDE_MAX auditu: [`docs/SEARCH_RELEVANCE_AND_YIELD_OPTIMIZATION_20260908_CZ.md`](docs/SEARCH_RELEVANCE_AND_YIELD_OPTIMIZATION_20260908_CZ.md)
 
 Search Phase A — truth/freshness acceptance: [`docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md`](docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md)

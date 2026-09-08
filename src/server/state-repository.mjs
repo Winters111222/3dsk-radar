@@ -11,6 +11,8 @@ const COMPANY_PREFIX = "companies/";
 const SOURCE_RUN_PREFIX = "source-runs/";
 const SOURCE_RUN_REQUEST_PREFIX = "source-run-requests/";
 const SOURCE_SIGNAL_PREFIX = "source-signals/";
+const ULTRA_MAX_RUN_PREFIX = "ultra-max-runs/";
+const ULTRA_MAX_RUN_REQUEST_PREFIX = "ultra-max-run-requests/";
 
 function safeStateId(value) {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{8,80}$/.test(value)) throw new Error("STATE_ID_INVALID");
@@ -19,6 +21,10 @@ function safeStateId(value) {
 
 function sourceRunKey(runId, suffix) {
   return `${SOURCE_RUN_PREFIX}${safeStateId(runId)}/${suffix}`;
+}
+
+function ultraMaxRunKey(runId, suffix) {
+  return `${ULTRA_MAX_RUN_PREFIX}${safeStateId(runId)}/${suffix}`;
 }
 
 function dedupeIndexKey(runId, value) {
@@ -327,6 +333,48 @@ export function createStateRepository(store) {
 
     async saveSourceRunCancel(runId, marker) {
       await store.setJSON(sourceRunKey(runId, "cancel"), marker);
+      return marker;
+    },
+
+    async getUltraMaxRun(runId) {
+      return store.get(ultraMaxRunKey(runId, "state"), { type:"json" });
+    },
+
+    async saveUltraMaxRun(run) {
+      await store.setJSON(ultraMaxRunKey(run.run_id, "state"), run);
+      await store.setJSON("metadata/last-ultra-max-run", { run_id:run.run_id, updated_at:run.updated_at });
+      return run;
+    },
+
+    async lastUltraMaxRun() {
+      const pointer = await store.get("metadata/last-ultra-max-run", { type:"json" });
+      return pointer?.run_id ? this.getUltraMaxRun(pointer.run_id) : null;
+    },
+
+    async getUltraMaxRunRequest(requestId) {
+      return store.get(`${ULTRA_MAX_RUN_REQUEST_PREFIX}${safeStateId(requestId)}`, { type:"json" });
+    },
+
+    async saveUltraMaxRunRequest(requestId, value) {
+      await store.setJSON(`${ULTRA_MAX_RUN_REQUEST_PREFIX}${safeStateId(requestId)}`, value);
+      return value;
+    },
+
+    async getUltraMaxRunOperation(runId, operationId) {
+      return store.get(ultraMaxRunKey(runId, `operations/${safeStateId(operationId)}`), { type:"json" });
+    },
+
+    async saveUltraMaxRunOperation(runId, operation) {
+      await store.setJSON(ultraMaxRunKey(runId, `operations/${safeStateId(operation.operation_id)}`), operation);
+      return operation;
+    },
+
+    async getUltraMaxRunCancel(runId) {
+      return store.get(ultraMaxRunKey(runId, "cancel"), { type:"json" });
+    },
+
+    async saveUltraMaxRunCancel(runId, marker) {
+      await store.setJSON(ultraMaxRunKey(runId, "cancel"), marker);
       return marker;
     },
 
