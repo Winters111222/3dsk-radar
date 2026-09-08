@@ -12,7 +12,7 @@ cestu, ale zatím nesplňují source-specific precision. Všechny proto zůstáv
 
 | Pořadí | Zdroj | Očekávaný přínos | Přístup | Credential | Stav |
 |---:|---|---|---|---|---|
-| 1 | Upwork | vysoký | schválené GraphQL API | OAuth2 + tenant ID | čeká na platformní approval |
+| 1 | Upwork | vysoký | schválené GraphQL API; mezitím ruční saved-search pilot | OAuth2 + tenant ID pro API; instant e-mail navíc Freelancer Plus + individuální proposal historie | čeká na API approval / měřit ruční feed |
 | 2 | TED EU | střední, nízká frekvence / vysoká hodnota | anonymní Search API | žádný | bounded precision sample |
 | 3 | NEN | vysoký lokální, nízký objem | určené XML / ISVZ open data | podle potvrzeného exportu žádný | endpoint contract review |
 | 4 | E-ZAK muzea/kraje | vysoký lokální, nízký objem | nativní e-mail alert / schválený feed | free account nebo povolení | alert pilot |
@@ -48,6 +48,13 @@ Access-ready neznamená runtime-ready. Stávající politika stále vyžaduje ne
 30 ručně posouzených kandidátů, precision alespoň 0,8 a relevantní pozitivní
 důkazy. Žádný zdroj tuto kombinaci nyní nesplňuje.
 
+Upwork e-mail bridge není plnohodnotnou náhradou API. Aktuální oficiální pravidla
+vážou instant alerts na Freelancer Plus a historii individuálních proposals;
+saved search sám o sobě negarantuje doručení e-mailu. Proto je jako bezpečný
+mezistav veden ruční precision pilot osmi saved searches. LinkedIn dovoluje
+nejvýše 20 job alertů a posílá je daily/weekly, ale jde především o zaměstnanecké
+signály, které musí radar převést na doloženou externí studio příležitost.
+
 ## Grantová lane
 
 Radar musí odděleně hledat:
@@ -68,4 +75,3 @@ heritage/buyer query packem. Není součástí tohoto checkpointu, protože sou�
 autorizační hranice zakazuje zapnutí `RADAR_SOURCE_COLLECTION_ENABLED` a změnu
 produkčního environmentu. Lokální měření musí zůstat explicitně potvrzené,
 read-only, bez retry, bez AI a bez persistence.
-

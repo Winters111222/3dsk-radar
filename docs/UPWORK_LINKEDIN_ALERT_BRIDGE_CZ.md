@@ -10,16 +10,20 @@ inženýrství neveřejných endpointů. Alert, který platforma sama doručí d
 uživatelovy schránky, se zpracuje pouze jako discovery signál. Radar z něj
 nesmí automaticky oslovovat kupujícího ani jej vydat za ověřenou zakázku.
 
-Preferovaná Upwork cesta zůstává schválené GraphQL API. Alert bridge je
-nízkofrekvenční fallback v době čekání na schválení API a neprovádí žádný
-request vůči Upworku. LinkedIn nemá veřejné API pro globální čtení Jobs;
+Preferovaná Upwork cesta zůstává schválené GraphQL API. Uložené Upwork searches
+jsou užitečné jako ručně kontrolované feedy, ale negarantují e-mail pro každý
+dotaz. Podle aktuální oficiální dokumentace jsou instantní alerty dostupné pro
+Freelancer Plus, vyžadují alespoň jednu aktivní individuální proposal a vycházejí
+z historie individuálních proposals. Gmail bridge je proto pouze oportunistický
+fallback, pokud Upwork e-mail skutečně doručí. LinkedIn nemá veřejné API pro globální čtení Jobs;
 oficiální Job Posting API slouží schváleným partnerům k publikování nabídek.
 Proto LinkedIn zůstává signal-only vrstvou.
 
 ## Tok dat
 
-1. Uživatel si přímo v Upworku nebo LinkedInu vytvoří nativní job alert.
-2. Platforma doručí alert do uživatelovy vlastní vyhrazené schránky, labelu
+1. Uživatel vytvoří LinkedIn job alert. V Upworku uloží search feed; samostatně
+   může povolit historie-proposals instant alerts, pouze pokud je účet způsobilý.
+2. Pokud platforma podporovaný alert doručí, přijde do uživatelovy vlastní schránky, labelu
    nebo folderu, například `3dsk-radar`.
 3. Budoucí mailbox relay používá pouze oficiální read-only API poskytovatele
    e-mailu a aplikačně čte jen tento label/folder. Gmail OAuth scope nelze
@@ -84,6 +88,20 @@ oficiální Gmail API. Provede nejvýše jeden list request a dvacet detail requ
 raw Gmail payload nevrací ani neukládá. Chybnou jednotlivou zprávu izoluje a do
 diagnostiky zapíše jen bezpečný error code.
 
+## Pilotní dotazy a skutečné platformní limity
+
+Strojový plán `config/platform-alert-pilot.v1.json` obsahuje osm LinkedIn job
+alertů a osm Upwork saved searches. Všechny jsou default-off a vyžadují ruční
+založení vlastníkem účtu. LinkedIn oficiálně dovoluje nejvýše 20 job alertů a
+jejich e-mailovou frekvenci daily/weekly. Upwork dovoluje nejvýše 30 saved
+searches a podporuje `AND`, `OR`, `NOT`, závorky a wildcard `*`; nepodporuje
+operátory `+`, `-` a `!`. Pilot používá pouze dokumentovanou syntaxi.
+
+LinkedIn alerts jsou z principu employment-biased a zůstávají signal-only.
+Upwork saved search je operator-review feed; nelze jej označit jako aktivní
+e-mailový monitoring bez skutečně doručeného platformního alertu. Ani jedna
+platforma se nestane runtime zdrojem pouhým vytvořením dotazu.
+
 ## Gaty pro preview canary
 
 Code-only endpoint `/api/gmail-alert-canary` je implementovaný, ale funguje
@@ -129,6 +147,10 @@ Oficiální podklady:
 - [Upwork — Use bots and other automation properly](https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly)
 - [Upwork — API key application](https://www.upwork.com/developer/keys/apply)
 - [Upwork GraphQL API](https://www.upwork.com/developer/documentation/graphql/api/docs/index.html)
+- [Upwork — Search and saved searches](https://support.upwork.com/hc/en-us/articles/211063078-How-to-search-for-jobs-on-Upwork)
+- [Upwork — Advanced Boolean search](https://support.upwork.com/hc/en-us/articles/1500007921782-How-to-use-advanced-search-techniques-to-find-jobs)
+- [Upwork — Instant alert eligibility](https://support.upwork.com/hc/en-us/articles/36001273797907-How-to-get-instant-job-alerts)
+- [LinkedIn — Job alerts](https://www.linkedin.com/help/linkedin/answer/a511279)
 - [LinkedIn Talent API catalog](https://developer.linkedin.com/product-catalog/talent)
 - [LinkedIn Job Posting API](https://learn.microsoft.com/en-us/linkedin/talent/job-postings/api/overview?view=li-lts-2026-04)
 - [Gmail API — users.messages.list](https://developers.google.com/gmail/api/reference/rest/v1/users.messages/list)

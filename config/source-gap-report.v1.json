@@ -7,15 +7,15 @@
     {
       "rank": 1,
       "source_id": "upwork",
-      "missing_source": "Approved Upwork marketplaceJobPostingsSearch access or a user-owned alert mailbox transport",
+      "missing_source": "Approved Upwork marketplaceJobPostingsSearch access; saved searches are manual feeds and instant email alerts depend on Freelancer Plus plus individual proposal history",
       "expected_yield": "HIGH",
       "expected_yield_confidence": "MEDIUM_HISTORICAL_EVIDENCE",
-      "access_method": "OFFICIAL_GRAPHQL_API_OR_USER_OWNED_ALERT_RELAY",
+      "access_method": "OFFICIAL_GRAPHQL_API_PRIMARY_MANUAL_SAVED_SEARCH_SECONDARY_HISTORY_BASED_EMAIL_IF_ELIGIBLE",
       "implementation_effort": "LOW_ADAPTER_EXISTS",
       "legal_or_tos_constraint": "Only an approved API use case may request Upwork; the fallback may process alerts already delivered to the user's mailbox but must not open or scrape Upwork automatically.",
-      "required_authorization_or_credential": "Approved OAuth2 API token and tenant ID, or a read-only mailbox label plus HMAC ingest secret for discovery-only alerts",
+      "required_authorization_or_credential": "Approved OAuth2 API token and tenant ID; alternatively an operator-owned account for manual saved searches. Email alerts additionally require Freelancer Plus and prior individual proposal history.",
       "detail_verification": "Open the exact Upwork buyer job detail and prove active status, team eligibility, deliverable, budget provenance and application route.",
-      "safe_next_state": "AUTHORIZED_ALERT_PILOT_WHILE_WAITING_FOR_PLATFORM_APPROVAL",
+      "safe_next_state": "MANUAL_SAVED_SEARCH_PRECISION_PILOT_WHILE_WAITING_FOR_API_APPROVAL",
       "runtime_eligible": false
     },
     {

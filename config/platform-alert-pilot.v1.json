@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-09-08",
+  "status": "OPERATOR_SETUP_REQUIRED_RUNTIME_LOCKED",
+  "scheduled_collection_enabled": false,
+  "automatic_account_changes_enabled": false,
+  "production_import_enabled": false,
+  "gmail_label": "3dsk-radar",
+  "official_limits": {
+    "linkedin": {
+      "maximum_job_alerts": 20,
+      "delivery": ["DAILY", "WEEKLY"],
+      "scope": "LINKEDIN_JOB_POSTINGS",
+      "email_delivery_supported": true,
+      "documentation_url": "https://www.linkedin.com/help/linkedin/answer/a511279"
+    },
+    "upwork": {
+      "maximum_saved_searches": 30,
+      "saved_search_email_delivery_guaranteed": false,
+      "instant_alert_basis": "INDIVIDUAL_PROPOSAL_HISTORY",
+      "instant_alert_requirements": ["FREELANCER_PLUS", "AT_LEAST_ONE_ACTIVE_INDIVIDUAL_PROPOSAL"],
+      "documentation_urls": [
+        "https://support.upwork.com/hc/en-us/articles/211063078-How-to-search-for-jobs-on-Upwork",
+        "https://support.upwork.com/hc/en-us/articles/1500007921782-How-to-use-advanced-search-techniques-to-find-jobs",
+        "https://support.upwork.com/hc/en-us/articles/36001273797907-How-to-get-instant-job-alerts"
+      ]
+    }
+  },
+  "linkedin_job_alerts": [
+    {"id":"linkedin_digital_human","category":"HUMAN_DIGITAL_DOUBLE","search_phrase":"digital human","frequency":"DAILY","email_required":true,"enabled":false},
+    {"id":"linkedin_digital_double","category":"HUMAN_DIGITAL_DOUBLE","search_phrase":"digital double","frequency":"DAILY","email_required":true,"enabled":false},
+    {"id":"linkedin_realistic_character","category":"HUMAN_DIGITAL_DOUBLE","search_phrase":"realistic 3D character","frequency":"DAILY","email_required":true,"enabled":false},
+    {"id":"linkedin_scan_cleanup","category":"SCAN_CLEANUP_WRAP","search_phrase":"3D scan cleanup","frequency":"DAILY","email_required":true,"enabled":false},
+    {"id":"linkedin_photogrammetry","category":"PHOTOGRAMMETRY_ASSETS","search_phrase":"photogrammetry artist","frequency":"DAILY","email_required":true,"enabled":false},
+    {"id":"linkedin_character_outsourcing","category":"REMOTE_OVERFLOW","search_phrase":"character outsourcing","frequency":"DAILY","email_required":true,"enabled":false},
+    {"id":"linkedin_production_vendor","category":"REMOTE_OVERFLOW","search_phrase":"3D production vendor","frequency":"DAILY","email_required":true,"enabled":false},
+    {"id":"linkedin_heritage_3d","category":"MUSEUM_DIGITISATION","search_phrase":"cultural heritage 3D","frequency":"DAILY","email_required":true,"enabled":false}
+  ],
+  "upwork_saved_searches": [
+    {"id":"upwork_digital_humans","category":"HUMAN_DIGITAL_DOUBLE","boolean_query":"(\"digital human\" OR \"digital double\" OR \"realistic character\" OR MetaHuman) NOT (Reallusion OR iClone OR \"Character Creator\" OR Daz)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_scan_repair","category":"SCAN_CLEANUP_WRAP","boolean_query":"(\"scan cleanup\" OR \"mesh cleanup\" OR retopology OR \"topology transfer\" OR \"scan repair\") NOT (Reallusion OR iClone OR \"Character Creator\" OR Daz)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_human_photogrammetry","category":"PHOTOGRAMMETRY_ASSETS","boolean_query":"(photogrammetry OR \"photo reconstruction\" OR \"image based modeling\") AND (human OR character OR face OR body) NOT (aerial OR drone OR GIS)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_wrap_fitting","category":"SCAN_CLEANUP_WRAP","boolean_query":"(Wrap3D OR \"R3DS Wrap\" OR \"basemesh fitting\" OR \"topology fitting\") NOT (Reallusion OR iClone OR \"Character Creator\" OR Daz)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_likeness_sculpt","category":"HUMAN_DIGITAL_DOUBLE","boolean_query":"(ZBrush OR sculpting) AND (scan OR \"digital double\" OR likeness) NOT (miniature OR figurine OR printing)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_scan_texturing","category":"PHOTOGRAMMETRY_ASSETS","boolean_query":"(\"texture reprojection\" OR \"texture cleanup\" OR \"de-lighting\" OR \"PBR maps\") AND (scan OR photogrammetry OR human)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_production_overflow","category":"REMOTE_OVERFLOW","boolean_query":"(\"production overflow\" OR \"external art team\" OR outsourcing OR subcontractor OR vendor) AND (character OR human OR 3D)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_remote_heritage","category":"MUSEUM_DIGITISATION","boolean_query":"(\"cultural heritage\" OR museum OR artefact) AND (3D OR photogrammetry OR reconstruction) AND (remote OR cleanup OR processing)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false}
+  ],
+  "truth_contract": {
+    "linkedin_role": "SIGNAL_ONLY_EMPLOYMENT_BIASED",
+    "upwork_saved_search_role": "OPERATOR_REVIEW_FEED",
+    "upwork_email_role": "SIGNAL_ONLY_IF_PLATFORM_DELIVERS",
+    "required_final_verification": ["ORIGINAL_DETAIL", "ACTIVE_STATUS", "BUYER_IDENTITY", "STUDIO_ELIGIBILITY", "DELIVERABLE", "BUDGET_PROVENANCE", "APPLICATION_ROUTE"],
+    "outreach_locked_until_verified": true
+  }
+}
