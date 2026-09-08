@@ -71,6 +71,41 @@ test("START, CONTINUE_NATIVE, replay and GET preserve one bounded root run", asy
   assert.equal((await response.json()).run.run_id, started.run.run_id);
 });
 
+test("ULTRA advances to paid discovery without HTTP when no native source is qualified", async t => {
+  const values = install(t);
+  values.RADAR_SOURCE_COLLECTION_ENABLED = "false";
+  globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__ = new Set();
+  let calls = 0;
+  globalThis.__RADAR_TEST_TED_FETCH__ = async () => { calls += 1; throw new Error("must stay offline"); };
+  const handler = await load("paid-only-fallback");
+  let response = await handler(request("POST",{action:"START",request_id:"request_ultra_paid_only"}),{});
+  assert.equal(response.status,201);
+  const started = await response.json();
+  response = await handler(request("POST",{
+    action:"CONTINUE_NATIVE",
+    run_id:started.run.run_id,
+    operation_id:started.next_operation.operation_id
+  }),{});
+  const continued = await response.json();
+  assert.equal(response.status,200);
+  assert.equal(continued.run.plan_snapshot.phases[0].status,"COMPLETED");
+  assert.equal(continued.result.payload.child_status,"SKIPPED_NO_RUNTIME_ELIGIBLE_SOURCES");
+  assert.equal(continued.next_operation.phase_id,"CORE_DISCOVERY");
+  assert.equal(continued.run.usage.source_requests,0);
+  assert.equal(calls,0);
+});
+
+test("a qualified native source still requires the independent collection gate", async t => {
+  install(t,{RADAR_SOURCE_COLLECTION_ENABLED:"false"});
+  let calls = 0;
+  globalThis.__RADAR_TEST_TED_FETCH__ = async () => { calls += 1; throw new Error("must stay offline"); };
+  const handler = await load("qualified-source-locked");
+  const response = await handler(request("POST",{action:"START",request_id:"request_ultra_native_locked"}),{});
+  assert.equal(response.status,423);
+  assert.equal((await response.json()).error.code,"SOURCE_COLLECTION_LOCKED");
+  assert.equal(calls,0);
+});
+
 test("CANCEL stays available after the ULTRA gate is disabled", async t => {
   const values = install(t);
   const handler = await load("cancel");

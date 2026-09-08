@@ -63,13 +63,20 @@ test("health exposes an armed paid gate only in Deploy Preview context", async t
   assert.equal(preview.deploy_context, "deploy-preview");
 });
 
-test("health exposes ULTRA native readiness only when both gates and source qualification pass", async t => {
-  runtime(t, { RADAR_ULTRA_MAX_ENABLED:"true", RADAR_SOURCE_COLLECTION_ENABLED:"true" });
-  assert.equal((await (await health()).json()).ultra_max_native,"LOCKED");
+test("health exposes paid-only ULTRA fallback until a qualified native source is enabled", async t => {
+  runtime(t, { RADAR_ULTRA_MAX_ENABLED:"true", RADAR_SOURCE_COLLECTION_ENABLED:"false" });
+  const fallback = await (await health()).json();
+  assert.equal(fallback.ultra_max_native,"READY");
+  assert.equal(fallback.ultra_max_native_mode,"SKIP_NO_RUNTIME_ELIGIBLE_SOURCES");
   globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__ = new Set(["ted_eu"]);
   t.after(() => delete globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__);
+  const blocked = await (await health()).json();
+  assert.equal(blocked.ultra_max_native,"LOCKED");
+  assert.equal(blocked.ultra_max_native_mode,"SOURCE_COLLECTION_LOCKED");
+  process.env.RADAR_SOURCE_COLLECTION_ENABLED = "true";
   const ready = await (await health()).json();
   assert.equal(ready.ultra_max_native,"READY");
+  assert.equal(ready.ultra_max_native_mode,"ACTIVE");
   assert.equal(ready.live_ai_enabled,false);
 });
 

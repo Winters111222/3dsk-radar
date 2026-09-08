@@ -73,8 +73,10 @@ export default async function handler(request, context) {
       const prepared=await prepareUltraMaxPaidPhase({body,context,repository});
       return json({ok:true,run:prepared.run,next_operation:nextOperation(prepared.run),background_path:"/api/ultra-max-phase-background",retry_allowed:false});
     }
-    if (!sourceCollectionEnabled()) return json({ ok:false, error:{ code:"SOURCE_COLLECTION_LOCKED", message:"Native source collection is disabled." } }, 423);
-    if (!anyRuntimeSourceEligible()) return json({ ok:false, qualification:runtimeQualificationSummary(), error:{ code:"SOURCE_RELEVANCE_LOCKED", message:"No source is runtime-qualified." } }, 423);
+    const runtimeSourcesAvailable = anyRuntimeSourceEligible();
+    if (runtimeSourcesAvailable && !sourceCollectionEnabled()) {
+      return json({ ok:false, error:{ code:"SOURCE_COLLECTION_LOCKED", message:"Native source collection is disabled." } }, 423);
+    }
 
     if (action === "START") {
       const result = await startUltraMaxRun({ repository, requestId:body.request_id, nowIso });
@@ -90,6 +92,8 @@ export default async function handler(request, context) {
       repository,
       nowIso,
       grantRecords,
+      runtimeSourcesAvailable,
+      qualificationSummary:runtimeQualificationSummary(),
       collectPage:({sourceId,queryPackId,position,nowIso:at,limit}) => collectSourcePage({sourceId,queryPackId,position,nowIso:at,limit,fetchImpl:sourceFetch(sourceId)}),
       fetchDetail:({candidate,nowIso:at}) => fetchSourceDetail({candidate,nowIso:at,fetchImpl:sourceDetailFetch(candidate?.primary_record?.source_id)})
     });

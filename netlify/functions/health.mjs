@@ -14,9 +14,14 @@ export default async (_request, context) => {
   const productionSearchConfig = controlledProductionSearch === "READY" ? productionSearchConfiguration() : null;
   const controlledProductionReply = productionReplyState({ context });
   const officialSourceCanary = officialSourceCanaryConfiguration({ context, getEnv:envValue });
-  const ultraMaxNativeReady = envValue("RADAR_ULTRA_MAX_ENABLED").toLowerCase() === "true"
-    && sourceCollectionEnabled()
-    && anyRuntimeSourceEligible();
+  const ultraMaxEnabled = envValue("RADAR_ULTRA_MAX_ENABLED").toLowerCase() === "true";
+  const runtimeSourcesAvailable = anyRuntimeSourceEligible();
+  const ultraMaxNativeReady = ultraMaxEnabled && (!runtimeSourcesAvailable || sourceCollectionEnabled());
+  const ultraMaxNativeMode = !ultraMaxEnabled
+    ? "LOCKED"
+    : runtimeSourcesAvailable
+      ? sourceCollectionEnabled() ? "ACTIVE" : "SOURCE_COLLECTION_LOCKED"
+      : "SKIP_NO_RUNTIME_ELIGIBLE_SOURCES";
   const ultraMaxPaid = ultraMaxPaidConfiguration({context,getEnv:envValue});
   return Response.json({
     ok: true,
@@ -60,6 +65,7 @@ export default async (_request, context) => {
     })),
     source_run_engine: sourceCollectionEnabled() ? "IMPLEMENTED_ENABLED" : "IMPLEMENTED_LOCKED",
     ultra_max_native: ultraMaxNativeReady ? "READY" : "LOCKED",
+    ultra_max_native_mode:ultraMaxNativeMode,
     ultra_max_paid:ultraMaxPaid.state,
     ultra_max_paid_max_usd:ultraMaxPaid.ok ? ultraMaxPaid.cap_microusd/1_000_000 : null,
     ultra_max_paid_openai_request_limit:ultraMaxPaid.ok ? ultraMaxPaid.openai_request_limit : null,

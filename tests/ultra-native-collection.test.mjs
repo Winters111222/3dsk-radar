@@ -49,6 +49,64 @@ test("ULTRA native phase resumes the existing zero-cost source run across bounde
   assert.equal(calls, 12);
 });
 
+test("ULTRA native phase completes without HTTP when no source is runtime-qualified", async () => {
+  const repository = createStateRepository(memoryStore());
+  let calls = 0;
+  const executor = createUltraNativeCollectionExecutor({
+    repository,
+    nowIso:NOW,
+    runtimeSourcesAvailable:false,
+    qualificationSummary:{status:"HISTORICAL_QUALIFICATION_COMPLETE_RUNTIME_LOCKED",eligible_source_ids:[]},
+    collectPage:async () => { calls += 1; throw new Error("must stay offline"); }
+  });
+  let root = (await startUltraMaxRun({repository,requestId:"request_native_skip",runId:"ultra_native_skip",nowIso:NOW})).run;
+  const operationId = ultraMaxNextOperationId(root, "NATIVE_COLLECTION");
+  const result = await executeUltraMaxPhase({repository,runId:root.run_id,phaseId:"NATIVE_COLLECTION",operationId,nowIso:NOW,execute:executor});
+  root = result.run;
+  assert.equal(root.plan_snapshot.phases[0].status,"COMPLETED");
+  assert.equal(root.usage.source_requests,0);
+  assert.equal(calls,0);
+  assert.equal(result.result.payload.child_status,"SKIPPED_NO_RUNTIME_ELIGIBLE_SOURCES");
+  assert.equal(result.result.payload.native_mode,"PAID_ONLY_SAFE_FALLBACK");
+  assert.deepEqual(result.result.payload.qualification.eligible_source_ids,[]);
+});
+
+test("paid-only native fallback still imports an operator-verified heritage grant", async () => {
+  const repository = createStateRepository(memoryStore());
+  const executor = createUltraNativeCollectionExecutor({
+    repository,
+    nowIso:NOW,
+    runtimeSourcesAvailable:false,
+    grantRecords:[{
+      source_id:"mk_cz_heritage_grants",
+      source_url:"https://www.mk.gov.cz/digitalizace-kulturnich-statku-a-narodnich-kulturnich-pamatek-cs-2941",
+      title:"Výzva pro 3D digitalizaci kulturních statků",
+      institution:"Ministerstvo kultury ČR",
+      summary:"Podpora fotogrammetrie a 3D skenování sbírkových předmětů muzeí.",
+      published_date:"2026-09-01",
+      deadline:"2026-10-31",
+      grant_state:"OPEN_CALL",
+      participation_route:"INSTITUTION_PARTNER",
+      eligibility_evidence:"Dodavatel může realizovat odborné 3D práce pro oprávněnou muzeální instituci."
+    }]
+  });
+  let root = (await startUltraMaxRun({repository,requestId:"request_native_skip_grant",runId:"ultra_native_skip_grant",nowIso:NOW})).run;
+  const result = await executeUltraMaxPhase({
+    repository,
+    runId:root.run_id,
+    phaseId:"NATIVE_COLLECTION",
+    operationId:ultraMaxNextOperationId(root,"NATIVE_COLLECTION"),
+    nowIso:NOW,
+    execute:executor
+  });
+  root = result.run;
+  assert.equal(root.plan_snapshot.phases[0].status,"COMPLETED");
+  assert.equal(root.usage.source_requests,0);
+  assert.equal(root.usage.results_accepted,1);
+  assert.equal(result.result.payload.grants_imported,1);
+  assert.equal((await repository.listOpportunities()).length,1);
+});
+
 test("native phase can import a verified grant once while source chunks continue", async () => {
   const repository = createStateRepository(memoryStore());
   const grant = {
