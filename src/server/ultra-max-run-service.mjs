@@ -6,6 +6,7 @@ import {
   completeUltraMaxPhase,
   createUltraMaxRun,
   pauseUltraMaxPhase,
+  recordUltraMaxPaidCoordinatorVersion,
   ultraMaxNextOperationId,
   recordUltraMaxUsage
 } from "./ultra-max-run-contract.mjs";
@@ -112,6 +113,9 @@ export async function executeUltraMaxPhase({ repository, runId, phaseId, operati
     const output = await execute({ run:structuredClone(run), phase:structuredClone(target), operationId });
     const usage = output?.usage || {};
     run = recordUltraMaxUsage(run, phaseId, usage, nowIso);
+    if (output?.paid_coordinator_version !== undefined) {
+      run = recordUltraMaxPaidCoordinatorVersion(run,output.paid_coordinator_version,nowIso);
+    }
     const postDispatchCancel = await repository.getUltraMaxRunCancel(runId);
     run = postDispatchCancel?.requested_at
       ? cancelUltraMaxRun(run, postDispatchCancel.requested_at)

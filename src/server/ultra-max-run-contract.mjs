@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { validClientId } from "./source-run-contract.mjs";
 
-export const ULTRA_MAX_RUN_SCHEMA_VERSION = 2;
+export const ULTRA_MAX_RUN_SCHEMA_VERSION = 3;
 export const ULTRA_MAX_RUN_STATUSES = Object.freeze(["READY", "RUNNING", "PAUSED", "COMPLETED", "CANCELLED", "UNCERTAIN"]);
 export const ULTRA_MAX_CHECKPOINT_MAX_BYTES = 65_536;
 
@@ -110,6 +110,7 @@ export function createUltraMaxRun({ requestId, nowIso, runId = randomUUID() } = 
     cancel_requested_at:null,
     completion_reason:null,
     retry_allowed:false,
+    paid_coordinator_version:0,
     plan_snapshot:{
       ...ULTRA_MAX_PROFILE,
       phases:ULTRA_MAX_PHASES.map((item) => ({
@@ -127,6 +128,14 @@ export function createUltraMaxRun({ requestId, nowIso, runId = randomUUID() } = 
     },
     usage:emptyUsage()
   };
+}
+
+export function recordUltraMaxPaidCoordinatorVersion(run, version, nowIso) {
+  validateTimestamp(nowIso);
+  const next = integer(version,"ULTRA_MAX_PAID_COORDINATOR_VERSION_INVALID");
+  const current = integer(run?.paid_coordinator_version||0,"ULTRA_MAX_PAID_COORDINATOR_VERSION_INVALID");
+  if (next < current) throw new Error("ULTRA_MAX_PAID_COORDINATOR_VERSION_STALE");
+  return withStatus(run,run.status,nowIso,{paid_coordinator_version:next});
 }
 
 export function beginUltraMaxPhase(run, phaseId, nowIso) {

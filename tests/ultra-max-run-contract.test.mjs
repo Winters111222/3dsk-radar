@@ -8,6 +8,7 @@ import {
   completeUltraMaxPhase,
   createUltraMaxRun,
   pauseUltraMaxPhase,
+  recordUltraMaxPaidCoordinatorVersion,
   ultraMaxNextOperationId,
   recordUltraMaxUsage
 } from "../src/server/ultra-max-run-contract.mjs";
@@ -18,6 +19,7 @@ const LATER = "2026-09-08T16:01:00.000Z";
 test("ULTRA_MAX snapshots seven bounded phases under one root budget", () => {
   const run = createUltraMaxRun({requestId:"request_ultra_001",runId:"ultra_run_001",nowIso:NOW});
   assert.equal(run.profile_id, "ULTRA_MAX");
+  assert.equal(run.schema_version,3);
   assert.equal(run.plan_snapshot.phases.length, 7);
   assert.equal(run.plan_snapshot.phases[0].phase_id, "NATIVE_COLLECTION");
   assert.equal(ULTRA_MAX_PHASES.reduce((sum, item) => sum + item.max_openai_requests, 0), 100);
@@ -26,7 +28,15 @@ test("ULTRA_MAX snapshots seven bounded phases under one root budget", () => {
   assert.equal(ULTRA_MAX_PROFILE.max_candidates, 200);
   assert.equal(ULTRA_MAX_PROFILE.max_results, 100);
   assert.equal(run.retry_allowed, false);
+  assert.equal(run.paid_coordinator_version,0);
   assert.equal(new Set(run.plan_snapshot.phases.map((item) => item.operation_id)).size, 7);
+});
+
+test("paid coordinator version is monotonic and persisted on the ULTRA root", () => {
+  let run=createUltraMaxRun({requestId:"request_ultra_paid_version",runId:"ultra_run_paid_version",nowIso:NOW});
+  run=recordUltraMaxPaidCoordinatorVersion(run,4,LATER);
+  assert.equal(run.paid_coordinator_version,4);
+  assert.throws(()=>recordUltraMaxPaidCoordinatorVersion(run,3,LATER),/ULTRA_MAX_PAID_COORDINATOR_VERSION_STALE/);
 });
 
 test("each intentional click gets a distinct root identity even in the same UTC window", () => {

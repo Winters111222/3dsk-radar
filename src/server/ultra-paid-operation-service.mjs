@@ -11,7 +11,7 @@ function paidPhase(run, phaseId) {
   const phase = run?.plan_snapshot?.phases?.find((item) => item.phase_id === phaseId);
   if (!phase || !["PAID_HOSTED_SEARCH","PAID_DETAIL_VERIFY"].includes(phase.kind)) throw new Error("ULTRA_PAID_PHASE_INVALID");
   if (!phase.reservation_id || phase.budget_cap_microusd < 1) throw new Error("ULTRA_PAID_PHASE_BUDGET_INVALID");
-  if (!['PENDING','PAUSED'].includes(phase.status)) throw new Error("ULTRA_PAID_PHASE_NOT_EXECUTABLE");
+  if (!['PENDING','PAUSED','RUNNING'].includes(phase.status)) throw new Error("ULTRA_PAID_PHASE_NOT_EXECUTABLE");
   return phase;
 }
 
@@ -22,7 +22,7 @@ function childReservationId(phase, operationId) {
 }
 
 function replayResult(claim) {
-  if (claim.status === "COMPLETED" && claim.result) return {replayed:true, result:claim.result};
+  if (claim.status === "COMPLETED" && claim.result) return {replayed:true, result:claim.result, coordinator_version:claim.version};
   const error = new Error("ULTRA_PAID_OPERATION_REPLAY_UNCERTAIN");
   error.code = "ULTRA_PAID_OPERATION_REPLAY_UNCERTAIN";
   throw error;
