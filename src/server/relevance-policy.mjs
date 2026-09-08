@@ -116,7 +116,9 @@ export function evaluateCandidateRelevance(candidate) {
   }
 
   const categories = new Set(Array.isArray(candidate?.categories) ? candidate.categories : []);
-  const heritage = categories.has("CULTURAL_HERITAGE_3D") || matchesAny(HERITAGE_PATTERNS, text);
+  const heritage = categories.has("CULTURAL_HERITAGE_3D")
+    || categories.has("HERITAGE_FUNDING_PARTNERSHIP")
+    || matchesAny(HERITAGE_PATTERNS, text);
   const physicalCapture = categories.has("CAPTURE") || matchesAny(PHYSICAL_CAPTURE_PATTERNS, text);
   const remotePostprocess = categories.has("HERITAGE_POSTPROCESSING")
     || ((categories.has("PHOTOGRAMMETRY_PROCESSING") || categories.has("SCAN_CLEANUP"))

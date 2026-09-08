@@ -313,6 +313,7 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
       publishedDate,
       sourceUpdatedDate,
       acceptanceVerified,
+      fundingPartnership:Array.isArray(candidate.categories) && candidate.categories.includes("HERITAGE_FUNDING_PARTNERSHIP"),
       nowIso
     });
     if (!truth.ok) return { opportunity:null, rejection:truth.rejection };

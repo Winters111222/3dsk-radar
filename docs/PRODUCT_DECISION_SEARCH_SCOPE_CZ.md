@@ -46,3 +46,11 @@ Character rigging nebo animation může zůstat relevantní pouze tehdy, když j
 5. Visual / AI / Motion-only kandidát se nesmí normalizovat na `OTHER_RELEVANT`.
 
 Toto rozhodnutí samo neaktivuje crawler, nemění Netlify environment, nespouští placený Search a není souhlasem s produkčním deployem.
+
+## Doplnění 2026-09-08 — CZ/SK granty pro kulturní dědictví
+
+Aktivní česká nebo slovenská grantová výzva s explicitním 3D scope se může zobrazit jako `HERITAGE_FUNDING_PARTNERSHIP` / `POTENTIAL_LEAD`, pokud se 3D.SK může účastnit přímo nebo s oprávněnou muzeální či jinou institucí. Stejně se může zobrazit konkrétní nedávno podpořený příjemce, pokud jeho projekt explicitně obsahuje relevantní 3D produkci.
+
+Grant není buyer objednávka: nikdy se neoznačí `OPEN_OPPORTUNITY` a grantová částka se nepoužije jako buyer project budget. `OPEN_OPPORTUNITY` vzniká až ze samostatné veřejné zakázky nebo konkrétní poptávky. Uzavřené výzvy, obecné grantové rozcestníky a projekty bez explicitního 3D deliverable se nezobrazují.
+
+Toto doplnění nemění pravidlo, že fyzická digitalizace kulturních předmětů patří do aktivního scope pouze v Česku a na Slovensku; mimo CZ/SK je relevantní jen vzdálená postprodukce z buyer-supplied dat.

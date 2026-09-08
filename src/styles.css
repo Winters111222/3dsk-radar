@@ -110,6 +110,7 @@ tr[data-id]:hover td, tr.is-selected td { background:#171d24; }
 .kind-badge { padding:5px 8px; font-size:9px; }
 .kind-badge.open { color:#b6d3ff; border-color:#294667; background:#111b27; }
 .kind-badge.lead { color:#f4cf74; border-color:#5c4a20; background:#211b0e; }
+.kind-badge.funding { color:#aee3be; border-color:#315d40; background:#102018; }
 .kind-badge.competitor { color:#d7b6ff; border-color:#563d72; background:#1c1426; }
 .intelligence-lock { margin-bottom:16px; padding:14px; display:grid; gap:6px; border:1px solid #563d72; border-radius:12px; background:#1c1426; }
 .intelligence-lock strong { color:#d7b6ff; font-size:10px; letter-spacing:.1em; }

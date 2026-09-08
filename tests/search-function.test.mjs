@@ -480,7 +480,8 @@ test("WIDE_MAX executes all 25 shards in one coordinated no-retry operation", as
     "sam.gov":"https://sam.gov/opp/12345678-1234-1234-1234-123456789abc/view",
     "ungm.org":"https://www.ungm.org/Public/Notice/12345",
     "find-tender.service.gov.uk":"https://www.find-tender.service.gov.uk/Notice/012345-2026",
-    "een.ec.europa.eu":"https://een.ec.europa.eu/partnering-opportunities/synthetic-photogrammetry-request"
+    "een.ec.europa.eu":"https://een.ec.europa.eu/partnering-opportunities/synthetic-photogrammetry-request",
+    "mk.gov.cz":"https://www.mk.gov.cz/digitalizace-kulturnich-statku-a-narodnich-kulturnich-pamatek-cs-2941"
   };
   let openaiRequests = 0;
   let savedRun;

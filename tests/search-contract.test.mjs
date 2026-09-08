@@ -41,9 +41,11 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.ok(body.instructions.includes("Hard exclusions: omit every Reallusion"));
   assert.ok(body.instructions.includes("physical scanning of museum objects"));
   assert.ok(body.instructions.includes("LOW confidence"));
-  for (const category of ["HUMAN_DATA_CAPTURE", "CULTURAL_HERITAGE_3D", "HERITAGE_POSTPROCESSING"]) {
+  for (const category of ["HUMAN_DATA_CAPTURE", "CULTURAL_HERITAGE_3D", "HERITAGE_POSTPROCESSING", "HERITAGE_FUNDING_PARTNERSHIP"]) {
     assert.ok(OPPORTUNITY_CATEGORIES.includes(category));
   }
+  assert.ok(body.instructions.includes("Never call a grant OPEN_OPPORTUNITY"));
+  assert.ok(body.instructions.includes("funding, or individual employee salary is NOT the buyer's outsourcing budget"));
 });
 
 test("search schema clamps result count and covers required opportunity kinds", () => {
@@ -55,6 +57,8 @@ test("search schema clamps result count and covers required opportunity kinds", 
   assert.ok(SEARCH_INTENTS.includes("AI human dataset photogrammetry capture vendor"));
   assert.ok(SEARCH_INTENTS.includes("3D digitalizace sbírkových předmětů veřejná zakázka"));
   assert.ok(SEARCH_INTENTS.includes("3D digitalizácia zbierkových predmetov verejné obstarávanie"));
+  assert.ok(SEARCH_INTENTS.includes("aktivní grant 3D digitalizace kulturních statků Česko"));
+  assert.ok(SEARCH_INTENTS.includes("otvorená výzva múzeá digitalizácia 3D Slovensko"));
 });
 
 test("instructions expose no credentials unless explicitly PUBLIC_APPROVED", () => {

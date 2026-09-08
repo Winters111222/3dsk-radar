@@ -43,3 +43,11 @@ test("employment and partnership signals cannot become open buyer requests", () 
   assert.equal(partnership.ok, true);
   assert.equal(partnership.opportunityKind, "POTENTIAL_LEAD");
 });
+
+test("a recent awarded heritage grant may remain a potential partner lead only with the explicit funding flag", () => {
+  const withoutFlag = evaluateSourceTruth({...base,requestedKind:"POTENTIAL_LEAD",commercialRole:"PARTNER",noticeStatus:"AWARDED"});
+  assert.equal(withoutFlag.rejection, "inactive_notice");
+  const fundedRecipient = evaluateSourceTruth({...base,requestedKind:"POTENTIAL_LEAD",commercialRole:"PARTNER",noticeStatus:"AWARDED",fundingPartnership:true});
+  assert.equal(fundedRecipient.ok, true);
+  assert.equal(fundedRecipient.opportunityKind, "POTENTIAL_LEAD");
+});
