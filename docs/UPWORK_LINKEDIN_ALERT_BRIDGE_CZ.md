@@ -102,6 +102,21 @@ Upwork saved search je operator-review feed; nelze jej označit jako aktivní
 e-mailový monitoring bez skutečně doručeného platformního alertu. Ani jedna
 platforma se nestane runtime zdrojem pouhým vytvořením dotazu.
 
+## Offline měření výtěžnosti
+
+Ručně ověřené kandidáty lze bez sítě a bez AI vyhodnotit příkazem
+`npm run report:alerts:precision -- <manual-review.json>`. Každý A/B výsledek
+musí doložit originální detail, aktivní stav, kupujícího, způsobilost externího
+studia, konkrétní deliverable, budget provenance a aplikační cestu. C, D a
+odmítnuté položky musí zůstat outreach-locked a mít explicitní důvod.
+LinkedIn A/B navíc musí být vyřešen na originální buyer/ATS zdroj mimo samotnou
+LinkedIn job URL; platformní alert zůstává pouze `signal_url`.
+
+Report ukáže precision celkem, po platformě i po jednotlivém pilotním dotazu.
+Zdroj projde pouze při nejméně 30 ručně posouzených kandidátech a alespoň 80 %
+ověřených A/B výsledků. Ani PASS automaticky neaktivuje runtime; výstup vždy
+ponechá `runtime_activation: LOCKED`.
+
 ## Gaty pro preview canary
 
 Code-only endpoint `/api/gmail-alert-canary` je implementovaný, ale funguje
