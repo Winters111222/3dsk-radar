@@ -59,6 +59,14 @@ export const WIDE_V3_SOURCE_CONNECTORS = Object.freeze([
     { requiredGates:["RADAR_SOURCE_SIGNAL_INGEST_ENABLED"], notes:"No LinkedIn browser scraping. A LinkedIn URL is a discovery signal and must resolve to an original employer, ATS or buyer source." }
   ),
   connector(
+    "upwork_alert_bridge",
+    "Upwork user-owned alerts",
+    "USER_AUTHORIZED_ALERT_RELAY",
+    "RADAR_UPWORK_SIGNAL_ENABLED",
+    ["RADAR_SOURCE_INGEST_SECRET"],
+    { requiredGates:["RADAR_SOURCE_SIGNAL_INGEST_ENABLED"], notes:"Processes only alerts already delivered to the user's mailbox; it never requests or scrapes Upwork. Every URL remains discovery-only until the exact buyer job is manually or officially verified." }
+  ),
+  connector(
     "telegram_authorized_channels",
     "Telegram authorized channels",
     "OFFICIAL_BOT_WEBHOOK",

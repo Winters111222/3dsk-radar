@@ -116,6 +116,14 @@ test("recent signed social signals join only social shards and stale signals are
     discovery_only:true,
     requires_original_verification:true
   }, {
+    source_id:"upwork_alert_bridge",
+    source_event_id:"up-mail-1",
+    source_url:"https://www.upwork.com/jobs/~abc",
+    text:"Buyer needs remote scan cleanup",
+    published_at:"2026-09-06T11:00:00Z",
+    discovery_only:true,
+    requires_original_verification:true
+  }, {
     source_id:"linkedin_alert_bridge",
     source_event_id:"li-old",
     source_url:"https://www.linkedin.com/jobs/view/old",
@@ -125,8 +133,9 @@ test("recent signed social signals join only social shards and stale signals are
     requires_original_verification:true
   }], "2026-09-06T12:00:00Z");
   assert.equal(discovery.requests, 0);
-  assert.equal(discovery.stored_signal_count, 1);
+  assert.equal(discovery.stored_signal_count, 2);
   assert.equal(officialHintsForShard(discovery, "social_signals").length, 1);
+  assert.equal(officialHintsForShard(discovery, "marketplaces_core").length, 1);
   assert.equal(officialHintsForShard(discovery, "procurement").length, 0);
-  assert.equal(summarizeOfficialWideDiscovery(discovery).stored_signal_count, 1);
+  assert.equal(summarizeOfficialWideDiscovery(discovery).stored_signal_count, 2);
 });
