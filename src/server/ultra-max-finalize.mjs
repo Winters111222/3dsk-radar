@@ -1,4 +1,5 @@
 import { loadUltraDetailEvidence } from "./ultra-detail-verification.mjs";
+import { buildUltraForensicAudit } from "./ultra-forensic-audit.mjs";
 
 function addUsage(left={},right={}) {
   return Object.fromEntries([
@@ -52,6 +53,15 @@ export async function persistUltraMaxVerifiedResults({repository,run,detailOutpu
     persistence:"NETLIFY_BLOBS",
     verification:detailOutput.payload.verification
   };
+  searchRun.forensic_audit=buildUltraForensicAudit({
+    run,
+    phaseOutputs:prior.map((payload)=>({
+      payload,
+      usage:run.plan_snapshot.phases.find((phase)=>phase.phase_id===payload.phase_id)?.usage || {}
+    })),
+    detailOutput,
+    persistence:merge
+  });
   await repository.saveSearchRun(searchRun);
   return {
     new_count:merge.new_count,

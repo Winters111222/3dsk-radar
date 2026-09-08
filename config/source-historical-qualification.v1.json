@@ -248,6 +248,15 @@
       "action": "HOLD_FOR_SOURCE_SPECIFIC_YIELD",
       "runtime_eligible": false,
       "positive_evidence_urls": [],
+      "access_status": "AUTOMATION_APPROVED",
+      "access_evidence_urls": [
+        "https://docs.ted.europa.eu/api/latest/index.html",
+        "https://docs.ted.europa.eu/api/latest/search.html"
+      ],
+      "yield_status": "SOURCE_SPECIFIC_PRECISION_PENDING",
+      "reviewed_candidates": 0,
+      "accepted_relevant_hits": 0,
+      "measured_precision": null,
       "rationale_cz": "Datová cesta je kvalitní, ale dosavadní omezený live vzorek nepřinesl relevantní 3D.SK příležitost."
     },
     {
@@ -257,6 +266,14 @@
       "action": "HOLD_FOR_SOURCE_SPECIFIC_YIELD",
       "runtime_eligible": false,
       "positive_evidence_urls": [],
+      "access_status": "AUTOMATION_APPROVED",
+      "access_evidence_urls": [
+        "https://www.find-tender.service.gov.uk/Developer/Documentation"
+      ],
+      "yield_status": "SOURCE_SPECIFIC_PRECISION_FAILED",
+      "reviewed_candidates": 50,
+      "accepted_relevant_hits": 0,
+      "measured_precision": 0,
       "rationale_cz": "Collector je implementovaný, ale dosavadní omezený live vzorek nepřinesl relevantní 3D.SK příležitost."
     },
     {
@@ -266,6 +283,14 @@
       "action": "HOLD_FOR_SOURCE_SPECIFIC_YIELD",
       "runtime_eligible": false,
       "positive_evidence_urls": [],
+      "access_status": "AUTOMATION_APPROVED",
+      "access_evidence_urls": [
+        "https://www.contractsfinder.service.gov.uk/apidocumentation/Notices/1/GET-Published-Notice-OCDS-Search"
+      ],
+      "yield_status": "SOURCE_SPECIFIC_PRECISION_FAILED",
+      "reviewed_candidates": 50,
+      "accepted_relevant_hits": 0,
+      "measured_precision": 0,
       "rationale_cz": "Collector je implementovaný, ale dosavadní omezený live vzorek nepřinesl relevantní 3D.SK příležitost."
     },
     {

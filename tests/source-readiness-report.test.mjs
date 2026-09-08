@@ -21,4 +21,8 @@ test("Tier A readiness report is offline, evidence-complete and fail-closed", as
   assert.ok(report.sources.every((source) => source.positive_examples >= 2));
   assert.ok(report.sources.every((source) => source.activation_blockers.includes("NOT_MEASURED")));
   assert.ok(report.sources.every((source) => source.runtime_eligible === false));
+  assert.equal(report.zero_cost_collectors.length,3);
+  assert.ok(report.zero_cost_collectors.every((source) => source.access_ready));
+  assert.ok(report.zero_cost_collectors.every((source) => source.runtime_eligible === false));
+  assert.equal(report.zero_cost_collectors.find((source) => source.source_id === "find_tender_uk").measured_precision,0);
 });

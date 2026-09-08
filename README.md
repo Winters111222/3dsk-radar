@@ -49,6 +49,10 @@ Maximum hosted-index profil `WIDE_MAX` (25 shardů / 75 web calls / 100 výsledk
 
 Roadmapa vícekolového `ULTRA_MAX` root-runu: [`docs/ULTRA_MAX_ROADMAP_CZ.md`](docs/ULTRA_MAX_ROADMAP_CZ.md). První code-only milník zavádí sedm perzistentních, přesně omezených fází pod jedním root capem; neaktivuje síť, placené hledání ani produkční endpoint.
 
+Forenzní audit prvního produkčního ULTRA běhu a oprava budoucí observability: [`docs/ULTRA_MAX_POST_RUN_FORENSIC_20260908_CZ.md`](docs/ULTRA_MAX_POST_RUN_FORENSIC_20260908_CZ.md).
+
+Seřazený source-gap report včetně access/credential/ToS/detail-verification kontraktů: [`docs/SOURCE_GAP_REPORT_20260908_CZ.md`](docs/SOURCE_GAP_REPORT_20260908_CZ.md). Strojová autorita je `config/source-gap-report.v1.json`; všechny záznamy zůstávají runtime zamčené.
+
 Relevance a yield optimalizace po prvním WIDE_MAX auditu: [`docs/SEARCH_RELEVANCE_AND_YIELD_OPTIMIZATION_20260908_CZ.md`](docs/SEARCH_RELEVANCE_AND_YIELD_OPTIMIZATION_20260908_CZ.md)
 
 Search Phase A — truth/freshness acceptance: [`docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md`](docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md)
