@@ -34,9 +34,21 @@ test("candidate panel permits only truth-gated promotion", () => {
 
 test("operator controls have responsive layouts and the collection lock is acceptance-tested", () => {
   assert.match(styles, /\.source-run-controls/);
-  assert.match(responsive, /\.source-run-controls,.source-run-progress \{ grid-template-columns:1fr; \}/);
+  assert.match(responsive, /\.source-run-controls,.ultra-max-controls,.source-run-progress \{ grid-template-columns:1fr; \}/);
   assert.match(app, /SOURCE_COLLECTION_LOCKED/);
   assert.match(app, /prelive_lock_check/);
+});
+
+test("ULTRA MAX operator UI runs only replay-safe native chunks from one click", () => {
+  for (const marker of ["ultra-max-panel","Maximum native radar","RUN ULTRA MAX · NATIVE LOCKED","CANCEL ULTRA RUN","Future hosted-search phases remain separately locked"]) {
+    assert.match(`${html}\n${app}`,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")));
+  }
+  assert.match(app,/continueUltraNativeLoop/);
+  assert.match(app,/action:"CONTINUE_NATIVE"/);
+  assert.match(app,/maxChunks:50/);
+  assert.match(app,/no automatic retry/i);
+  assert.match(app,/h\.ultra_max_native==="READY"/);
+  assert.match(styles,/\.ultra-max-controls/);
 });
 
 test("paid search diagnostics expose required-shard coverage, per-source yield and rejection reasons", () => {

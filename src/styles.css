@@ -65,6 +65,9 @@ a { color:inherit; }
 .source-run-candidates a { flex-shrink:0; color:#d5dce4; font-size:10px; font-weight:850; text-decoration:none; border-bottom:1px solid #546273; }
 .raw-candidate-badge { color:#f1d78f; font-size:9px; font-weight:900; letter-spacing:.06em; }
 .source-run-candidates .source-candidate-empty { color:#778493; justify-content:flex-start; }
+.ultra-max-panel { border-color:#3b4d62; background:linear-gradient(135deg,rgba(18,27,37,.98),rgba(11,16,22,.98)); }
+.ultra-max-controls { display:grid; grid-template-columns:minmax(260px,1fr) auto; gap:10px; margin:18px 0 14px; }
+.ultra-max-controls .primary-button,.ultra-max-controls .action-button { min-height:48px; }
 .summary-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin:14px 0; }
 .summary-card { padding:20px 22px; border:1px solid var(--line); background:#101419; border-radius:15px; min-width:0; }
 .summary-card .label { color:#8693a2; font-size:11px; font-weight:800; letter-spacing:.11em; }

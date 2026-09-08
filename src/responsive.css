@@ -26,7 +26,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visib
   .topbar-meta { justify-content:flex-end; }
   .toolbar { align-items:stretch; }
   .safety-note { grid-template-columns:1fr; gap:12px; }
-  .source-run-controls { grid-template-columns:1fr 1fr; }
+  .source-run-controls,.ultra-max-controls { grid-template-columns:1fr 1fr; }
   .source-run-controls label { grid-column:1 / -1; }
 }
 @media (max-width:760px) {
@@ -44,7 +44,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visib
   .hero-actions { width:100%; text-align:left; }
   .source-run-panel { padding:16px; }
   .source-run-head { flex-direction:column; gap:12px; }
-  .source-run-controls,.source-run-progress { grid-template-columns:1fr; }
+  .source-run-controls,.ultra-max-controls,.source-run-progress { grid-template-columns:1fr; }
   .source-run-controls label { grid-column:auto; }
   .source-run-candidates li { align-items:flex-start; flex-direction:column; gap:10px; }
   .source-run-candidates a { min-height:44px; display:flex; align-items:center; }
