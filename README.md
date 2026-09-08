@@ -43,6 +43,8 @@ Závazný Search scope: [`docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md`](docs/PRODUC
 
 Široká relevance Human Capture + Cultural Heritage: [`docs/PRODUCT_DECISION_WIDE_RELEVANCE_20260908_CZ.md`](docs/PRODUCT_DECISION_WIDE_RELEVANCE_20260908_CZ.md)
 
+Deep Research source gap, deduplikace a CZ/SK grantová lane: [`docs/DEEP_RESEARCH_SOURCE_GAP_AND_ACTIVATION_20260908_CZ.md`](docs/DEEP_RESEARCH_SOURCE_GAP_AND_ACTIVATION_20260908_CZ.md). Import drží 50 zdrojů, 71 watchlist URL a 52 query shardů default-off. Aktivní grant s explicitním 3D scope nebo konkrétní podpořený příjemce se může zobrazit jen jako `FUNDING / PARTNERSHIP` / `POTENTIAL_LEAD`; grant ani jeho částka nejsou buyer objednávka ani buyer project budget.
+
 Maximum hosted-index profil `WIDE_MAX` (25 shardů / 75 web calls / 100 výsledků / 5 USD): [`docs/WIDE_MAX_SEARCH_CZ.md`](docs/WIDE_MAX_SEARCH_CZ.md)
 
 Relevance a yield optimalizace po prvním WIDE_MAX auditu: [`docs/SEARCH_RELEVANCE_AND_YIELD_OPTIMIZATION_20260908_CZ.md`](docs/SEARCH_RELEVANCE_AND_YIELD_OPTIMIZATION_20260908_CZ.md)

@@ -30,7 +30,12 @@ test("every accepted detail domain belongs to a required shard and LinkedIn is e
     "worldwide_multilingual_buyer_sweep"
   ]);
   const heritage = WIDE_SEARCH_SHARDS.find((item) => item.id === "cultural_heritage_cz_sk");
-  assert.deepEqual(heritage.allowed_domains, ["ted.europa.eu", "nen.nipez.cz", "uvo.gov.sk"]);
+  assert.deepEqual(heritage.allowed_domains, [
+    "ted.europa.eu", "nen.nipez.cz", "zakazky.gov.cz", "zakazky.krajbezkorupce.cz",
+    "zakazky.kr-stredocesky.cz", "uvo.gov.sk", "josephine.proebiz.com", "mk.gov.cz",
+    "fpu.sk", "culture.gov.sk", "eeagrants.org"
+  ]);
+  assert.match(heritage.focus, /never OPEN_OPPORTUNITY/);
   assert.match(heritage.focus, /only in Czechia or Slovakia/);
   assert.doesNotMatch(JSON.stringify(WIDE_SEARCH_SHARDS), /ordinary employee roles.*POTENTIAL_LEAD/i);
 });

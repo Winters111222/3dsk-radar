@@ -5,6 +5,7 @@ import { extractWebSourceUrls, normalizeCandidate, normalizeSearchResponse, norm
 const NOW = "2026-09-05T10:00:00.000Z";
 const PRIMARY = "https://studio.example/jobs/vendor?utm_source=test";
 const CONTACT = "https://studio.example/contact";
+const GRANT = "https://www.mk.gov.cz/digitalizace-kulturnich-statku-a-narodnich-kulturnich-pamatek-cs-2941";
 
 function candidate(overrides = {}) {
   return {
@@ -136,6 +137,33 @@ test("visual AI motion-only results are rejected instead of falling back to Othe
   const result = normalizeCandidate(candidate({categories:["VISUAL_AI_MOTION"]}), verified, NOW);
   assert.equal(result.opportunity, null);
   assert.equal(result.rejection, "excluded_search_category");
+});
+
+test("a recent funded CZ museum project normalizes only as a partner lead without grant budget", () => {
+  const verified = new Set([normalizeUrl(GRANT)]);
+  const result = normalizeCandidate(candidate({
+    title:"Funded museum 3D digitisation project",
+    company:"Example Czech Museum",
+    summary:"A funded museum project explicitly includes photogrammetry and 3D scanning of collection objects.",
+    opportunity_kind:"POTENTIAL_LEAD",
+    commercial_role:"PARTNER",
+    notice_status:"AWARDED",
+    categories:["CULTURAL_HERITAGE_3D", "CAPTURE", "HERITAGE_FUNDING_PARTNERSHIP"],
+    location:"Czech Republic",
+    remote_scope:"ONSITE",
+    source_url:GRANT,
+    apply_url:GRANT,
+    source_evidence:[{type:"SIGNAL_SOURCE",url:GRANT,note:"Official award source"}],
+    budget_type:"PUBLISHED",
+    budget_published:"CZK 10,000,000 grant award",
+    budget_basis:"UNKNOWN"
+  }), verified, NOW);
+  assert.equal(result.rejection, null);
+  assert.equal(result.opportunity.opportunity_kind, "POTENTIAL_LEAD");
+  assert.equal(result.opportunity.commercial_role, "PARTNER");
+  assert.equal(result.opportunity.categories.includes("HERITAGE_FUNDING_PARTNERSHIP"), true);
+  assert.equal(result.opportunity.budget_type, "UNKNOWN");
+  assert.equal(result.opportunity.budget_published, null);
 });
 
 test("hard truth gates reject stale listings and accept old listings only with current source evidence", () => {

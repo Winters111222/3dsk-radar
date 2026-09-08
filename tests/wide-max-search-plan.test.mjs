@@ -30,6 +30,19 @@ test("WIDE_MAX spends no shards on employee ATS and includes EEN buyer requests"
     assert.equal(planned.has(domain), false, `${domain} must not consume WIDE_MAX discovery budget`);
   }
   assert.equal(planned.has("een.ec.europa.eu"), true);
+  for (const domain of [
+    "discussions.unity.com",
+    "codeur.com",
+    "zakazky.gov.cz",
+    "zakazky.krajbezkorupce.cz",
+    "zakazky.kr-stredocesky.cz",
+    "josephine.proebiz.com",
+    "mk.gov.cz",
+    "fpu.sk",
+    "culture.gov.sk",
+    "eeagrants.org"
+  ]) assert.equal(planned.has(domain), true, `${domain} must be covered after deep research`);
+  assert.equal(WIDE_MAX_SEARCH_SHARDS.some((item) => item.id === "cz_sk_heritage_funding"), true);
   assert.equal(WIDE_MAX_SEARCH_SHARDS.filter((item) => /heritage/i.test(item.id)).length >= 4, true);
   assert.equal(WIDE_MAX_SEARCH_SHARDS.filter((item) => /human|casting/i.test(item.id)).length >= 5, true);
   assert.equal(WIDE_MAX_SEARCH_SHARDS.every((item) => /Reject|reject|irrelevant|omit/i.test(item.focus)), true);

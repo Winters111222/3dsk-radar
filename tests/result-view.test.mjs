@@ -8,6 +8,7 @@ const items=[
 ];
 test('category OR combines with status and score filters and includes secondary tags',()=>{
 assert.equal(Object.hasOwn(CATEGORIES,'VISUAL_AI_MOTION'),false);
+assert.equal(CATEGORIES.HERITAGE_FUNDING_PARTNERSHIP,'Heritage Funding / Partnership');
 assert.deepEqual(visibleResults(items,{categories:['WRAP_BASEMESH','PHOTOGRAMMETRY_PROCESSING'],status:'NEW',minFit:60}).map(x=>x.id),['b','a']);
 assert.deepEqual(visibleResults(items,{categories:['WRAP_BASEMESH','PHOTOGRAMMETRY_PROCESSING'],minFit:80}).map(x=>x.id),['a']);
 assert.equal(visibleResults(items,{categories:['FACIAL_FACS']}).length,0);

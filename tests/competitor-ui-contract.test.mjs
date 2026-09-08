@@ -21,3 +21,9 @@ test("browser keeps every competitor sales action visibly locked", () => {
     "Response generation is locked for competitor intelligence."
   ]) assert.ok(app.includes(marker), marker);
 });
+
+test("heritage grants have a distinct funding/partnership label", () => {
+  assert.match(app, /HERITAGE_FUNDING_PARTNERSHIP/);
+  assert.match(app, /FUNDING \/ PARTNERSHIP/);
+  assert.match(app, /VERIFY ELIGIBILITY/);
+});
