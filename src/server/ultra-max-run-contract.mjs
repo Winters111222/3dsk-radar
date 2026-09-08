@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import { validClientId } from "./source-run-contract.mjs";
 
-export const ULTRA_MAX_RUN_SCHEMA_VERSION = 1;
-export const ULTRA_MAX_RUN_STATUSES = Object.freeze(["READY", "RUNNING", "COMPLETED", "CANCELLED", "UNCERTAIN"]);
+export const ULTRA_MAX_RUN_SCHEMA_VERSION = 2;
+export const ULTRA_MAX_RUN_STATUSES = Object.freeze(["READY", "RUNNING", "PAUSED", "COMPLETED", "CANCELLED", "UNCERTAIN"]);
+export const ULTRA_MAX_CHECKPOINT_MAX_BYTES = 65_536;
 
 const phase = (sequence, phaseId, kind, limits) => Object.freeze({
   sequence,
@@ -118,6 +119,9 @@ export function createUltraMaxRun({ requestId, nowIso, runId = randomUUID() } = 
         status:"PENDING",
         started_at:null,
         completed_at:null,
+        chunks_completed:0,
+        next_chunk_index:1,
+        checkpoint:null,
         usage:emptyUsage()
       }))
     },
@@ -127,13 +131,13 @@ export function createUltraMaxRun({ requestId, nowIso, runId = randomUUID() } = 
 
 export function beginUltraMaxPhase(run, phaseId, nowIso) {
   validateTimestamp(nowIso);
-  if (!["READY", "RUNNING"].includes(run?.status)) throw new Error("ULTRA_MAX_RUN_NOT_ACTIVE");
+  if (!["READY", "RUNNING", "PAUSED"].includes(run?.status)) throw new Error("ULTRA_MAX_RUN_NOT_ACTIVE");
   if (run.cancel_requested_at) throw new Error("ULTRA_MAX_RUN_CANCELLED");
   const index = run.plan_snapshot.phases.findIndex((item) => item.phase_id === phaseId);
   if (index < 0) throw new Error("ULTRA_MAX_PHASE_INVALID");
   const target = run.plan_snapshot.phases[index];
   if (target.status === "RUNNING") return run;
-  if (target.status !== "PENDING") throw new Error("ULTRA_MAX_PHASE_ALREADY_TERMINAL");
+  if (!["PENDING", "PAUSED"].includes(target.status)) throw new Error("ULTRA_MAX_PHASE_ALREADY_TERMINAL");
   if (run.plan_snapshot.phases.slice(0, index).some((item) => item.status !== "COMPLETED")) {
     throw new Error("ULTRA_MAX_PHASE_ORDER_VIOLATION");
   }
@@ -142,7 +146,47 @@ export function beginUltraMaxPhase(run, phaseId, nowIso) {
     started_at:run.started_at || nowIso,
     plan_snapshot:{
       ...run.plan_snapshot,
-      phases:run.plan_snapshot.phases.map((item) => item.phase_id === phaseId ? { ...item, status:"RUNNING", started_at:nowIso } : item)
+      phases:run.plan_snapshot.phases.map((item) => item.phase_id === phaseId ? { ...item, status:"RUNNING", started_at:item.started_at || nowIso } : item)
+    }
+  });
+}
+
+export function ultraMaxNextOperationId(run, phaseId) {
+  const target = run?.plan_snapshot?.phases?.find((item) => item.phase_id === phaseId);
+  if (!target) throw new Error("ULTRA_MAX_PHASE_INVALID");
+  const index = integer(target.next_chunk_index || 1, "ULTRA_MAX_CHUNK_INDEX_INVALID");
+  if (index < 1) throw new Error("ULTRA_MAX_CHUNK_INDEX_INVALID");
+  return `${target.operation_id}-chunk-${String(index).padStart(4, "0")}`;
+}
+
+function safeCheckpoint(value) {
+  if (value === undefined || value === null) return null;
+  let serialized;
+  try { serialized = JSON.stringify(value); }
+  catch { throw new Error("ULTRA_MAX_CHECKPOINT_INVALID"); }
+  if (!serialized || Buffer.byteLength(serialized, "utf8") > ULTRA_MAX_CHECKPOINT_MAX_BYTES) {
+    throw new Error("ULTRA_MAX_CHECKPOINT_INVALID");
+  }
+  return JSON.parse(serialized);
+}
+
+export function pauseUltraMaxPhase(run, phaseId, checkpoint, nowIso) {
+  validateTimestamp(nowIso);
+  if (run?.status !== "RUNNING" || run.current_phase_id !== phaseId) throw new Error("ULTRA_MAX_PHASE_NOT_RUNNING");
+  const savedCheckpoint = safeCheckpoint(checkpoint);
+  return withStatus(run, "PAUSED", nowIso, {
+    current_phase_id:phaseId,
+    active_operation_id:null,
+    completion_reason:"PHASE_CHUNK_COMPLETE",
+    plan_snapshot:{
+      ...run.plan_snapshot,
+      phases:run.plan_snapshot.phases.map((item) => item.phase_id === phaseId ? {
+        ...item,
+        status:"PAUSED",
+        chunks_completed:item.chunks_completed + 1,
+        next_chunk_index:item.next_chunk_index + 1,
+        checkpoint:savedCheckpoint
+      } : item)
     }
   });
 }
@@ -185,12 +229,18 @@ export function recordUltraMaxUsage(run, phaseId, delta = {}, nowIso) {
 export function completeUltraMaxPhase(run, phaseId, nowIso) {
   validateTimestamp(nowIso);
   if (run?.status !== "RUNNING" || run.current_phase_id !== phaseId) throw new Error("ULTRA_MAX_PHASE_NOT_RUNNING");
-  const phases = run.plan_snapshot.phases.map((item) => item.phase_id === phaseId ? { ...item, status:"COMPLETED", completed_at:nowIso } : item);
+  const phases = run.plan_snapshot.phases.map((item) => item.phase_id === phaseId ? {
+    ...item,
+    status:"COMPLETED",
+    completed_at:nowIso,
+    chunks_completed:item.chunks_completed + 1,
+    checkpoint:null
+  } : item);
   const complete = phases.every((item) => item.status === "COMPLETED");
   return withStatus(run, complete ? "COMPLETED" : "RUNNING", nowIso, {
     current_phase_id:null,
     completed_at:complete ? nowIso : null,
-    completion_reason:complete ? "ALL_PHASES_COMPLETE" : null,
+    completion_reason:complete ? "ALL_PHASES_COMPLETE" : "PHASE_COMPLETE",
     plan_snapshot:{ ...run.plan_snapshot, phases }
   });
 }

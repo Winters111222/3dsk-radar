@@ -7,6 +7,8 @@ import {
   cancelUltraMaxRun,
   completeUltraMaxPhase,
   createUltraMaxRun,
+  pauseUltraMaxPhase,
+  ultraMaxNextOperationId,
   recordUltraMaxUsage
 } from "../src/server/ultra-max-run-contract.mjs";
 
@@ -64,4 +66,18 @@ test("cancel is terminal and blocks every later phase", () => {
   assert.equal(run.status, "CANCELLED");
   assert.equal(run.completion_reason, "USER_CANCELLED");
   assert.throws(() => beginUltraMaxPhase(run, "NATIVE_COLLECTION", LATER), /ULTRA_MAX_RUN_NOT_ACTIVE/);
+});
+
+test("a completed chunk pauses durably and resumes with a new operation identity", () => {
+  let run = createUltraMaxRun({requestId:"request_ultra_006",runId:"ultra_run_006",nowIso:NOW});
+  const firstOperation = ultraMaxNextOperationId(run, "NATIVE_COLLECTION");
+  run = beginUltraMaxPhase(run, "NATIVE_COLLECTION", LATER);
+  run = recordUltraMaxUsage(run, "NATIVE_COLLECTION", {source_requests:4,candidates_seen:2}, LATER);
+  run = pauseUltraMaxPhase(run, "NATIVE_COLLECTION", {child_run_id:"source_run_006",cursor:"next"}, LATER);
+  assert.equal(run.status, "PAUSED");
+  assert.equal(run.plan_snapshot.phases[0].checkpoint.cursor, "next");
+  assert.equal(run.plan_snapshot.phases[0].chunks_completed, 1);
+  assert.notEqual(ultraMaxNextOperationId(run, "NATIVE_COLLECTION"), firstOperation);
+  run = beginUltraMaxPhase(run, "NATIVE_COLLECTION", LATER);
+  assert.equal(run.status, "RUNNING");
 });

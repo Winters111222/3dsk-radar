@@ -5,6 +5,8 @@ import {
   cancelUltraMaxRun,
   completeUltraMaxPhase,
   createUltraMaxRun,
+  pauseUltraMaxPhase,
+  ultraMaxNextOperationId,
   recordUltraMaxUsage
 } from "./ultra-max-run-contract.mjs";
 
@@ -17,6 +19,9 @@ function operationResult(run, phaseId, payload = null) {
     phase_id:phaseId,
     completion_reason:run.completion_reason,
     usage:run.usage,
+    next_operation_id:["READY", "RUNNING", "PAUSED"].includes(run.status) && run.current_phase_id
+      ? ultraMaxNextOperationId(run, run.current_phase_id)
+      : null,
     payload
   };
 }
@@ -33,7 +38,7 @@ function uncertain(run, phaseId, operationId, nowIso, reason) {
     plan_snapshot:{
       ...run.plan_snapshot,
       phases:run.plan_snapshot.phases.map((item) => item.phase_id === phaseId
-        ? { ...item, status:"UNCERTAIN", operation_id:operationId, completed_at:nowIso }
+        ? { ...item, status:"UNCERTAIN", last_operation_id:operationId, completed_at:nowIso }
         : item)
     }
   };
@@ -69,7 +74,6 @@ export async function executeUltraMaxPhase({ repository, runId, phaseId, operati
   if (!run) throw new Error("ULTRA_MAX_RUN_NOT_FOUND");
   const target = run.plan_snapshot.phases.find((item) => item.phase_id === phaseId);
   if (!target) throw new Error("ULTRA_MAX_PHASE_INVALID");
-  if (target.operation_id !== operationId) throw new Error("ULTRA_MAX_OPERATION_ID_MISMATCH");
 
   const previous = await repository.getUltraMaxRunOperation(runId, operationId);
   if (previous?.status === "COMPLETED") {
@@ -80,6 +84,7 @@ export async function executeUltraMaxPhase({ repository, runId, phaseId, operati
     await repository.saveUltraMaxRun(run);
     return { run, result:operationResult(run, phaseId), replayed:true };
   }
+  if (ultraMaxNextOperationId(run, phaseId) !== operationId) throw new Error("ULTRA_MAX_OPERATION_ID_MISMATCH");
   if (TERMINAL.has(run.status)) return { run, result:operationResult(run, phaseId), replayed:true };
 
   const cancelMarker = await repository.getUltraMaxRunCancel(runId);
@@ -110,7 +115,9 @@ export async function executeUltraMaxPhase({ repository, runId, phaseId, operati
     const postDispatchCancel = await repository.getUltraMaxRunCancel(runId);
     run = postDispatchCancel?.requested_at
       ? cancelUltraMaxRun(run, postDispatchCancel.requested_at)
-      : { ...completeUltraMaxPhase(run, phaseId, nowIso), active_operation_id:null };
+      : output?.complete === false
+        ? pauseUltraMaxPhase(run, phaseId, output?.checkpoint ?? null, nowIso)
+        : { ...completeUltraMaxPhase(run, phaseId, nowIso), active_operation_id:null };
     const result = operationResult(run, phaseId, output?.payload ?? null);
     await repository.saveUltraMaxRun(run);
     await repository.saveUltraMaxRunOperation(runId, {
