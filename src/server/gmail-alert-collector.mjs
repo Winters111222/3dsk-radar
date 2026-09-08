@@ -88,10 +88,11 @@ function dedupeSignals(signals) {
 }
 
 export async function collectGmailAlertSignals({ accessToken, label = "3dsk-radar", maxMessages = GMAIL_ALERT_MAX_MESSAGES, fetchImpl = fetch } = {}) {
+  const messageLimit = Math.max(1, Math.min(GMAIL_ALERT_MAX_MESSAGES, Number.parseInt(maxMessages, 10) || GMAIL_ALERT_MAX_MESSAGES));
   const listRequest = buildGmailAlertListRequest({ accessToken, label, maxResults:maxMessages });
   const list = await requestJson(listRequest, fetchImpl);
   if (list?.messages !== undefined && !Array.isArray(list.messages)) throw Object.assign(new Error("GMAIL_ALERT_LIST_SCHEMA_MISMATCH"), { code:"GMAIL_ALERT_LIST_SCHEMA_MISMATCH" });
-  const ids = [...new Set((list?.messages || []).map((item) => String(item?.id || "")).filter((id) => /^[a-z0-9]+$/i.test(id)))].slice(0, GMAIL_ALERT_MAX_MESSAGES);
+  const ids = [...new Set((list?.messages || []).map((item) => String(item?.id || "")).filter((id) => /^[a-z0-9]+$/i.test(id)))].slice(0, messageLimit);
   const messages = await Promise.all(ids.map(async (messageId) => {
     try {
       const request = buildGmailAlertMessageRequest({ accessToken, messageId });
@@ -102,13 +103,14 @@ export async function collectGmailAlertSignals({ accessToken, label = "3dsk-rada
     }
   }));
   const requests = 1 + ids.length;
-  if (requests > GMAIL_ALERT_MAX_REQUESTS) throw Object.assign(new Error("GMAIL_ALERT_REQUEST_CAP_EXCEEDED"), { code:"GMAIL_ALERT_REQUEST_CAP_EXCEEDED" });
+  const requestCap = messageLimit + 1;
+  if (requests > requestCap) throw Object.assign(new Error("GMAIL_ALERT_REQUEST_CAP_EXCEEDED"), { code:"GMAIL_ALERT_REQUEST_CAP_EXCEEDED" });
   const signals = dedupeSignals(messages.flatMap((item) => item.signals));
   return {
     provider:"GMAIL_ALERTS",
     status:messages.every((item) => item.status === "ACCEPTED") ? "COMPLETE" : "PARTIAL",
     requests,
-    request_cap:GMAIL_ALERT_MAX_REQUESTS,
+    request_cap:requestCap,
     messages_seen:ids.length,
     messages_accepted:messages.filter((item) => item.status === "ACCEPTED").length,
     messages_rejected:messages.filter((item) => item.status === "REJECTED").length,
@@ -117,7 +119,7 @@ export async function collectGmailAlertSignals({ accessToken, label = "3dsk-rada
   };
 }
 
-export async function runGmailAlertCollection({ getEnv = defaultEnv, fetchImpl = fetch } = {}) {
+export async function runGmailAlertCollection({ getEnv = defaultEnv, fetchImpl = fetch, maxMessages = GMAIL_ALERT_MAX_MESSAGES } = {}) {
   const readiness = gmailAlertCollectionReadiness(getEnv);
   if (readiness.status !== "CONFIG_READY") return {
     provider:"GMAIL_ALERTS",
@@ -134,6 +136,7 @@ export async function runGmailAlertCollection({ getEnv = defaultEnv, fetchImpl =
   return collectGmailAlertSignals({
     accessToken:getEnv("GMAIL_ALERT_OAUTH_ACCESS_TOKEN"),
     label:getEnv("GMAIL_ALERT_LABEL"),
+    maxMessages,
     fetchImpl
   });
 }

@@ -84,10 +84,16 @@ oficiální Gmail API. Provede nejvýše jeden list request a dvacet detail requ
 raw Gmail payload nevrací ani neukládá. Chybnou jednotlivou zprávu izoluje a do
 diagnostiky zapíše jen bezpečný error code.
 
-## Gaty pro budoucí preview canary
+## Gaty pro preview canary
 
-Žádný gate se tímto commitem nezapíná. Pro samostatný Deploy Preview canary bude
-později potřeba dočasně a izolovaně nakonfigurovat:
+Code-only endpoint `/api/gmail-alert-canary` je implementovaný, ale funguje
+výhradně v `deploy-preview`, vyžaduje interní autorizaci, pre-live workspace a
+doslovné potvrzení `READ_ONE_GMAIL_ALERT_AND_IMPORT_ONE_LOCKED_SIGNAL`. Před
+splněním všech gatů neotevře Gmail ani databázi. Jeden canary smí načíst nejvýše
+jednu zprávu, importovat nejvýše jeden signál a provést nejvýše dva Gmail API
+requesty bez retry. Žádný gate se tímto commitem nezapíná. Pro pozdější
+samostatně schválený Deploy Preview canary bude potřeba dočasně a izolovaně
+nakonfigurovat:
 
 - `RADAR_SOURCE_SIGNAL_INGEST_ENABLED=true`;
 - `RADAR_GMAIL_ALERT_COLLECTION_ENABLED=true`;
@@ -98,10 +104,9 @@ později potřeba dočasně a izolovaně nakonfigurovat:
 - read-only mailbox credential; collector aplikačně vynutí jediný vyhrazený
   label/folder, i když samotný Gmail OAuth grant není label-scoped.
 
-Canary musí nejprve dostat samostatný autorizovaný Netlify entrypoint. Poté smí
-read-only přečíst již doručený alert z vyhrazeného labelu, ověřit přesně jeden
-signal-ingest write/readback/replay a dočasnou konfiguraci odstranit. Do Gmailu
-nesmí zapisovat. Nesmí zapnout globální
+Canary smí read-only přečíst již doručený alert z vyhrazeného labelu, ověřit
+nejvýše jeden signal-ingest write/readback a při opakovaném explicitním spuštění
+idempotentní replay. Do Gmailu nesmí zapisovat. Nesmí zapnout globální
 `RADAR_SOURCE_COLLECTION_ENABLED` ani provést placený search.
 
 ## Detailní truth gate
@@ -114,10 +119,10 @@ watchlist signálem a nesmí do sales workspace.
 
 ## Externí předpoklady
 
-Repozitář nyní obsahuje Gmail transportní knihovnu a read-only readiness, nikoli
-veřejný nebo plánovaný collector endpoint. Produkční spojení vyžaduje samostatné
-schválení OAuth konfigurace a canary entrypointu. Token se nikdy nesmí předat do
-browseru, logu, URL nebo repozitáře.
+Repozitář nyní obsahuje Gmail transportní knihovnu, read-only readiness a
+preview-only canary endpoint. Produkční spojení stále neexistuje a vyžaduje
+samostatné schválení po úspěšném izolovaném canary. Token se nikdy nesmí předat
+do browseru, logu, URL nebo repozitáře.
 
 Oficiální podklady:
 

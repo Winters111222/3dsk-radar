@@ -199,6 +199,8 @@ test("health exposes Gmail alert readiness without dispatching or leaking OAuth"
   assert.deepEqual(status.gmail_alert_missing_configuration, []);
   assert.equal(status.gmail_alert_max_messages, 20);
   assert.equal(status.gmail_alert_request_limit, 21);
+  assert.equal(status.gmail_alert_canary, "CONTEXT_BLOCKED");
+  assert.deepEqual(status.gmail_alert_canary_missing_configuration, []);
   assert.equal(JSON.stringify(status).includes("private-gmail-token"), false);
   assert.equal(network.mock.callCount(), 0);
 });
