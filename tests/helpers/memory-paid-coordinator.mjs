@@ -7,7 +7,8 @@ function conflict(code = "PAID_COORDINATOR_VERSION_CONFLICT") {
   return error;
 }
 
-export function memoryPaidCoordinator({ capMicrousd = 500_000 } = {}) {
+export function memoryPaidCoordinator({ capMicrousd = 500_000, lifecycleMode = "SINGLE_OPERATION" } = {}) {
+  if (!['SINGLE_OPERATION','MULTI_OPERATION'].includes(lifecycleMode)) throw new Error("PAID_COORDINATOR_LIFECYCLE_INVALID");
   const runs = new Map();
   let queue = Promise.resolve();
   const serial = (work) => {
@@ -15,9 +16,11 @@ export function memoryPaidCoordinator({ capMicrousd = 500_000 } = {}) {
     queue = next.catch(() => {});
     return next;
   };
-  const capabilities = Object.freeze(Object.fromEntries(PAID_COORDINATOR_REQUIRED_CAPABILITIES.map((name) => [name, true])));
+  const capabilities = Object.freeze(Object.fromEntries([...PAID_COORDINATOR_REQUIRED_CAPABILITIES,"multi_operation_root_budget"].map((name) => [name, true])));
   return {
     capabilities,
+    lifecycle_mode:lifecycleMode,
+    cap_microusd:capMicrousd,
     runs,
     readOperation(runId, operationId) {
       return serial(() => {
@@ -28,6 +31,7 @@ export function memoryPaidCoordinator({ capMicrousd = 500_000 } = {}) {
           run_id:runId,
           operation_id:operationId,
           run_status:run.status,
+          lifecycle_mode:lifecycleMode,
           operation_status:operation?.status || null,
           version:run.version,
           fence_token:run.fence,
@@ -42,8 +46,9 @@ export function memoryPaidCoordinator({ capMicrousd = 500_000 } = {}) {
     },
     claimOperation(runId, operationId, expectedVersion) {
       return serial(() => {
-        const run = runs.get(runId) || { version:0, fence:0, status:"READY", reserved:0, settled:0, operations:new Map(), reservations:new Map() };
+        const run = runs.get(runId) || { version:0, fence:0, status:"READY", lifecycle_mode:lifecycleMode, reserved:0, settled:0, operations:new Map(), reservations:new Map() };
         runs.set(runId, run);
+        if (run.lifecycle_mode !== lifecycleMode) throw conflict("PAID_COORDINATOR_LIFECYCLE_MISMATCH");
         const existing = run.operations.get(operationId);
         if (existing) return { replayed:true, run_id:runId, operation_id:operationId, ...existing };
         if (["COMPLETED", "CANCELLED", "UNCERTAIN"].includes(run.status)) throw conflict("PAID_COORDINATOR_RUN_TERMINAL");
@@ -99,9 +104,9 @@ export function memoryPaidCoordinator({ capMicrousd = 500_000 } = {}) {
         if (!run || !operation || run.fence !== fenceToken) throw conflict("PAID_COORDINATOR_STALE_FENCE");
         if (run.status !== "SETTLED" || operation.status !== "CLAIMED") throw conflict("PAID_COORDINATOR_OPERATION_STATE_INVALID");
         run.version += 1;
-        run.status = "COMPLETED";
+        run.status = lifecycleMode === "MULTI_OPERATION" ? "READY" : "COMPLETED";
         Object.assign(operation, { status:"COMPLETED", result, version:run.version });
-        return { replayed:false, result };
+        return { replayed:false, result, version:run.version, run_status:run.status };
       });
     },
     markUncertain(runId, operationId, code, fenceToken) {

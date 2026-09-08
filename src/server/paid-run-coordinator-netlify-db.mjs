@@ -1,4 +1,4 @@
-import { PAID_COORDINATOR_REQUIRED_CAPABILITIES } from "./paid-run-coordinator-contract.mjs";
+import { PAID_COORDINATOR_LIFECYCLE_MODES, PAID_COORDINATOR_REQUIRED_CAPABILITIES } from "./paid-run-coordinator-contract.mjs";
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{8,80}$/;
 
@@ -46,15 +46,22 @@ function first(result) {
   return result?.rows?.[0] || null;
 }
 
-export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = {}) {
+export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000, lifecycleMode = "SINGLE_OPERATION" } = {}) {
   if (!pool?.connect) throw new Error("PAID_COORDINATOR_POOL_REQUIRED");
   const fixedCap = integer(capMicrousd, "PAID_COORDINATOR_CAP_INVALID", { min:1 });
+  if (!PAID_COORDINATOR_LIFECYCLE_MODES.includes(lifecycleMode)) throw new PaidCoordinatorError("PAID_COORDINATOR_LIFECYCLE_INVALID", 400);
   const capabilities = Object.freeze(Object.fromEntries(
-    PAID_COORDINATOR_REQUIRED_CAPABILITIES.map((name) => [name, true])
+    [...PAID_COORDINATOR_REQUIRED_CAPABILITIES, "multi_operation_root_budget"].map((name) => [name, true])
   ));
+
+  function assertLifecycle(run) {
+    if (run?.lifecycle_mode !== lifecycleMode) throw new PaidCoordinatorError("PAID_COORDINATOR_LIFECYCLE_MISMATCH", 409);
+  }
 
   return {
     capabilities,
+    lifecycle_mode:lifecycleMode,
+    cap_microusd:fixedCap,
 
     async readOperation(runId, operationId) {
       validId(runId);
@@ -62,13 +69,14 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
       const client = await pool.connect();
       try {
         const run = first(await client.query(
-          `SELECT run_id, status, version, fence_token, cap_microusd,
+          `SELECT run_id, status, lifecycle_mode, version, fence_token, cap_microusd,
                   reserved_microusd, settled_microusd, updated_at
            FROM radar_paid_runs
            WHERE run_id = $1`,
           [runId]
         ));
         if (!run) return null;
+        assertLifecycle(run);
         const operation = first(await client.query(
           `SELECT operation_id, status, version, fence_token, error_code,
                   completed_at
@@ -80,6 +88,7 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
           run_id:runId,
           operation_id:operationId,
           run_status:run.status,
+          lifecycle_mode:run.lifecycle_mode,
           operation_status:operation?.status || null,
           version:Number(run.version),
           fence_token:Number(run.fence_token),
@@ -101,15 +110,16 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
       const expected = integer(expectedVersion, "PAID_COORDINATOR_VERSION_INVALID");
       return transaction(pool, async (client) => {
         await client.query(
-          `INSERT INTO radar_paid_runs (run_id, cap_microusd)
-           VALUES ($1, $2)
+          `INSERT INTO radar_paid_runs (run_id, cap_microusd, lifecycle_mode)
+           VALUES ($1, $2, $3)
            ON CONFLICT (run_id) DO NOTHING`,
-          [runId, fixedCap]
+          [runId, fixedCap, lifecycleMode]
         );
         const run = first(await client.query(
           "SELECT * FROM radar_paid_runs WHERE run_id = $1 FOR UPDATE",
           [runId]
         ));
+        assertLifecycle(run);
         if (Number(run.cap_microusd) !== fixedCap) {
           throw new PaidCoordinatorError("PAID_COORDINATOR_CAP_MISMATCH", 409);
         }
@@ -163,6 +173,7 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
           [runId]
         ));
         if (!run) throw new PaidCoordinatorError("PAID_COORDINATOR_RUN_NOT_FOUND", 404);
+        assertLifecycle(run);
         const existing = first(await client.query(
           "SELECT * FROM radar_paid_reservations WHERE run_id = $1 AND reservation_id = $2",
           [runId, reservationId]
@@ -222,6 +233,7 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
           [runId, reservationId]
         ));
         if (!run || !reservation) throw new PaidCoordinatorError("PAID_COORDINATOR_RESERVATION_NOT_FOUND", 404);
+        assertLifecycle(run);
         if (Number(reservation.fence_token) !== fence || Number(run.fence_token) !== fence) {
           throw new PaidCoordinatorError("PAID_COORDINATOR_STALE_FENCE", 409);
         }
@@ -265,10 +277,11 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
           [runId, operationId]
         ));
         if (!run || !operation) throw new PaidCoordinatorError("PAID_COORDINATOR_OPERATION_NOT_FOUND", 404);
+        assertLifecycle(run);
         if (Number(run.fence_token) !== fence || Number(operation.fence_token) !== fence) {
           throw new PaidCoordinatorError("PAID_COORDINATOR_STALE_FENCE", 409);
         }
-        if (operation.status === "COMPLETED") return { replayed:true, result:operation.result_json };
+        if (operation.status === "COMPLETED") return { replayed:true, result:operation.result_json, version:Number(run.version), run_status:run.status };
         if (run.status !== "SETTLED" || operation.status !== "CLAIMED") {
           throw new PaidCoordinatorError("PAID_COORDINATOR_OPERATION_STATE_INVALID", 409);
         }
@@ -280,11 +293,12 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
            WHERE run_id = $1 AND operation_id = $2`,
           [runId, operationId, encoded, version]
         );
+        const nextStatus = lifecycleMode === "MULTI_OPERATION" ? "READY" : "COMPLETED";
         await client.query(
-          "UPDATE radar_paid_runs SET status = 'COMPLETED', version = $2, updated_at = NOW() WHERE run_id = $1",
-          [runId, version]
+          "UPDATE radar_paid_runs SET status = $3, version = $2, updated_at = NOW() WHERE run_id = $1",
+          [runId, version, nextStatus]
         );
-        return { replayed:false, result };
+        return { replayed:false, result, version, run_status:nextStatus };
       });
     },
 
@@ -295,6 +309,7 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
       return transaction(pool, async (client) => {
         const run = first(await client.query("SELECT * FROM radar_paid_runs WHERE run_id = $1 FOR UPDATE", [runId]));
         if (!run) throw new PaidCoordinatorError("PAID_COORDINATOR_RUN_NOT_FOUND", 404);
+        assertLifecycle(run);
         if (Number(run.fence_token) !== fence) throw new PaidCoordinatorError("PAID_COORDINATOR_STALE_FENCE", 409);
         const version = Number(run.version) + 1;
         await client.query(
@@ -313,9 +328,9 @@ export function createPostgresPaidCoordinator({ pool, capMicrousd = 500_000 } = 
   };
 }
 
-export async function getNetlifyPaidCoordinator({ capMicrousd = 500_000 } = {}) {
+export async function getNetlifyPaidCoordinator({ capMicrousd = 500_000, lifecycleMode = "SINGLE_OPERATION" } = {}) {
   if (globalThis.__RADAR_TEST_PAID_COORDINATOR__) return globalThis.__RADAR_TEST_PAID_COORDINATOR__;
   const { getDatabase } = await import("@netlify/database");
   const database = getDatabase();
-  return createPostgresPaidCoordinator({ pool:database.pool, capMicrousd });
+  return createPostgresPaidCoordinator({ pool:database.pool, capMicrousd, lifecycleMode });
 }
