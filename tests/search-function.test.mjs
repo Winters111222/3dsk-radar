@@ -479,7 +479,8 @@ test("WIDE_MAX executes all 25 shards in one coordinated no-retry operation", as
     "uvo.gov.sk":"https://www.uvo.gov.sk/vestnik/oznamenie/detail/373248",
     "sam.gov":"https://sam.gov/opp/12345678-1234-1234-1234-123456789abc/view",
     "ungm.org":"https://www.ungm.org/Public/Notice/12345",
-    "find-tender.service.gov.uk":"https://www.find-tender.service.gov.uk/Notice/012345-2026"
+    "find-tender.service.gov.uk":"https://www.find-tender.service.gov.uk/Notice/012345-2026",
+    "een.ec.europa.eu":"https://een.ec.europa.eu/partnering-opportunities/synthetic-photogrammetry-request"
   };
   let openaiRequests = 0;
   let savedRun;

@@ -43,7 +43,8 @@ export const INDEX_DISCOVERY_SOURCE_POLICIES = Object.freeze([
   policy("undp", "UNDP Procurement Notices", "procurement-notices.undp.org", "/view_negotiation.cfm?nego_id=...", /^\/view_negotiation\.cfm$/i, "PROCUREMENT"),
   policy("world_bank", "World Bank Procurement", "worldbank.org", "/.../procurement-detail/...", /^\/en\/projects-operations\/procurement-detail\/[^/]+\/?$/i, "PROCUREMENT"),
   policy("nen_cz", "Czech NEN", "nen.nipez.cz", "/verejne-zakazky/detail-zakazky/N006-...", /^\/verejne-zakazky\/detail-zakazky\/N006-\d{2}-V\d+\/?$/i, "PROCUREMENT"),
-  policy("uvo_sk", "Slovak UVO", "uvo.gov.sk", "/vestnik/oznamenie/detail/<id>", /^\/vestnik\/oznamenie\/detail\/\d+\/?$/i, "PROCUREMENT")
+  policy("uvo_sk", "Slovak UVO", "uvo.gov.sk", "/vestnik/oznamenie/detail/<id>", /^\/vestnik\/oznamenie\/detail\/\d+\/?$/i, "PROCUREMENT"),
+  policy("een_requests", "Enterprise Europe Network requests", "een.ec.europa.eu", "/partnering-opportunities/<request-slug>", /^\/partnering-opportunities\/[^/]+\/?$/i, "PARTNER_REQUEST")
 ]);
 
 export const INDEX_DISCOVERY_ALLOWED_DOMAINS = Object.freeze(

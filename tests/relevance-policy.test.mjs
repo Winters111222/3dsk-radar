@@ -47,9 +47,21 @@ test("freshness confidence is deterministic and undated active evidence stays lo
   assert.equal(freshnessConfidence(null), null);
 });
 
-test("ordinary employment is rejected but an explicit external contract remains eligible", () => {
+test("every employer vacancy is rejected even when it mentions an external contract", () => {
   const employee = {...base, commercial_role:"EMPLOYER", title:"Permanent Character Artist", summary:"Join our internal team as a full-time employee."};
   assert.equal(evaluateCandidateRelevance(employee).rejection, "individual_employment");
   const contractor = {...employee, title:"Contract scan artist", summary:"External freelance vendor contract for a supplied scan batch."};
-  assert.equal(evaluateCandidateRelevance(contractor).ok, true);
+  assert.equal(evaluateCandidateRelevance(contractor).rejection, "individual_employment");
+});
+
+test("source evidence that says closed wins over model labels", () => {
+  const inactive = {...base, commercial_role:"BUYER", summary:"This job is no longer accepting applications."};
+  assert.equal(evaluateCandidateRelevance(inactive).rejection, "inactive_source_evidence");
+});
+
+test("individual job language is rejected unless the brief buys studio production", () => {
+  const leadRole = {...base, commercial_role:"BUYER", title:"Lead 3D Character Artist", summary:"Submit your resume for this permanent role."};
+  assert.equal(evaluateCandidateRelevance(leadRole).rejection, "individual_employment");
+  const batch = {...base, commercial_role:"BUYER", title:"Human scan cleanup batch", summary:"A buyer seeks an external studio for recurring batches of 50 body scans."};
+  assert.equal(evaluateCandidateRelevance(batch).ok, true);
 });

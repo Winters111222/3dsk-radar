@@ -121,6 +121,16 @@ export function classifyRecordCandidate(candidate) {
   const sellerSignal = matchesAny(SELLER_TEXT_PATTERNS, combined) || sellerMarketplacePage(sourceHost, sourcePath);
   const role = String(candidate?.commercial_role || "UNKNOWN").toUpperCase();
 
+  if (role === "EMPLOYER" && !concreteBuyerSignal) {
+    return {
+      record_kind:null,
+      rejection:"individual_employment",
+      reason:"EMPLOYMENT_IS_NOT_VENDOR_DEMAND",
+      effective_commercial_role:"EMPLOYER",
+      concrete_buyer_signal:false
+    };
+  }
+
   if (sourcePlatformIdentity(candidate, sourceHost, company) || (platformSignal && !concreteBuyerSignal)) {
     return {
       record_kind:"SOURCE_PLATFORM",

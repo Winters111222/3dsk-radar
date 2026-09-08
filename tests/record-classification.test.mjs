@@ -75,7 +75,7 @@ test("Outscal-like archived aggregator is a source platform, never a buyer", () 
   assert.equal(result.record_kind, "SOURCE_PLATFORM");
 });
 
-test("an ATS detail with a distinct employer remains a sales candidate", () => {
+test("an ATS employee detail is not a sales candidate without concrete vendor procurement", () => {
   const result = classifyRecordCandidate(record({
     source_url:"https://jobs.lever.co/buyer-studio/abc123",
     company:"Buyer Studio",
@@ -83,7 +83,8 @@ test("an ATS detail with a distinct employer remains a sales candidate", () => {
     title:"Character production contract",
     summary:"The employer needs external character production support."
   }));
-  assert.equal(result.record_kind, "SALES_OPPORTUNITY");
+  assert.equal(result.record_kind, null);
+  assert.equal(result.rejection, "individual_employment");
 });
 
 test("a competitor with a concrete current subcontract signal can become a lead", () => {

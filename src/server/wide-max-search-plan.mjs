@@ -7,14 +7,11 @@ const shard = (id, label, allowedDomains, focus) => Object.freeze({
 
 const MARKETPLACES = ["upwork.com", "freelancer.com", "peopleperhour.com", "guru.com"];
 const COMMUNITIES = ["reddit.com", "forums.unrealengine.com", "polycount.com", "blenderartists.org"];
-const INDIE_JOBS = ["workwithindies.com", "remotegamejobs.com", "hitmarker.net", "gamesjobsdirect.com", "artstation.com", "gamejobs.co", "vfxengine.com"];
-const ATS_A = ["greenhouse.io", "lever.co"];
-const ATS_B = ["ashbyhq.com", "workable.com"];
-const ATS_C = ["smartrecruiters.com", "teamtailor.com", "recruitee.com"];
 const GLOBAL_PROCUREMENT = ["sam.gov", "canadabuys.canada.ca", "worldbank.org"];
 const UN_PROCUREMENT = ["ungm.org", "procurement-notices.undp.org"];
+const EEN_REQUESTS = ["een.ec.europa.eu"];
 
-const rejectNoise = "Require explicit current buyer, external-vendor, contract, freelance-team, outsourcing, subcontract, RFP/RFQ or production-overflow demand. Reject permanent employment, sellers, portfolios, training, hardware, unpaid/rev-share work, Reallusion Character Creator/CC3/CC4, iClone and Daz3D.";
+const rejectNoise = "Require an active buyer purchasing a concrete production deliverable that a Czech/European external studio or team can deliver. Reject every employee vacancy even if it says contract, B2B or external development; also reject sellers, portfolios, training, hardware, unpaid/rev-share work, software/pipeline development, Reallusion Character Creator/CC3/CC4, iClone and Daz3D.";
 
 export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
   shard("human_face_body_marketplaces", "Human face/body capture · marketplaces", MARKETPLACES,
@@ -33,18 +30,18 @@ export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
     `Find paid scan-texturing requests involving texture cleanup, reprojection, PBR material creation, Substance Painter finishing or delivery-ready texture sets from photogrammetry data. ${rejectNoise}`),
   shard("batch_scan_postproduction", "Batch scan post-production", [...MARKETPLACES, ...COMMUNITIES],
     `Find recurring, ongoing, volume or production-overflow requests for processing batches of human or object scans through reconstruction, cleanup, wrapping and texturing. ${rejectNoise}`),
-  shard("realistic_humans_indie", "Realistic humans · indie/contract", INDIE_JOBS,
-    `Find explicit contract-studio or external-vendor demand for realistic humans, scanned characters, facial assets, FACS/expression processing or digital doubles. Reject ordinary Character Artist employment and stylized-only work. ${rejectNoise}`),
-  shard("digital_doubles_vfx", "Digital doubles · VFX", ["vfxengine.com", "artstation.com", "gamesjobsdirect.com", "hitmarker.net", "gamejobs.co"],
-    `Find current outsourced digital-double, photoreal human, face replacement source asset, facial scan or VFX human-character production briefs suitable for a studio vendor. ${rejectNoise}`),
+  shard("realistic_human_marketplace_projects", "Realistic humans · buyer projects", MARKETPLACES,
+    `Find current buyer project briefs commissioning realistic human characters, scan-derived humans, facial assets, FACS/expression processing or digital doubles from a production team. Reject individual vacancies, stylized-only work and animation-only work. ${rejectNoise}`),
+  shard("digital_double_marketplace_projects", "Digital doubles · buyer projects", MARKETPLACES,
+    `Find current client projects buying digital-double, photoreal human, likeness, facial scan or scan-derived human-character assets. Require asset deliverables rather than an employee, programmer or realtime technical artist. ${rejectNoise}`),
   shard("character_overflow_communities", "Character overflow · communities", ["reddit.com", "forums.unrealengine.com", "polycount.com"],
     `Find current HIRING or PAID posts seeking an external team for realistic-human character overflow, scan cleanup, digital doubles or facial production. Reject FOR HIRE posts and individual permanent jobs. ${rejectNoise}`),
-  shard("character_vendor_greenhouse_lever", "Character vendors · Greenhouse/Lever", ATS_A,
-    `Find exact ATS detail pages that explicitly allow contract, freelance, vendor, outsourcing or external-development delivery for realistic human or scan-based character work. Ordinary employee vacancies are irrelevant. ${rejectNoise}`),
-  shard("character_vendor_ashby_workable", "Character vendors · Ashby/Workable", ATS_B,
-    `Find exact ATS detail pages that explicitly allow contract, freelance, vendor, outsourcing or external-development delivery for realistic human or scan-based character work. Ordinary employee vacancies are irrelevant. ${rejectNoise}`),
-  shard("character_vendor_recruiting_ats", "Character vendors · recruiting ATS", ATS_C,
-    `Find exact ATS detail pages that explicitly allow contract, freelance, vendor, outsourcing or external-development delivery for realistic human or scan-based character work. Ordinary employee vacancies are irrelevant. ${rejectNoise}`),
+  shard("marketplace_paid_tests_batches", "Paid tests and batches · marketplaces", MARKETPLACES,
+    `Find current paid tests, pilots, batches, recurring volumes or overflow packages for human scans, heads, bodies, realistic characters, retopology, wrapping, cleanup or texturing. Prefer briefs that explicitly ask about team capacity. ${rejectNoise}`),
+  shard("een_business_requests", "EEN · business requests", EEN_REQUESTS,
+    `Find exact current Enterprise Europe Network Business Request detail pages where a buyer seeks an outsourcing supplier, subcontractor or production partner for human 3D capture, photogrammetry processing, museum-object 3D work, digital humans or realistic characters. Reject Business Offers, Technology Offers and unfunded generic networking. ${rejectNoise}`),
+  shard("een_technology_requests", "EEN · technology requests", EEN_REQUESTS,
+    `Find exact current Enterprise Europe Network Technology Request detail pages buying or subcontracting production services for photogrammetry, 3D reconstruction, scan cleanup, human datasets, digital humans or museum-object digitisation. Reject Technology Offers, software-only R&D and generic consortium recruitment. ${rejectNoise}`),
   shard("heritage_ted", "Cultural heritage · TED", ["ted.europa.eu"],
     `Find active TED notices for photogrammetric 3D digitisation of museum objects, costumes, textiles, artefacts, sculptures or collections. Physical capture qualifies only in Czechia or Slovakia; elsewhere require buyer-supplied photos/scans for remote processing. Reject document scanning, equipment, GIS, BIM and buildings. ${rejectNoise}`),
   shard("heritage_nen_cz", "Cultural heritage · Czech NEN", ["nen.nipez.cz"],
@@ -65,8 +62,8 @@ export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
     `Search Spanish, Italian and Portuguese buyer terminology for current external 3D human scanning, photogrammetry processing, scan cleanup, digital doubles and supplied-data post-production. Return normalized English summaries. ${rejectNoise}`),
   shard("central_europe_buyer_sweep", "Polish/Czech/Slovak buyer sweep", [...MARKETPLACES, "ted.europa.eu", "nen.nipez.cz", "uvo.gov.sk"],
     `Search Polish, Czech and Slovak buyer terminology for current external human scanning, photogrammetry processing, scan cleanup, realistic humans and CZ/SK cultural-heritage 3D procurement. Return normalized English summaries. ${rejectNoise}`),
-  shard("japanese_global_freshness", "Japanese/global freshness sweep", [...MARKETPLACES, ...INDIE_JOBS, ...ATS_A, ...ATS_B, ...ATS_C, "ted.europa.eu"],
-    `Run a final Japanese and English freshness sweep for explicit current buyer demand missed by other shards: human capture/casting, supplied-scan post-production, digital doubles and realistic-human vendor overflow. Return normalized English summaries and omit weak or undated pages without current acceptance evidence. ${rejectNoise}`)
+  shard("active_backfill_31_90_days", "Active buyer backfill · 31–90 days", [...MARKETPLACES, ...COMMUNITIES, ...EEN_REQUESTS, "ted.europa.eu"],
+    `Search buyer briefs published 31 to 90 days ago only when the exact original page explicitly proves that proposals are still accepted now. Focus on human capture, supplied-scan post-production, digital doubles, realistic-human batches and character production overflow. Omit anything merely indexed, archived, filled or undated. ${rejectNoise}`)
 ]);
 
 export const WIDE_MAX_OPENAI_REQUEST_LIMIT = WIDE_MAX_SEARCH_SHARDS.length;

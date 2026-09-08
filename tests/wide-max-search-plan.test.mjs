@@ -22,10 +22,14 @@ test("WIDE_MAX has 25 distinct buyer-focused shards and exact 5x discovery bound
   assert.equal(new Set(WIDE_MAX_SEARCH_SHARDS.map((item) => item.id)).size, 25);
 });
 
-test("WIDE_MAX covers every accepted hosted-index domain without LinkedIn", () => {
+test("WIDE_MAX spends no shards on employee ATS and includes EEN buyer requests", () => {
   const planned = new Set(WIDE_MAX_SEARCH_SHARDS.flatMap((item) => item.allowed_domains));
-  assert.deepEqual([...INDEX_DISCOVERY_ALLOWED_DOMAINS].sort(), [...planned].sort());
+  assert.equal([...planned].every((domain) => INDEX_DISCOVERY_ALLOWED_DOMAINS.includes(domain)), true);
   assert.equal(planned.has("linkedin.com"), false);
+  for (const domain of ["greenhouse.io","lever.co","ashbyhq.com","workable.com","smartrecruiters.com","teamtailor.com","recruitee.com","artstation.com","hitmarker.net"]) {
+    assert.equal(planned.has(domain), false, `${domain} must not consume WIDE_MAX discovery budget`);
+  }
+  assert.equal(planned.has("een.ec.europa.eu"), true);
   assert.equal(WIDE_MAX_SEARCH_SHARDS.filter((item) => /heritage/i.test(item.id)).length >= 4, true);
   assert.equal(WIDE_MAX_SEARCH_SHARDS.filter((item) => /human|casting/i.test(item.id)).length >= 5, true);
   assert.equal(WIDE_MAX_SEARCH_SHARDS.every((item) => /Reject|reject|irrelevant|omit/i.test(item.focus)), true);

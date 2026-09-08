@@ -185,6 +185,9 @@ const DIAGNOSTIC_REJECTION_CODES = new Set([
   "excluded_search_category",
   "excluded_workflow",
   "individual_employment",
+  "inactive_source_evidence",
+  "studio_eligibility_unproven",
+  "software_pipeline_project",
   "heritage_capture_outside_cz_sk"
 ]);
 
@@ -443,7 +446,13 @@ export function dedupeOpportunities(items) {
   return [...byFingerprint.values()].sort((a, b) => b.win_score - a.win_score || b.fit_score - a.fit_score);
 }
 
-export function normalizeSearchResponse(response, { nowIso, maxResults = 12, indexDiscovery = false, additionalVerifiedSourceUrls = [] } = {}) {
+export function normalizeSearchResponse(response, {
+  nowIso,
+  maxResults = 12,
+  maxCandidates = 30,
+  indexDiscovery = false,
+  additionalVerifiedSourceUrls = []
+} = {}) {
   const extractedSourceUrls = extractWebSourceUrls(response);
   const allSourceUrls = new Set([...extractedSourceUrls, ...additionalVerifiedSourceUrls].map(normalizeUrl).filter(Boolean));
   const verifiedSourceUrls = indexDiscovery
@@ -455,7 +464,8 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12, ind
   const acceptedRecords = [];
   const rejections = [];
   const outcomes = [];
-  const candidates = parsed.opportunities.slice(0, 30);
+  const candidateLimit = Math.max(1, Math.min(150, Number(maxCandidates) || 30));
+  const candidates = parsed.opportunities.slice(0, candidateLimit);
   for (const candidate of candidates) {
     const normalized = normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { indexDiscovery });
     if (normalized.opportunity) {
@@ -471,7 +481,7 @@ export function normalizeSearchResponse(response, { nowIso, maxResults = 12, ind
   const dedupedRecords = dedupeOpportunities(acceptedRecords);
   const acceptedSales = acceptedRecords.filter(isSalesOpportunityRecord);
   const dedupedSales = dedupedRecords.filter(isSalesOpportunityRecord);
-  const opportunities = dedupedSales.slice(0, Math.max(1, Math.min(24, maxResults)));
+  const opportunities = dedupedSales.slice(0, Math.max(1, Math.min(100, Number(maxResults) || 12)));
   const competitors = dedupedRecords.filter((item) => item.record_kind === "COMPETITOR");
   const sourcePlatforms = dedupedRecords.filter((item) => item.record_kind === "SOURCE_PLATFORM");
   const records = [...opportunities, ...competitors, ...sourcePlatforms];

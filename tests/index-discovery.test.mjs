@@ -24,11 +24,12 @@ const validExamples = [
   ["https://www.peopleperhour.com/freelance-jobs/design/3d-design/3d-human-avatar-animation-motion-capture-20-exercise-vide-4516731", "peopleperhour"],
   ["https://gamejobs.co/Senior-Game-Engineer-Systems-Engine-at-Telescope-Games", "gamejobs_co"],
   ["https://nen.nipez.cz/verejne-zakazky/detail-zakazky/N006-25-V00017990", "nen_cz"],
-  ["https://www.uvo.gov.sk/vestnik/oznamenie/detail/373248", "uvo_sk"]
+  ["https://www.uvo.gov.sk/vestnik/oznamenie/detail/373248", "uvo_sk"],
+  ["https://een.ec.europa.eu/partnering-opportunities/example-request", "een_requests"]
 ];
 
 test("index discovery keeps the focused five while wide mode adds strict detail policies", () => {
-  assert.equal(INDEX_DISCOVERY_SOURCE_POLICIES.length, 32);
+  assert.equal(INDEX_DISCOVERY_SOURCE_POLICIES.length, 33);
   assert.deepEqual(FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS, [
     "upwork.com",
     "freelancer.com",
@@ -36,7 +37,7 @@ test("index discovery keeps the focused five while wide mode adds strict detail 
     "forums.unrealengine.com",
     "polycount.com"
   ]);
-  assert.equal(INDEX_DISCOVERY_ALLOWED_DOMAINS.length, 32);
+  assert.equal(INDEX_DISCOVERY_ALLOWED_DOMAINS.length, 33);
   assert.equal(INDEX_DISCOVERY_ALLOWED_DOMAINS.includes("linkedin.com"), false);
   assert.equal(INDEX_DISCOVERY_ALLOWED_DOMAINS.includes("blenderartists.org"), true);
   assert.equal(INDEX_DISCOVERY_ALLOWED_DOMAINS.includes("ted.europa.eu"), true);

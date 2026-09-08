@@ -36,9 +36,11 @@ export function evaluateSourceTruth({
   maxAgeDays = 30
 }) {
   if (commercialRole === "SELLER") return { ok:false, rejection:"seller_not_opportunity" };
-  if (commercialRole === "UNKNOWN") return { ok:false, rejection:"unknown_commercial_role" };
   if (INACTIVE_NOTICE_STATUSES.has(noticeStatus)) return { ok:false, rejection:"inactive_notice" };
+  if (commercialRole === "EMPLOYER") return { ok:false, rejection:"individual_employment" };
+  if (commercialRole === "UNKNOWN") return { ok:false, rejection:"unknown_commercial_role" };
   if (studioEligibility === "NO") return { ok:false, rejection:"studio_ineligible" };
+  if (studioEligibility !== "YES") return { ok:false, rejection:"studio_eligibility_unproven" };
   if (EXCLUDED_SCOPE_FITS.has(scopeFit)) return { ok:false, rejection:"out_of_scope" };
 
   const recentPublished = isRecentSourceDate(publishedDate, nowIso, maxAgeDays);
