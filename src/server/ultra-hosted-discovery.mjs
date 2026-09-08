@@ -21,6 +21,8 @@ function payloadFor(result,estimatedCost,phaseId,searchProfile) {
     records:result.records||result.opportunities||[],
     coverage:result.coverage||[],
     diagnostics:result.diagnostics||null,
+    source_context:result.official_source_discovery||null,
+    direct_source_requests:Number(result.direct_source_requests)||0,
     model:result.model||null,
     response_ids:result.response_ids||[],
     estimated_cost:estimatedCost
@@ -29,23 +31,28 @@ function payloadFor(result,estimatedCost,phaseId,searchProfile) {
 
 export function createUltraHostedDiscoveryExecutor({
   coordinator,apiKey,model="gpt-5.6-luna",profile,nowIso,searchRunner=runWideOpportunitySearch,fetchImpl=fetch,
-  phaseId,searchProfile,budgetCapMicrousd,shards,maxResults,resultsPerShard=6,toolCallsPerShard=3,maxOutputTokensPerShard=6000,maxConcurrency=5,validatePlan
+  phaseId,searchProfile,budgetCapMicrousd,shards,maxResults,resultsPerShard=6,toolCallsPerShard=3,maxOutputTokensPerShard=6000,maxConcurrency=5,validatePlan,
+  prepareSearchInput=async()=>({})
 }={}) {
   if (!apiKey) throw new Error("ULTRA_HOSTED_API_KEY_REQUIRED");
   if (!profile?.capabilities||!Array.isArray(profile.credentials)) throw new Error("ULTRA_HOSTED_PROFILE_REQUIRED");
   if (!Number.isFinite(Date.parse(nowIso))) throw new Error("ULTRA_HOSTED_TIMESTAMP_INVALID");
   if (typeof validatePlan!=="function"||!validatePlan(shards)) throw new Error("ULTRA_HOSTED_PLAN_INVALID");
+  if (typeof prepareSearchInput!=="function") throw new Error("ULTRA_HOSTED_PREPARER_INVALID");
   const requestLimit=shards.length;
   const webCallLimit=requestLimit*toolCallsPerShard;
   return async ({run,phase,operationId}={})=>{
     if (phase?.phase_id!==phaseId||phase.kind!=="PAID_HOSTED_SEARCH"||phase.budget_cap_microusd!==budgetCapMicrousd) throw new Error("ULTRA_HOSTED_PHASE_MISMATCH");
+    const prepared=await prepareSearchInput({run,phase,operationId});
+    if (!prepared||typeof prepared!=="object"||Array.isArray(prepared)) throw new Error("ULTRA_HOSTED_SEARCH_INPUT_INVALID");
     const paid=await executeUltraPaidChild({
       coordinator,run,phaseId,operationId,expectedVersion:run.paid_coordinator_version,
       dispatch:async()=>{
-        const result=await searchRunner({apiKey,model,profile,nowIso,shards,maxResults,maxResultsPerShard:resultsPerShard,maxToolCallsPerShard:toolCallsPerShard,maxOutputTokensPerShard,maxConcurrency,fetchImpl,searchProfile});
+        const result=await searchRunner({...prepared,apiKey,model,profile,nowIso,shards,maxResults,maxResultsPerShard:resultsPerShard,maxToolCallsPerShard:toolCallsPerShard,maxOutputTokensPerShard,maxConcurrency,fetchImpl,searchProfile});
         if (result.attempts!==1
           || result.openai_request_count!==requestLimit
           || result.web_search_call_count>webCallLimit
+          || Number(result.direct_source_requests||0)!==0
           || !Array.isArray(result.opportunities)
           || result.opportunities.length>maxResults) throw new Error("ULTRA_HOSTED_REQUEST_BOUNDARY_EXCEEDED");
         const estimatedCost=estimateSearchCost({model:result.model,usage:result.usage,webSearchCalls:result.web_search_call_count});
