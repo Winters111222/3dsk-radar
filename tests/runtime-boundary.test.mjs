@@ -187,6 +187,22 @@ test("health reports WIDE V3 connector readiness without exposing credentials", 
   assert.equal(JSON.stringify(status).includes("private-bsky-app-password"), false);
 });
 
+test("health exposes Gmail alert readiness without dispatching or leaking OAuth", async t => {
+  runtime(t, {
+    RADAR_GMAIL_ALERT_COLLECTION_ENABLED:"true",
+    GMAIL_ALERT_OAUTH_ACCESS_TOKEN:"private-gmail-token",
+    GMAIL_ALERT_LABEL:"3dsk-radar"
+  });
+  const network = t.mock.method(globalThis, "fetch", () => { throw new Error("Health must not dispatch Gmail"); });
+  const status = await (await health(undefined, {deploy:{context:"production"}})).json();
+  assert.equal(status.gmail_alert_collection, "CONFIG_READY");
+  assert.deepEqual(status.gmail_alert_missing_configuration, []);
+  assert.equal(status.gmail_alert_max_messages, 20);
+  assert.equal(status.gmail_alert_request_limit, 21);
+  assert.equal(JSON.stringify(status).includes("private-gmail-token"), false);
+  assert.equal(network.mock.callCount(), 0);
+});
+
 test("health exposes WIDE V3 exact limits without dispatching official or paid requests", async t => {
   runtime(t, {
     RADAR_LIVE_AI_ENABLED:"true",

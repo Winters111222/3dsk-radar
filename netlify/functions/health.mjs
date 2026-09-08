@@ -5,6 +5,7 @@ import { sourceConnectorReadiness } from "../../src/server/wide-v3-source-plan.m
 import { officialSourceCanaryConfiguration } from "../../src/server/official-source-canary-policy.mjs";
 import { anyRuntimeSourceEligible } from "../../src/server/source-qualification.mjs";
 import { ultraMaxPaidConfiguration } from "../../src/server/ultra-max-paid-policy.mjs";
+import { gmailAlertCollectionReadiness } from "../../src/server/gmail-alert-collector.mjs";
 
 export default async (_request, context) => {
   const liveAIEnabled = envValue("RADAR_LIVE_AI_ENABLED").toLowerCase() === "true";
@@ -23,6 +24,7 @@ export default async (_request, context) => {
       ? sourceCollectionEnabled() ? "ACTIVE" : "SOURCE_COLLECTION_LOCKED"
       : "SKIP_NO_RUNTIME_ELIGIBLE_SOURCES";
   const ultraMaxPaid = ultraMaxPaidConfiguration({context,getEnv:envValue});
+  const gmailAlerts = gmailAlertCollectionReadiness(envValue);
   return Response.json({
     ok: true,
     service: "3dsk-opportunity-radar",
@@ -63,6 +65,10 @@ export default async (_request, context) => {
       status:item.status,
       missing_configuration:item.missing_configuration
     })),
+    gmail_alert_collection:gmailAlerts.status,
+    gmail_alert_missing_configuration:gmailAlerts.missing_configuration,
+    gmail_alert_max_messages:gmailAlerts.max_messages,
+    gmail_alert_request_limit:gmailAlerts.max_requests,
     source_run_engine: sourceCollectionEnabled() ? "IMPLEMENTED_ENABLED" : "IMPLEMENTED_LOCKED",
     ultra_max_native: ultraMaxNativeReady ? "READY" : "LOCKED",
     ultra_max_native_mode:ultraMaxNativeMode,

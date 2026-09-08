@@ -28,8 +28,9 @@ function clean(value, max) {
 }
 
 function canonicalAlertLink(value, rule) {
+  const supplied = typeof value === "string" ? { url:value, text:"" } : value || {};
   let url;
-  try { url = new URL(String(value || "")); }
+  try { url = new URL(String(supplied.url || "")); }
   catch { return null; }
   if (url.protocol !== "https:" || url.username || url.password) return null;
   const hostname = url.hostname.toLowerCase();
@@ -42,7 +43,7 @@ function canonicalAlertLink(value, rule) {
   if (route.entry.canonical) url.pathname = route.entry.canonical(route.match[1]);
   url.search = "";
   url.hash = "";
-  return { url:url.toString(), item_id:clean(route.match[1], 240) };
+  return { url:url.toString(), item_id:clean(route.match[1], 240), text:clean(supplied.text, 1000) };
 }
 
 export function normalizeUserOwnedAlert({ platform, message_id:messageId, subject, body_text:bodyText, received_at:receivedAt, links } = {}) {
@@ -50,8 +51,8 @@ export function normalizeUserOwnedAlert({ platform, message_id:messageId, subjec
   if (!rule) throw Object.assign(new Error("ALERT_PLATFORM_UNSUPPORTED"), { code:"ALERT_PLATFORM_UNSUPPORTED" });
   const message = clean(messageId, 500);
   const received = Date.parse(String(receivedAt || ""));
-  const text = clean([subject, bodyText].filter(Boolean).join(" — "), 4000);
-  if (!message || !Number.isFinite(received) || !text || !Array.isArray(links) || links.length > USER_OWNED_ALERT_MAX_LINKS) {
+  const fallbackText = clean([subject, bodyText].filter(Boolean).join(" — "), 4000);
+  if (!message || !Number.isFinite(received) || !fallbackText || !Array.isArray(links) || links.length > USER_OWNED_ALERT_MAX_LINKS) {
     throw Object.assign(new Error("ALERT_PAYLOAD_INVALID"), { code:"ALERT_PAYLOAD_INVALID" });
   }
   const seen = new Set();
@@ -65,7 +66,7 @@ export function normalizeUserOwnedAlert({ platform, message_id:messageId, subjec
     channel_id:null,
     source_url:item.url,
     author:null,
-    text,
+    text:clean([subject, item.text || bodyText].filter(Boolean).join(" — "), 4000),
     published_at:new Date(received).toISOString()
   }));
 }
