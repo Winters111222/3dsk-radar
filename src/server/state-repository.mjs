@@ -13,6 +13,7 @@ const SOURCE_RUN_REQUEST_PREFIX = "source-run-requests/";
 const SOURCE_SIGNAL_PREFIX = "source-signals/";
 const ULTRA_MAX_RUN_PREFIX = "ultra-max-runs/";
 const ULTRA_MAX_RUN_REQUEST_PREFIX = "ultra-max-run-requests/";
+const HERITAGE_GRANT_IMPORT_PREFIX = "heritage-grant-imports/";
 
 function safeStateId(value) {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{8,80}$/.test(value)) throw new Error("STATE_ID_INVALID");
@@ -375,6 +376,15 @@ export function createStateRepository(store) {
 
     async saveUltraMaxRunCancel(runId, marker) {
       await store.setJSON(ultraMaxRunKey(runId, "cancel"), marker);
+      return marker;
+    },
+
+    async getHeritageGrantImport(importId) {
+      return store.get(`${HERITAGE_GRANT_IMPORT_PREFIX}${safeStateId(importId)}`, { type:"json" });
+    },
+
+    async saveHeritageGrantImport(marker) {
+      await store.setJSON(`${HERITAGE_GRANT_IMPORT_PREFIX}${safeStateId(marker.import_id)}`, marker);
       return marker;
     },
 
