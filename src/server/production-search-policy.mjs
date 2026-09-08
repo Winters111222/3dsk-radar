@@ -15,6 +15,14 @@ import {
   wideV3FirecrawlShards
 } from "./wide-v3-source-plan.mjs";
 import { OFFICIAL_SOURCE_MAX_REQUESTS, officialSourceRunPlan } from "./official-source-run.mjs";
+import {
+  WIDE_MAX_MAX_CONCURRENCY,
+  WIDE_MAX_OPENAI_REQUEST_LIMIT,
+  WIDE_MAX_RESULTS_PER_SHARD,
+  WIDE_MAX_SEARCH_SHARDS,
+  WIDE_MAX_TOTAL_TOOL_CALL_LIMIT,
+  validateWideMaxPlan
+} from "./wide-max-search-plan.mjs";
 
 export const PRODUCTION_SEARCH_MODEL = "gpt-5.6-luna";
 export const PRODUCTION_SEARCH_MAX_CAP_MICROUSD = 500_000;
@@ -25,6 +33,8 @@ export const PRODUCTION_WIDE_SEARCH_MAX_CAP_MICROUSD = 2_000_000;
 export const PRODUCTION_WIDE_SEARCH_MAX_RESULTS = 24;
 export const PRODUCTION_WIDE_SEARCH_MAX_OUTPUT_TOKENS_PER_SHARD = 6000;
 export const PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT = "2";
+export const PRODUCTION_WIDE_MAX_CAP_MICROUSD = 5_000_000;
+export const PRODUCTION_WIDE_MAX_RESULTS = 100;
 export const PRODUCTION_WIDE_V3_MODEL = "gpt-5.6-sol";
 export const PRODUCTION_WIDE_V3_MAX_CAP_MICROUSD = 3_000_000;
 export const PRODUCTION_WIDE_V3_MAX_RESULTS = 32;
@@ -42,12 +52,14 @@ export function productionSearchContextAllowed(context) {
 export function productionSearchConfiguration({ getEnv = envValue, nowIso = new Date().toISOString() } = {}) {
   const requestedProfile = String(getEnv("RADAR_PRODUCTION_SEARCH_PROFILE") || "FOCUSED").trim().toUpperCase();
   const wideV2 = requestedProfile === "WIDE_INDEX";
+  const wideMax = requestedProfile === "WIDE_MAX";
   const wideV3 = requestedProfile === "WIDE_V3";
-  const wide = wideV2 || wideV3;
+  const wide = wideV2 || wideMax || wideV3;
   if (!wide && requestedProfile !== "FOCUSED") return { ok:false };
   const recoverySlot = String(getEnv("RADAR_PRODUCTION_SEARCH_WIDE_RECOVERY_SLOT") || "").trim();
   const recovery = wideV2 && recoverySlot === PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT;
-  const firecrawlEnabled = wide && enabled(getEnv("RADAR_FIRECRAWL_WIDE_ENABLED"));
+  const firecrawlRequested = enabled(getEnv("RADAR_FIRECRAWL_WIDE_ENABLED"));
+  const firecrawlEnabled = wide && !wideMax && firecrawlRequested;
   const officialSourcesEnabled = wideV3 && enabled(getEnv("RADAR_OFFICIAL_SOURCE_DISCOVERY_ENABLED"));
   const officialSourceRequestLimitText = String(getEnv("RADAR_OFFICIAL_SOURCE_MAX_REQUESTS") || "").trim();
   const officialSourceRequestLimit = Number(officialSourceRequestLimitText);
@@ -60,8 +72,8 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
   const maxResults = Number(resultText);
   const windowMatch = String(nowIso).match(/^(\d{4})-(\d{2})-(\d{2})T/);
   const capMicrousd = Math.round(usd * 1_000_000);
-  const expectedCap = wideV3 ? PRODUCTION_WIDE_V3_MAX_CAP_MICROUSD : wideV2 ? PRODUCTION_WIDE_SEARCH_MAX_CAP_MICROUSD : PRODUCTION_SEARCH_MAX_CAP_MICROUSD;
-  const expectedMaxResults = wideV3 ? PRODUCTION_WIDE_V3_MAX_RESULTS : wideV2 ? PRODUCTION_WIDE_SEARCH_MAX_RESULTS : PRODUCTION_SEARCH_MAX_RESULTS;
+  const expectedCap = wideV3 ? PRODUCTION_WIDE_V3_MAX_CAP_MICROUSD : wideMax ? PRODUCTION_WIDE_MAX_CAP_MICROUSD : wideV2 ? PRODUCTION_WIDE_SEARCH_MAX_CAP_MICROUSD : PRODUCTION_SEARCH_MAX_CAP_MICROUSD;
+  const expectedMaxResults = wideV3 ? PRODUCTION_WIDE_V3_MAX_RESULTS : wideMax ? PRODUCTION_WIDE_MAX_RESULTS : wideV2 ? PRODUCTION_WIDE_SEARCH_MAX_RESULTS : PRODUCTION_SEARCH_MAX_RESULTS;
   const valid = usdText !== ""
     && Number.isFinite(usd)
     && capMicrousd === expectedCap
@@ -72,8 +84,10 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
     && Boolean(windowMatch)
     && Number.isFinite(Date.parse(nowIso))
     && (recoverySlot === "" || recovery)
+    && (!wideMax || !firecrawlRequested)
     && (!firecrawlEnabled || (firecrawlCreditsText !== "" && firecrawlCredits === FIRECRAWL_MAX_CREDITS))
     && (!wideV2 || validateWideSearchPlan())
+    && (!wideMax || validateWideMaxPlan())
     && (!wideV3 || validateWideV3Plan())
     && (!wideV3 || officialSourcesEnabled)
     && (!officialSourcesEnabled || (officialSourceRequestLimitText !== ""
@@ -84,25 +98,29 @@ export function productionSearchConfiguration({ getEnv = envValue, nowIso = new 
   const windowUtc = `${windowMatch[1]}-${windowMatch[2]}-${windowMatch[3]}`;
   return {
     ok:true,
-    mode:wideV3 ? "PRODUCTION_DAILY_WIDE_V3" : wideV2 ? (recovery ? "PRODUCTION_APPROVED_WIDE_RECOVERY" : "PRODUCTION_DAILY_WIDE_INDEX") : "PRODUCTION_DAILY",
-    search_profile:wideV3 ? "WIDE_V3" : wideV2 ? "WIDE_INDEX" : "FOCUSED",
+    mode:wideV3 ? "PRODUCTION_DAILY_WIDE_V3" : wideMax ? "PRODUCTION_DAILY_WIDE_MAX" : wideV2 ? (recovery ? "PRODUCTION_APPROVED_WIDE_RECOVERY" : "PRODUCTION_DAILY_WIDE_INDEX") : "PRODUCTION_DAILY",
+    search_profile:wideV3 ? "WIDE_V3" : wideMax ? "WIDE_MAX" : wideV2 ? "WIDE_INDEX" : "FOCUSED",
     run_id:wideV3
       ? `prod-wide-v3-search-${windowUtc.replaceAll("-", "")}`
+      : wideMax
+      ? `prod-wide-max-search-${windowUtc.replaceAll("-", "")}`
       : wideV2
       ? `prod-wide-index-search-${windowUtc.replaceAll("-", "")}${recovery ? `-recovery-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : ""}`
       : `prod-search-${windowUtc.replaceAll("-", "")}`,
-    operation_id:wideV3 ? "daily-wide-v3-search" : wideV2 ? (recovery ? `approved-wide-recovery-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-search") : "daily-focused-search",
-    reservation_id:wideV3 ? "daily-wide-v3-budget" : wideV2 ? (recovery ? `approved-wide-recovery-budget-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-budget") : "daily-focused-budget",
+    operation_id:wideV3 ? "daily-wide-v3-search" : wideMax ? "daily-wide-max-search" : wideV2 ? (recovery ? `approved-wide-recovery-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-search") : "daily-focused-search",
+    reservation_id:wideV3 ? "daily-wide-v3-budget" : wideMax ? "daily-wide-max-budget" : wideV2 ? (recovery ? `approved-wide-recovery-budget-${PRODUCTION_WIDE_SEARCH_RECOVERY_SLOT}` : "daily-wide-index-budget") : "daily-focused-budget",
     window_utc:windowUtc,
     cap_microusd:capMicrousd,
     max_results:maxResults,
     model:wideV3 ? PRODUCTION_WIDE_V3_MODEL : PRODUCTION_SEARCH_MODEL,
     allow_structured_retry:false,
-    openai_request_limit:wideV3 ? WIDE_V3_MAX_OPENAI_REQUESTS : wideV2 ? WIDE_SEARCH_MAX_OPENAI_REQUESTS : 1,
-    max_tool_calls:wideV3 ? WIDE_V3_MAX_HOSTED_SEARCH_CALLS : wideV2 ? WIDE_SEARCH_MAX_TOTAL_TOOL_CALLS : PRODUCTION_SEARCH_MAX_TOOL_CALLS,
+    openai_request_limit:wideV3 ? WIDE_V3_MAX_OPENAI_REQUESTS : wideMax ? WIDE_MAX_OPENAI_REQUEST_LIMIT : wideV2 ? WIDE_SEARCH_MAX_OPENAI_REQUESTS : 1,
+    max_tool_calls:wideV3 ? WIDE_V3_MAX_HOSTED_SEARCH_CALLS : wideMax ? WIDE_MAX_TOTAL_TOOL_CALL_LIMIT : wideV2 ? WIDE_SEARCH_MAX_TOTAL_TOOL_CALLS : PRODUCTION_SEARCH_MAX_TOOL_CALLS,
     max_tool_calls_per_request:wide ? WIDE_SEARCH_MAX_TOOL_CALLS_PER_SHARD : PRODUCTION_SEARCH_MAX_TOOL_CALLS,
     max_output_tokens:wide ? PRODUCTION_WIDE_SEARCH_MAX_OUTPUT_TOKENS_PER_SHARD : PRODUCTION_SEARCH_MAX_OUTPUT_TOKENS,
-    shards:wideV3 ? WIDE_V3_SEARCH_SHARDS : wideV2 ? WIDE_SEARCH_SHARDS : null,
+    shards:wideV3 ? WIDE_V3_SEARCH_SHARDS : wideMax ? WIDE_MAX_SEARCH_SHARDS : wideV2 ? WIDE_SEARCH_SHARDS : null,
+    max_results_per_shard:wideMax ? WIDE_MAX_RESULTS_PER_SHARD : 6,
+    max_concurrency:wideMax ? WIDE_MAX_MAX_CONCURRENCY : (wideV3 ? WIDE_V3_MAX_OPENAI_REQUESTS : wideV2 ? WIDE_SEARCH_MAX_OPENAI_REQUESTS : 1),
     firecrawl_shards:wideV3 ? wideV3FirecrawlShards() : wideV2 ? WIDE_SEARCH_SHARDS : null,
     firecrawl_enabled:firecrawlEnabled,
     firecrawl_request_limit:firecrawlEnabled ? FIRECRAWL_MAX_REQUESTS : 0,

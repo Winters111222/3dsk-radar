@@ -131,6 +131,21 @@ function urlMatchesAllowedDomain(value, allowedDomains) {
   }
 }
 
+async function mapWithConcurrency(items, maxConcurrency, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  };
+  const concurrency = Math.max(1, Math.min(items.length, Number(maxConcurrency) || items.length));
+  await Promise.all(Array.from({ length:concurrency }, worker));
+  return results;
+}
+
 export async function runWideOpportunitySearch({
   apiKey,
   model,
@@ -141,6 +156,7 @@ export async function runWideOpportunitySearch({
   maxResultsPerShard = 6,
   maxToolCallsPerShard = 3,
   maxOutputTokensPerShard = 6000,
+  maxConcurrency = shards?.length || 1,
   fetchImpl = fetch,
   timeoutMs = 45000,
   preDiscovery = null,
@@ -153,7 +169,7 @@ export async function runWideOpportunitySearch({
     throw error;
   }
 
-  const settled = await Promise.all(shards.map(async (shard) => {
+  const settled = await mapWithConcurrency(shards, maxConcurrency, async (shard) => {
     const discoveryHints = [
       ...firecrawlHintsForShard(preDiscovery, shard.id),
       ...officialHintsForShard(officialDiscovery, shard.id)
@@ -223,7 +239,7 @@ export async function runWideOpportunitySearch({
         error_code:failureCode(error)
       };
     }
-  }));
+  });
 
   const successful = settled.filter((item) => item.ok);
   if (!successful.length) {

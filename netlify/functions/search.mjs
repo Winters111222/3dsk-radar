@@ -149,7 +149,7 @@ export default async function handler(request, context) {
     if (officialDiscovery && officialDiscovery.requests > execution.official_source_request_limit) {
       throw new Error("OFFICIAL_SOURCE_REQUEST_BOUNDARY_EXCEEDED");
     }
-    const result = ["WIDE_INDEX", "WIDE_V3"].includes(execution.search_profile)
+    const result = ["WIDE_INDEX", "WIDE_MAX", "WIDE_V3"].includes(execution.search_profile)
       ? await runWideOpportunitySearch({
         apiKey,
         model:execution.model,
@@ -157,9 +157,10 @@ export default async function handler(request, context) {
         nowIso,
         shards:execution.shards,
         maxResults:execution.max_results,
-        maxResultsPerShard:6,
+        maxResultsPerShard:execution.max_results_per_shard || 6,
         maxToolCallsPerShard:execution.max_tool_calls_per_request,
         maxOutputTokensPerShard:execution.max_output_tokens,
+        maxConcurrency:execution.max_concurrency,
         preDiscovery,
         officialDiscovery,
         searchProfile:execution.search_profile

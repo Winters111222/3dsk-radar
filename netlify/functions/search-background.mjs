@@ -3,8 +3,8 @@ import { productionSearchConfiguration } from "../../src/server/production-searc
 
 export async function runBackgroundSearch(request, context) {
   const execution = productionSearchConfiguration();
-  if (!execution.ok || !["WIDE_INDEX", "WIDE_V3"].includes(execution.search_profile)) {
-    return Response.json({ ok:false, error:{ code:"WIDE_BACKGROUND_NOT_ARMED", message:"The background endpoint is available only for an armed WIDE_INDEX or WIDE_V3 production search." } }, { status:423 });
+  if (!execution.ok || !["WIDE_INDEX", "WIDE_MAX", "WIDE_V3"].includes(execution.search_profile)) {
+    return Response.json({ ok:false, error:{ code:"WIDE_BACKGROUND_NOT_ARMED", message:"The background endpoint is available only for an armed WIDE_INDEX, WIDE_MAX or WIDE_V3 production search." } }, { status:423 });
   }
   return searchHandler(request, context);
 }

@@ -43,6 +43,8 @@ Závazný Search scope: [`docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md`](docs/PRODUC
 
 Široká relevance Human Capture + Cultural Heritage: [`docs/PRODUCT_DECISION_WIDE_RELEVANCE_20260908_CZ.md`](docs/PRODUCT_DECISION_WIDE_RELEVANCE_20260908_CZ.md)
 
+Maximum hosted-index profil `WIDE_MAX` (25 shardů / 75 web calls / 100 výsledků / 5 USD): [`docs/WIDE_MAX_SEARCH_CZ.md`](docs/WIDE_MAX_SEARCH_CZ.md)
+
 Search Phase A — truth/freshness acceptance: [`docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md`](docs/PHASE_A_SEARCH_TRUTH_ACCEPTANCE_CZ.md)
 
 Search Phase B — read-only source collection: [`docs/PHASE_B_SOURCE_COLLECTION_CZ.md`](docs/PHASE_B_SOURCE_COLLECTION_CZ.md)

@@ -47,6 +47,17 @@ test("representative five-shard wide run remains well below its two-dollar reser
   assert.ok(cost.total_usd < 2);
 });
 
+test("representative 25-shard WIDE_MAX run remains below its five-dollar reservation", () => {
+  const cost = estimateSearchCost({
+    model:"gpt-5.6-luna",
+    webSearchCalls:75,
+    usage:{ input_tokens:2_500_000, output_tokens:150_000 }
+  });
+  assert.equal(cost.pricing_tier, "LONG_CONTEXT");
+  assert.equal(cost.total_usd, 2.02);
+  assert.ok(cost.total_usd < 5);
+});
+
 test("retry usage and tool calls can be accumulated without hiding first-attempt cost", () => {
   const total = addUsage(
     { input_tokens: 100, input_tokens_details: { cached_tokens: 20 }, output_tokens: 30 },

@@ -18,7 +18,7 @@ práce sama o sobě není relevantní. Reallusion Character Creator (CC3/CC4),
 iClone a Daz3D/Daz Studio jsou hard reject; obecné profesní spojení „character
 creator“ bez vazby na tento software se automaticky nevyřazuje.
 
-## Pět runtime shardů WIDE_INDEX
+## Základních pět runtime shardů WIDE_INDEX
 
 1. `human_data_capture_worldwide` — worldwide face/body photogrammetry,
    multi-person a multi-ethnicity datasets, casting + scanning a AI/computer
@@ -68,3 +68,8 @@ Změna nemění produkční env ani sama nespouští Search. WIDE_INDEX zachová
 nejvýše 5 OpenAI Responses requestů, 15 hosted web-search calls, 24 sales
 výsledků, 2 USD, jeden ruční běh za UTC den a žádný retry. Nový acceptance run
 nepoužije Firecrawl, Bluesky ani jiné official-source konektory.
+
+Pro prioritní maximum coverage je nad stejnými relevance pravidly dostupný
+samostatný profil [`WIDE_MAX`](WIDE_MAX_SEARCH_CZ.md): 25 specializovaných
+shardů, nejvýše 75 hosted web-search calls, až 150 kandidátů před společnou
+normalizací, nejvýše 100 uložených výsledků a přesný hard cap 5 USD.

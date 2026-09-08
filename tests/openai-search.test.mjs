@@ -216,3 +216,48 @@ test("wide search accepts an exact Firecrawl-rendered detail URL and preserves c
   assert.equal(result.cloud_browser_requests, 1);
   assert.equal(result.firecrawl_credits_used, 10);
 });
+
+test("wide search executes large plans with bounded concurrency and no retry", async () => {
+  const shards = Array.from({length:12}, (_, index) => ({
+    id:`bounded_${index}`,
+    label:`Bounded ${index}`,
+    allowed_domains:["upwork.com"],
+    focus:"Find one explicit current external vendor request and reject ordinary employment."
+  }));
+  let calls = 0;
+  let active = 0;
+  let peak = 0;
+  const fakeFetch = async (_url, options) => {
+    calls += 1;
+    active += 1;
+    peak = Math.max(peak, active);
+    const request = JSON.parse(options.body);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    active -= 1;
+    return Response.json({
+      id:`resp_bounded_${calls}`,
+      model:"gpt-5.6-luna",
+      usage:{input_tokens:10,output_tokens:5,total_tokens:15},
+      output:[
+        {type:"web_search_call",action:{sources:[{url:SOURCE,title:"source"}]}},
+        {type:"message",content:[{type:"output_text",text:JSON.stringify({opportunities:[]})}]}
+      ]
+    });
+  };
+  const result = await runWideOpportunitySearch({
+    apiKey:"fake",
+    model:"gpt-5.6-luna",
+    profile,
+    nowIso:NOW,
+    shards,
+    maxConcurrency:5,
+    searchProfile:"WIDE_MAX",
+    fetchImpl:fakeFetch
+  });
+  assert.equal(calls, 12);
+  assert.equal(peak, 5);
+  assert.equal(result.openai_request_count, 12);
+  assert.equal(result.attempts, 1);
+  assert.equal(result.search_profile, "WIDE_MAX");
+  assert.equal(result.search_status, "COMPLETE");
+});

@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   PRODUCTION_SEARCH_MODEL,
+  PRODUCTION_WIDE_MAX_CAP_MICROUSD,
+  PRODUCTION_WIDE_MAX_RESULTS,
   PRODUCTION_WIDE_SEARCH_MAX_CAP_MICROUSD,
   PRODUCTION_WIDE_V3_MAX_CAP_MICROUSD,
   PRODUCTION_WIDE_V3_MODEL,
@@ -60,6 +62,47 @@ test("wide-index profile has exact two-dollar and five-shard server-owned bounda
     getEnv:configured(),
     nowIso:"2026-09-07T00:00:01.000Z"
   }).run_id);
+});
+
+test("WIDE_MAX has exact five-dollar, 25-shard and bounded-concurrency boundaries", () => {
+  const config = productionSearchConfiguration({
+    getEnv:configured({
+      RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_MAX",
+      RADAR_PRODUCTION_SEARCH_MAX_USD:"5.00",
+      RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"100"
+    }),
+    nowIso:"2026-09-08T10:00:00.000Z"
+  });
+  assert.equal(config.ok, true);
+  assert.equal(config.mode, "PRODUCTION_DAILY_WIDE_MAX");
+  assert.equal(config.search_profile, "WIDE_MAX");
+  assert.equal(config.cap_microusd, PRODUCTION_WIDE_MAX_CAP_MICROUSD);
+  assert.equal(config.max_results, PRODUCTION_WIDE_MAX_RESULTS);
+  assert.equal(config.openai_request_limit, 25);
+  assert.equal(config.max_tool_calls, 75);
+  assert.equal(config.max_tool_calls_per_request, 3);
+  assert.equal(config.max_results_per_shard, 6);
+  assert.equal(config.max_concurrency, 5);
+  assert.equal(config.shards.length, 25);
+  assert.equal(config.firecrawl_enabled, false);
+  assert.equal(config.official_sources_enabled, false);
+  assert.equal(config.run_id, "prod-wide-max-search-20260908");
+  assert.equal(config.operation_id, "daily-wide-max-search");
+  assert.equal(config.reservation_id, "daily-wide-max-budget");
+});
+
+test("WIDE_MAX fails closed on altered bounds or any Firecrawl activation", () => {
+  for (const overrides of [
+    { RADAR_PRODUCTION_SEARCH_MAX_USD:"4.99", RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"100" },
+    { RADAR_PRODUCTION_SEARCH_MAX_USD:"5.00", RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"99" },
+    { RADAR_PRODUCTION_SEARCH_MAX_USD:"5.00", RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"101" },
+    { RADAR_PRODUCTION_SEARCH_MAX_USD:"5.00", RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"100", RADAR_FIRECRAWL_WIDE_ENABLED:"true", RADAR_FIRECRAWL_MAX_CREDITS:"26" }
+  ]) {
+    assert.equal(productionSearchConfiguration({
+      getEnv:configured({ RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_MAX", ...overrides }),
+      nowIso:"2026-09-08T10:00:00.000Z"
+    }).ok, false);
+  }
 });
 
 test("Firecrawl WIDE v2 requires the exact 26-credit no-retry boundary", () => {

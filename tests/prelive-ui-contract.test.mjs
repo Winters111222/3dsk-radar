@@ -55,7 +55,8 @@ test("browser enables paid controls only from their dedicated health states", ()
 });
 
 test("wide search uses a background function and polls durable coordinator state", () => {
-  assert.match(app, /state\.searchProfile==="WIDE_INDEX"/);
+  assert.match(app, /\["WIDE_INDEX","WIDE_MAX","WIDE_V3"\]\.includes\(state\.searchProfile\)/);
+  assert.match(app, /"WIDE_MAX"/);
   assert.match(app, /\/api\/search-background/);
   assert.match(app, /\/api\/search-status/);
   assert.match(app, /No automatic retry was attempted/);

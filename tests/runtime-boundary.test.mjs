@@ -101,6 +101,27 @@ test("health exposes wide search profile and its server-owned limits without dis
   assert.equal(network.mock.callCount(), 0);
 });
 
+test("health exposes WIDE_MAX 25/75/100 boundaries without network dispatch", async t => {
+  runtime(t, {
+    RADAR_INTERNAL_ACCESS_SECRET:"fixture-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_MAX",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"5.00",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"100"
+  });
+  const network = t.mock.method(globalThis, "fetch", () => { throw new Error("Health must not dispatch search"); });
+  const production = await (await health(undefined, {deploy:{context:"production"}})).json();
+  assert.equal(production.production_search, "READY");
+  assert.equal(production.production_search_profile, "WIDE_MAX");
+  assert.equal(production.production_search_max_results, 100);
+  assert.equal(production.production_search_max_usd, 5);
+  assert.equal(production.production_search_openai_request_limit, 25);
+  assert.equal(production.production_search_web_call_limit, 75);
+  assert.equal(production.cloud_browser, "LOCKED");
+  assert.equal(network.mock.callCount(), 0);
+});
+
 test("health exposes Firecrawl WIDE v2 only behind the exact server gate", async t => {
   runtime(t, {
     RADAR_INTERNAL_ACCESS_SECRET:"fixture-secret",

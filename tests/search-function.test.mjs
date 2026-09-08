@@ -439,12 +439,88 @@ test("wide production search runs five bounded coverage shards and persists one 
     assert.equal(response.status, 200);
     assert.equal(openaiRequests, 5);
     assert.equal(payload.run.search_profile, "WIDE_INDEX");
+    assert.deepEqual(payload.run.coverage.filter((item) => item.status !== "COMPLETE"), []);
     assert.equal(payload.run.search_status, "COMPLETE");
     assert.equal(payload.run.coverage.length, 5);
     assert.equal(payload.run.paid_execution.cap_usd, 2);
     assert.equal(payload.run.paid_execution.openai_requests, 5);
     assert.equal(payload.run.web_search_call_count, 5);
     assert.equal(payload.run.returned_count, 1);
+    assert.deepEqual(savedRun.coverage, payload.run.coverage);
+  } finally {
+    globalThis.fetch = oldFetch;
+    restore();
+    clearWarmState();
+  }
+});
+
+test("WIDE_MAX executes all 25 shards in one coordinated no-retry operation", async () => {
+  const oldFetch = globalThis.fetch;
+  clearWarmState();
+  const restore = installNetlifyEnv({
+    RADAR_INTERNAL_ACCESS_SECRET:"team-secret",
+    RADAR_LIVE_AI_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_ENABLED:"true",
+    RADAR_PRODUCTION_SEARCH_PROFILE:"WIDE_MAX",
+    RADAR_PRODUCTION_SEARCH_MAX_USD:"5.00",
+    RADAR_PRODUCTION_SEARCH_MAX_RESULTS:"100",
+    OPENAI_API_KEY:"fake-test-key"
+  });
+  const detailUrl = {
+    "upwork.com":SOURCE,
+    "ted.europa.eu":"https://ted.europa.eu/en/notice/-/detail/123456-2026",
+    "workwithindies.com":"https://workwithindies.com/careers/realistic-human-vendor",
+    "vfxengine.com":"https://vfxengine.com/jobs/digital-double-vendor",
+    "reddit.com":"https://www.reddit.com/r/gameDevClassifieds/comments/abc123/hiring_vendor/",
+    "greenhouse.io":"https://boards.greenhouse.io/example/jobs/123456",
+    "ashbyhq.com":"https://jobs.ashbyhq.com/example/12345678-1234-1234-1234-123456789abc",
+    "smartrecruiters.com":"https://jobs.smartrecruiters.com/Example/123456-character-vendor",
+    "nen.nipez.cz":"https://nen.nipez.cz/verejne-zakazky/detail-zakazky/N006-26-V00012345",
+    "uvo.gov.sk":"https://www.uvo.gov.sk/vestnik/oznamenie/detail/373248",
+    "sam.gov":"https://sam.gov/opp/12345678-1234-1234-1234-123456789abc/view",
+    "ungm.org":"https://www.ungm.org/Public/Notice/12345",
+    "find-tender.service.gov.uk":"https://www.find-tender.service.gov.uk/Notice/012345-2026"
+  };
+  let openaiRequests = 0;
+  let savedRun;
+  globalThis.__RADAR_TEST_PAID_COORDINATOR__ = memoryPaidCoordinator({capMicrousd:5_000_000});
+  globalThis.__RADAR_TEST_STATE_REPOSITORY__ = {
+    mergeSearchResultsWithStats:async (items) => ({opportunities:items,new_count:0,updated_count:0,workspace_total:0}),
+    saveSearchRun:async (run) => { savedRun = run; }
+  };
+  globalThis.fetch = async (_url, options) => {
+    openaiRequests += 1;
+    const request = JSON.parse(options.body);
+    const domain = request.tools[0].filters.allowed_domains[0];
+    const source = detailUrl[domain];
+    assert.ok(source, `missing test detail URL for ${domain}`);
+    return Response.json({
+      id:`resp_wide_max_${openaiRequests}`,
+      model:"gpt-5.6-luna",
+      usage:{input_tokens:50,output_tokens:10,total_tokens:60},
+      output:[
+        {type:"web_search_call",action:{sources:[{url:source,title:"source"}]}},
+        {type:"message",content:[{type:"output_text",text:JSON.stringify({opportunities:[]})}]}
+      ]
+    });
+  };
+  try {
+    const response = await handler(new Request("https://radar.test/api/search", {
+      method:"POST",
+      headers:{authorization:"Bearer team-secret","content-type":"application/json"},
+      body:"{}"
+    }), {deploy:{context:"production"}});
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(openaiRequests, 25);
+    assert.equal(payload.run.search_profile, "WIDE_MAX");
+    assert.deepEqual(payload.run.coverage.filter((item) => item.status !== "COMPLETE"), [], JSON.stringify(payload.run.coverage));
+    assert.equal(payload.run.search_status, "COMPLETE");
+    assert.equal(payload.run.coverage.length, 25);
+    assert.equal(payload.run.paid_execution.cap_usd, 5);
+    assert.equal(payload.run.paid_execution.openai_requests, 25);
+    assert.equal(payload.run.web_search_call_count, 25);
+    assert.equal(payload.run.returned_count, 0);
     assert.deepEqual(savedRun.coverage, payload.run.coverage);
   } finally {
     globalThis.fetch = oldFetch;
