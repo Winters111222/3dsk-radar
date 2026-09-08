@@ -63,6 +63,28 @@ test("health exposes an armed paid gate only in Deploy Preview context", async t
   assert.equal(preview.deploy_context, "deploy-preview");
 });
 
+test("health exposes ULTRA native readiness only when both gates and source qualification pass", async t => {
+  runtime(t, { RADAR_ULTRA_MAX_ENABLED:"true", RADAR_SOURCE_COLLECTION_ENABLED:"true" });
+  assert.equal((await (await health()).json()).ultra_max_native,"LOCKED");
+  globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__ = new Set(["ted_eu"]);
+  t.after(() => delete globalThis.__RADAR_TEST_RUNTIME_ELIGIBLE_SOURCE_IDS__);
+  const ready = await (await health()).json();
+  assert.equal(ready.ultra_max_native,"READY");
+  assert.equal(ready.live_ai_enabled,false);
+});
+
+test("health exposes ULTRA paid readiness only behind its independent production gate", async t => {
+  runtime(t, {RADAR_ULTRA_MAX_ENABLED:"true",RADAR_ULTRA_MAX_PAID_ENABLED:"true",RADAR_LIVE_AI_ENABLED:"true",OPENAI_API_KEY:"fixture-key"});
+  const preview=await (await health(undefined,{deploy:{context:"deploy-preview"}})).json();
+  const production=await (await health(undefined,{deploy:{context:"production"}})).json();
+  assert.equal(preview.ultra_max_paid,"CONTEXT_BLOCKED");
+  assert.equal(production.ultra_max_paid,"READY");
+  assert.equal(production.ultra_max_paid_max_usd,15);
+  assert.equal(production.ultra_max_paid_openai_request_limit,100);
+  assert.equal(production.ultra_max_paid_web_call_limit,300);
+  assert.equal(production.ultra_max_paid_retry_allowed,false);
+});
+
 test("health exposes production search readiness independently from global AI", async t => {
   runtime(t, {
     RADAR_INTERNAL_ACCESS_SECRET:"fixture-secret",

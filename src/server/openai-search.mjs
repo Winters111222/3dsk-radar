@@ -161,7 +161,8 @@ export async function runWideOpportunitySearch({
   timeoutMs = 45000,
   preDiscovery = null,
   officialDiscovery = null,
-  searchProfile = "WIDE_INDEX"
+  searchProfile = "WIDE_INDEX",
+  includeVerificationEvidence = false
 }) {
   if (!Array.isArray(shards) || !shards.length) {
     const error = new Error("Wide search plan is empty");
@@ -224,6 +225,7 @@ export async function runWideOpportunitySearch({
         shard,
         raw,
         parsed,
+        verified_source_urls:[...sourceUrls],
         web_calls:webCalls,
         consulted_urls:new Set([...sourceUrls, ...discoveryHints.map((item) => item.url)]).size,
         firecrawl_verified_urls:firecrawlVerifiedUrls.size
@@ -276,6 +278,7 @@ export async function runWideOpportunitySearch({
     status:"COMPLETE",
     allowed_domain_count:item.shard.allowed_domains.length,
     consulted_urls:item.consulted_urls,
+    ...(includeVerificationEvidence ? { verified_source_urls:item.verified_source_urls } : {}),
     candidates_seen:item.parsed.opportunities.length,
     web_search_calls:item.web_calls,
     firecrawl_verified_urls:item.firecrawl_verified_urls,
@@ -286,6 +289,7 @@ export async function runWideOpportunitySearch({
     status:"FAILED",
     allowed_domain_count:item.shard.allowed_domains.length,
     consulted_urls:item.consulted_urls,
+    ...(includeVerificationEvidence ? { verified_source_urls:[] } : {}),
     candidates_seen:0,
     web_search_calls:item.web_calls,
     firecrawl_verified_urls:item.firecrawl_verified_urls,

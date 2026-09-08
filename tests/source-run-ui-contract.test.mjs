@@ -34,9 +34,24 @@ test("candidate panel permits only truth-gated promotion", () => {
 
 test("operator controls have responsive layouts and the collection lock is acceptance-tested", () => {
   assert.match(styles, /\.source-run-controls/);
-  assert.match(responsive, /\.source-run-controls,.source-run-progress \{ grid-template-columns:1fr; \}/);
+  assert.match(responsive, /\.source-run-controls,.ultra-max-controls,.source-run-progress \{ grid-template-columns:1fr; \}/);
   assert.match(app, /SOURCE_COLLECTION_LOCKED/);
   assert.match(app, /prelive_lock_check/);
+});
+
+test("ULTRA MAX operator UI advances native and independently gated paid phases from one click", () => {
+  for (const marker of ["ultra-max-panel","Ultra maximum radar","RUN ULTRA MAX · LOCKED","CANCEL ULTRA RUN","all seven persisted phases"]) {
+    assert.match(`${html}\n${app}`,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")));
+  }
+  assert.match(app,/continueUltraMaxLoop/);
+  assert.match(app,/action:"CONTINUE_NATIVE"/);
+  assert.match(app,/action:"PREPARE_PAID"/);
+  assert.match(app,/prepared\.background_path/);
+  assert.match(app,/maxOperations:56/);
+  assert.match(app,/no automatic retry/i);
+  assert.match(app,/h\.ultra_max_native==="READY"/);
+  assert.match(app,/h\.ultra_max_paid==="READY"/);
+  assert.match(styles,/\.ultra-max-controls/);
 });
 
 test("paid search diagnostics expose required-shard coverage, per-source yield and rejection reasons", () => {

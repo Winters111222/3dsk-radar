@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { callOpenAIResponses, runOpportunitySearch, runWideOpportunitySearch } from "../src/server/openai-search.mjs";
+import { normalizeUrl } from "../src/server/normalize.mjs";
 import { WIDE_SEARCH_SHARDS } from "../src/server/wide-search-plan.mjs";
 
 const profile = JSON.parse(await readFile(new URL("../config/company-profile.public.json", import.meta.url), "utf8"));
@@ -131,7 +132,8 @@ test("wide search dispatches every required shard once and deduplicates their re
     profile,
     nowIso:NOW,
     shards:WIDE_SEARCH_SHARDS,
-    fetchImpl:fakeFetch
+    fetchImpl:fakeFetch,
+    includeVerificationEvidence:true
   });
   assert.equal(requests.length, 5);
   assert.equal(result.openai_request_count, 5);
@@ -140,6 +142,10 @@ test("wide search dispatches every required shard once and deduplicates their re
   assert.equal(result.search_status, "COMPLETE");
   assert.equal(result.coverage.length, 5);
   assert.equal(result.coverage.every((item) => item.status === "COMPLETE"), true);
+  assert.deepEqual(
+    result.coverage.map((item) => item.verified_source_urls),
+    requests.map((request) => [normalizeUrl(sourceForFirstDomain[request.tools[0].filters.allowed_domains[0]])])
+  );
   assert.equal(result.opportunities.length, 1);
   assert.equal(result.counters.duplicates_removed, 2);
   assert.equal(requests.every((request) => request.tool_choice === "required" && request.max_tool_calls === 3), true);

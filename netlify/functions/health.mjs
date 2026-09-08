@@ -3,6 +3,8 @@ import { productionSearchConfiguration, productionSearchState } from "../../src/
 import { productionReplyState } from "../../src/server/production-reply-policy.mjs";
 import { sourceConnectorReadiness } from "../../src/server/wide-v3-source-plan.mjs";
 import { officialSourceCanaryConfiguration } from "../../src/server/official-source-canary-policy.mjs";
+import { anyRuntimeSourceEligible } from "../../src/server/source-qualification.mjs";
+import { ultraMaxPaidConfiguration } from "../../src/server/ultra-max-paid-policy.mjs";
 
 export default async (_request, context) => {
   const liveAIEnabled = envValue("RADAR_LIVE_AI_ENABLED").toLowerCase() === "true";
@@ -12,6 +14,10 @@ export default async (_request, context) => {
   const productionSearchConfig = controlledProductionSearch === "READY" ? productionSearchConfiguration() : null;
   const controlledProductionReply = productionReplyState({ context });
   const officialSourceCanary = officialSourceCanaryConfiguration({ context, getEnv:envValue });
+  const ultraMaxNativeReady = envValue("RADAR_ULTRA_MAX_ENABLED").toLowerCase() === "true"
+    && sourceCollectionEnabled()
+    && anyRuntimeSourceEligible();
+  const ultraMaxPaid = ultraMaxPaidConfiguration({context,getEnv:envValue});
   return Response.json({
     ok: true,
     service: "3dsk-opportunity-radar",
@@ -53,6 +59,12 @@ export default async (_request, context) => {
       missing_configuration:item.missing_configuration
     })),
     source_run_engine: sourceCollectionEnabled() ? "IMPLEMENTED_ENABLED" : "IMPLEMENTED_LOCKED",
+    ultra_max_native: ultraMaxNativeReady ? "READY" : "LOCKED",
+    ultra_max_paid:ultraMaxPaid.state,
+    ultra_max_paid_max_usd:ultraMaxPaid.ok ? ultraMaxPaid.cap_microusd/1_000_000 : null,
+    ultra_max_paid_openai_request_limit:ultraMaxPaid.ok ? ultraMaxPaid.openai_request_limit : null,
+    ultra_max_paid_web_call_limit:ultraMaxPaid.ok ? ultraMaxPaid.web_search_call_limit : null,
+    ultra_max_paid_retry_allowed:false,
     persistence: "NETLIFY_BLOBS",
     response_generation: controlledProductionReply === "READY" ? "IMPLEMENTED_ENABLED" : "IMPLEMENTED_LOCKED"
   }, { headers: { "cache-control": "no-store" } });

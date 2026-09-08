@@ -8,6 +8,8 @@ const searchFunction = await readFile(new URL("../netlify/functions/search.mjs",
 const replyFunction = await readFile(new URL("../netlify/functions/generate-response.mjs", import.meta.url), "utf8");
 const healthFunction = await readFile(new URL("../netlify/functions/health.mjs", import.meta.url), "utf8");
 const sourceCollectionFunction = await readFile(new URL("../netlify/functions/source-collection.mjs", import.meta.url), "utf8");
+const ultraBackgroundFunction = await readFile(new URL("../netlify/functions/ultra-max-phase-background.mjs", import.meta.url), "utf8");
+const ultraPaidShared = await readFile(new URL("../netlify/functions/_shared/ultra-max-paid-phase.mjs", import.meta.url), "utf8");
 const runtime = await readFile(new URL("../src/server/runtime.mjs", import.meta.url), "utf8");
 const profile = await readFile(new URL("../config/company-profile.public.json", import.meta.url), "utf8");
 
@@ -15,6 +17,9 @@ test("env example contains secret names but no secret values", () => {
   assert.match(envExample, /^OPENAI_API_KEY=$/m);
   assert.match(envExample, /^RADAR_INTERNAL_ACCESS_SECRET=$/m);
   assert.match(envExample, /^RADAR_SOURCE_COLLECTION_ENABLED=false$/m);
+  assert.match(envExample, /^RADAR_HERITAGE_GRANT_IMPORT_ENABLED=false$/m);
+  assert.match(envExample, /^RADAR_ULTRA_MAX_ENABLED=false$/m);
+  assert.match(envExample, /^RADAR_ULTRA_MAX_PAID_ENABLED=false$/m);
   assert.doesNotMatch(envExample, /sk-[A-Za-z0-9_-]{10,}/);
 });
 
@@ -24,11 +29,14 @@ test("browser bundle does not reference server secret environment names", () => 
 });
 
 test("Netlify Functions use the server runtime adapter and never print secret values", () => {
-  for (const source of [searchFunction, replyFunction, healthFunction, sourceCollectionFunction]) {
+  for (const source of [searchFunction, replyFunction, healthFunction, sourceCollectionFunction, ultraBackgroundFunction]) {
     assert.match(source, /from "..\/..\/src\/server\/runtime.mjs"/);
     assert.doesNotMatch(source, /process\.env/);
     assert.doesNotMatch(source, /console\.(log|error)\([^\n]*(apiKey|RADAR_INTERNAL_ACCESS_SECRET)/);
   }
+  assert.match(ultraPaidShared, /from "\.\.\/\.\.\/\.\.\/src\/server\/runtime\.mjs"/);
+  assert.doesNotMatch(ultraPaidShared, /process\.env|console\.(?:log|error)\([^\n]*(?:apiKey|RADAR_INTERNAL_ACCESS_SECRET)/);
+  assert.match(ultraBackgroundFunction,/config=\{path:"\/api\/ultra-max-phase-background"\}/);
   assert.doesNotMatch(runtime, /console\.(log|error)/);
   assert.doesNotMatch(healthFunction, /OPENAI_API_KEY/);
 });
