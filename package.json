@@ -10,6 +10,7 @@
     "accept:fixture": "node scripts/fixture-acceptance.mjs",
     "accept:collector": "node scripts/collector-acceptance.mjs",
     "accept:run": "node scripts/source-run-acceptance.mjs",
+    "accept:ultra": "node --test tests/ultra-max-paid-background.test.mjs tests/ultra-max-finalize.test.mjs tests/ultra-paid-coordinator-probe.test.mjs",
     "accept:deployed:locked": "node scripts/deployed-zero-cost-acceptance.mjs",
     "accept:deployed:paid": "node scripts/deployed-paid-acceptance.mjs",
     "measure:collector:live": "node scripts/collector-yield-measurement.mjs",

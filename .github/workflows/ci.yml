@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - "feature/**"
+      - "feat/**"
 
 permissions:
   contents: read
@@ -39,13 +40,13 @@ jobs:
         run: npm run accept:fixture
       - name: Run static HTTP smoke acceptance
         run: npm run accept:http
+      - name: Run ULTRA MAX offline acceptance
+        run: npm run accept:ultra
       - name: Syntax check
         shell: bash
         run: |
           set -euo pipefail
-          for file in src/app.js src/lib/*.mjs src/server/*.mjs netlify/functions/*.mjs scripts/*.mjs; do
-            node --check "$file"
-          done
+          find src netlify/functions scripts -type f \( -name '*.js' -o -name '*.mjs' \) -print0 | xargs -0 -n1 node --check
       - name: Package tested source
         run: |
           git archive --format=tar -o radar-source.tar HEAD
