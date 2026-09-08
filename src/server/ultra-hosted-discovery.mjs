@@ -32,17 +32,18 @@ function payloadFor(result,estimatedCost,phaseId,searchProfile) {
 export function createUltraHostedDiscoveryExecutor({
   coordinator,apiKey,model="gpt-5.6-luna",profile,nowIso,searchRunner=runWideOpportunitySearch,fetchImpl=fetch,
   phaseId,searchProfile,budgetCapMicrousd,shards,maxResults,resultsPerShard=6,toolCallsPerShard=3,maxOutputTokensPerShard=6000,maxConcurrency=5,validatePlan,
-  prepareSearchInput=async()=>({})
+  phaseKind="PAID_HOSTED_SEARCH",prepareSearchInput=async()=>({}),validateResult=()=>true,mapUsage=(result,estimatedCost,usage)=>usage,decoratePayload=(payload)=>payload
 }={}) {
   if (!apiKey) throw new Error("ULTRA_HOSTED_API_KEY_REQUIRED");
   if (!profile?.capabilities||!Array.isArray(profile.credentials)) throw new Error("ULTRA_HOSTED_PROFILE_REQUIRED");
   if (!Number.isFinite(Date.parse(nowIso))) throw new Error("ULTRA_HOSTED_TIMESTAMP_INVALID");
   if (typeof validatePlan!=="function"||!validatePlan(shards)) throw new Error("ULTRA_HOSTED_PLAN_INVALID");
   if (typeof prepareSearchInput!=="function") throw new Error("ULTRA_HOSTED_PREPARER_INVALID");
+  if (typeof validateResult!=="function"||typeof mapUsage!=="function"||typeof decoratePayload!=="function") throw new Error("ULTRA_HOSTED_HOOK_INVALID");
   const requestLimit=shards.length;
   const webCallLimit=requestLimit*toolCallsPerShard;
   return async ({run,phase,operationId}={})=>{
-    if (phase?.phase_id!==phaseId||phase.kind!=="PAID_HOSTED_SEARCH"||phase.budget_cap_microusd!==budgetCapMicrousd) throw new Error("ULTRA_HOSTED_PHASE_MISMATCH");
+    if (phase?.phase_id!==phaseId||phase.kind!==phaseKind||phase.budget_cap_microusd!==budgetCapMicrousd) throw new Error("ULTRA_HOSTED_PHASE_MISMATCH");
     const prepared=await prepareSearchInput({run,phase,operationId});
     if (!prepared||typeof prepared!=="object"||Array.isArray(prepared)) throw new Error("ULTRA_HOSTED_SEARCH_INPUT_INVALID");
     const paid=await executeUltraPaidChild({
@@ -54,10 +55,13 @@ export function createUltraHostedDiscoveryExecutor({
           || result.web_search_call_count>webCallLimit
           || Number(result.direct_source_requests||0)!==0
           || !Array.isArray(result.opportunities)
-          || result.opportunities.length>maxResults) throw new Error("ULTRA_HOSTED_REQUEST_BOUNDARY_EXCEEDED");
+          || result.opportunities.length>maxResults
+          || !validateResult(result)) throw new Error("ULTRA_HOSTED_REQUEST_BOUNDARY_EXCEEDED");
         const estimatedCost=estimateSearchCost({model:result.model,usage:result.usage,webSearchCalls:result.web_search_call_count});
         if (!estimatedCost) throw new Error("ULTRA_HOSTED_COST_UNKNOWN");
-        return {usage:usageFor(result,estimatedCost),payload:payloadFor(result,estimatedCost,phaseId,searchProfile)};
+        const usage=mapUsage(result,estimatedCost,usageFor(result,estimatedCost));
+        const payload=decoratePayload(payloadFor(result,estimatedCost,phaseId,searchProfile),result);
+        return {usage,payload};
       }
     });
     return {complete:true,usage:paid.result.usage,payload:paid.result.payload,paid_coordinator_version:paid.coordinator_version};
