@@ -41,6 +41,9 @@ export function evaluatePlatformAlertPrecision(review, pilot, policy = {}) {
     ...pilot.linkedin_job_alerts.map((item) => [item.id, "linkedin"]),
     ...pilot.upwork_saved_searches.map((item) => [item.id, "upwork"])
   ]);
+  const humanRequiredQueries = new Set(pilot.upwork_saved_searches
+    .filter((item) => item.human_subject_required === true)
+    .map((item) => item.id));
   const ids = new Set();
   const rows = review.candidates.map((candidate) => {
     assert(candidate && typeof candidate === "object", "PLATFORM_ALERT_CANDIDATE_INVALID");
@@ -60,6 +63,9 @@ export function evaluatePlatformAlertPrecision(review, pilot, policy = {}) {
     if (accepted) {
       for (const field of REQUIRED_TRUTH) assert(candidate[field] === true, `PLATFORM_ALERT_ACCEPTED_${field.toUpperCase()}_REQUIRED`);
       assert(candidate.opportunity_kind === "OPEN_OPPORTUNITY", "PLATFORM_ALERT_ACCEPTED_OPEN_OPPORTUNITY_REQUIRED");
+      if (humanRequiredQueries.has(candidate.pilot_query_id)) {
+        assert(candidate.human_subject_verified === true, "PLATFORM_ALERT_ACCEPTED_HUMAN_SUBJECT_VERIFIED_REQUIRED");
+      }
       if (candidate.platform === "linkedin") assert(!isPlatformUrl(candidate.original_url, "linkedin"), "PLATFORM_ALERT_LINKEDIN_ORIGINAL_BUYER_SOURCE_REQUIRED");
       assert(candidate.rejection_reason === "", "PLATFORM_ALERT_ACCEPTED_REJECTION_REASON_FORBIDDEN");
     } else {

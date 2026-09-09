@@ -223,7 +223,7 @@ assert.equal(semanticResearch.evaluation_cases.filter(item => item.class === "D"
 assert.equal(semanticResearch.evaluation_cases.filter(item => item.class === "A" || item.class === "B").length, 0);
 assert.doesNotMatch(JSON.stringify(semanticResearch), /(?:contact_email|email_address|\"email\")/i, "Derived research must not contain contact fields");
 assert.equal(platformAlertPilot.linkedin_job_alerts.length, 8);
-assert.equal(platformAlertPilot.upwork_saved_searches.length, 8);
+assert.equal(platformAlertPilot.upwork_saved_searches.length, 11);
 assert.ok(platformAlertPilot.linkedin_job_alerts.length <= platformAlertPilot.official_limits.linkedin.maximum_job_alerts);
 assert.ok(platformAlertPilot.upwork_saved_searches.length <= platformAlertPilot.official_limits.upwork.maximum_saved_searches);
 for (const alert of platformAlertPilot.linkedin_job_alerts) {
@@ -237,7 +237,7 @@ for (const search of platformAlertPilot.upwork_saved_searches) {
   assert.equal(search.enabled, false);
   assert.equal(search.delivery_expectation, "MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE");
   assert.ok(semanticCategories.has(search.category));
-  assert.match(search.boolean_query, /\b(?:OR|AND)\b/);
+  assert.ok(typeof search.boolean_query === "string" && search.boolean_query.trim(), `Empty Upwork query: ${search.id}`);
   assert.doesNotMatch(search.boolean_query, /(?:^|\s)[+!-](?=\w)/, `Unsupported Upwork operator: ${search.id}`);
 }
 [platformAlertPilot.official_limits.linkedin.documentation_url, ...platformAlertPilot.official_limits.upwork.documentation_urls].forEach(publicUrl);

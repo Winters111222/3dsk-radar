@@ -105,11 +105,19 @@ platforma se nestane runtime zdrojem pouhým vytvořením dotazu.
 ### Živá kalibrace 2026-09-09
 
 Vlastník účtů ručně a přes oficiální UI vytvořil jeden globální LinkedIn alert
-`\"character artist\"` a dva Upwork saved searches. LinkedIn ukázal 46 výsledků
+`\"character artist\"` a pět Upwork saved searches. LinkedIn ukázal 46 výsledků
 a správce alertů potvrdil denní doručení e-mailem i notifikací. Upwork broad
 scan-cleanup dotaz ukázal 8 výsledků; human-scan dotaz ukázal 2 výsledky, z
 nichž jeden byl přímý ongoing full-body human photogrammetry cleanup. Samostatný
 Wrap3D / topology-transfer dotaz měl 0 výsledků a nebyl uložen.
+
+Další tři uložené Upwork dotazy jsou `3D mesh repair`, `ZBrush scan cleanup` a
+`3D scan retopology`. Patří do samostatné lane `HUMAN_SCAN_MICROTASK`, která
+povoluje i jediný scan nebo krátkou individuální zakázku. Obecný název dotazu
+ale není důkaz relevance: A/B výsledek musí na originálním detailu potvrdit, že
+jde o člověka, tělo, hlavu, obličej, ruce/prsty, likeness nebo digital double.
+Pneumatiky, produkty, stroje, budovy, miniatury a jiné generic object meshes se
+z této lane odmítají, i kdyby technicky vyžadovaly cleanup nebo retopologii.
 
 Pozorování neopravňuje runtime aktivaci: počty jsou pouze časově označený
 kalibrační vzorek, nikoli garantovaná výtěžnost. MetaHuman byl z aktivního

@@ -19,6 +19,7 @@ const accepted = (id, overrides = {}) => ({
   studio_eligibility_verified:true,
   deliverable_verified:true,
   application_route_verified:true,
+  human_subject_verified:true,
   outreach_locked:false,
   rejection_reason:"",
   ...overrides
@@ -92,9 +93,25 @@ test("non-sales outcomes require an outreach lock and explicit reason", () => {
   );
 });
 
+test("generic mesh-repair microtasks cannot become A/B without verified human subject evidence", () => {
+  assert.throws(
+    () => evaluatePlatformAlertPrecision({schema_version:1,candidates:[accepted("object-mesh", {
+      pilot_query_id:"upwork_3d_mesh_repair",
+      human_subject_verified:false
+    })]}, pilot),
+    /PLATFORM_ALERT_ACCEPTED_HUMAN_SUBJECT_VERIFIED_REQUIRED/
+  );
+});
+
 test("live-calibrated pilot records only created alerts and keeps runtime locked", () => {
   assert.deepEqual(pilot.operator_observations.linkedin.created_alert_ids, ["linkedin_character_artist"]);
-  assert.deepEqual(pilot.operator_observations.upwork.created_saved_search_ids, ["upwork_scan_repair", "upwork_human_scans"]);
+  assert.deepEqual(pilot.operator_observations.upwork.created_saved_search_ids, [
+    "upwork_scan_repair",
+    "upwork_human_scans",
+    "upwork_3d_mesh_repair",
+    "upwork_zbrush_scan_cleanup",
+    "upwork_3d_scan_retopology"
+  ]);
   assert.equal(pilot.operator_observations.upwork.upwork_scan_repair_observed_results, 8);
   assert.equal(pilot.operator_observations.upwork.upwork_human_scans_direct_matches, 1);
   assert.equal(pilot.operator_observations.upwork.upwork_wrap_fitting_observed_results, 0);

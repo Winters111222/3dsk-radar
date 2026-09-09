@@ -5,7 +5,7 @@ import pilot from "../config/platform-alert-pilot.v1.json" with {type:"json"};
 test("platform alert pilot stays within official counts and default-off", () => {
   assert.equal(pilot.status, "OPERATOR_SETUP_REQUIRED_RUNTIME_LOCKED");
   assert.equal(pilot.linkedin_job_alerts.length, 8);
-  assert.equal(pilot.upwork_saved_searches.length, 8);
+  assert.equal(pilot.upwork_saved_searches.length, 11);
   assert.ok(pilot.linkedin_job_alerts.length <= pilot.official_limits.linkedin.maximum_job_alerts);
   assert.ok(pilot.upwork_saved_searches.length <= pilot.official_limits.upwork.maximum_saved_searches);
   assert.equal([...pilot.linkedin_job_alerts, ...pilot.upwork_saved_searches].every((item) => item.enabled === false), true);
@@ -14,6 +14,21 @@ test("platform alert pilot stays within official counts and default-off", () => 
     pilot.automatic_account_changes_enabled,
     pilot.production_import_enabled
   ], [false, false, false]);
+});
+
+test("human scan microtasks include single assets but fail closed on generic object meshes", () => {
+  const lane = pilot.acquisition_lanes.find((item) => item.id === "HUMAN_SCAN_MICROTASK");
+  assert.equal(lane.single_asset_allowed, true);
+  assert.equal(lane.generic_object_meshes_allowed, false);
+  assert.equal(lane.runtime_activation, "LOCKED");
+  const microtasks = pilot.upwork_saved_searches.filter((item) => item.lane === "HUMAN_SCAN_MICROTASK");
+  assert.deepEqual(microtasks.map((item) => item.id), [
+    "upwork_human_scans",
+    "upwork_3d_mesh_repair",
+    "upwork_zbrush_scan_cleanup",
+    "upwork_3d_scan_retopology"
+  ]);
+  assert.equal(microtasks.every((item) => item.human_subject_required === true), true);
 });
 
 test("Upwork saved searches cannot masquerade as configured email monitoring", () => {
