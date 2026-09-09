@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const read = async (name) => JSON.parse(await readFile(new URL(`../config/${name}`, import.meta.url), "utf8"));
-const [catalog, queries, evidence, qualification, deepResearchWatchlist, deepResearchQueries, deepResearchAliases, semanticResearch, platformAlertPilot] = await Promise.all([
+const [catalog, queries, evidence, qualification, deepResearchWatchlist, deepResearchQueries, deepResearchAliases, semanticResearch, dualTrackResearch, platformAlertPilot] = await Promise.all([
   read("opportunity-sources.v1.json"),
   read("search-query-packs.v1.json"),
   read("source-evidence-cases.v1.json"),
@@ -12,6 +12,7 @@ const [catalog, queries, evidence, qualification, deepResearchWatchlist, deepRes
   read("deep-research-query-shards.v1.json"),
   read("deep-research-source-aliases.v1.json"),
   read("semantic-research-derived.v1.json"),
+  read("dual-track-research-derived.v1.json"),
   read("platform-alert-pilot.v1.json")
 ]);
 const lanes = new Set(["DIRECT_BUYER", "HIRING_SIGNAL", "PROCUREMENT", "PARTNERSHIP", "DISABLED"]);
@@ -72,6 +73,7 @@ const publicUrl = (value) => {
 for (const artifact of [catalog, queries, evidence, qualification]) assert.equal(artifact.schema_version, 1);
 for (const artifact of [deepResearchWatchlist, deepResearchQueries, deepResearchAliases]) assert.equal(artifact.schema_version, 1);
 assert.equal(semanticResearch.schema_version, 1);
+assert.equal(dualTrackResearch.schema_version, 1);
 assert.equal(platformAlertPilot.schema_version, 1);
 assert.equal(catalog.status, "RESEARCH_CATALOG_NOT_RUNTIME_CONFIG");
 assert.match(catalog.based_on_sha, /^[a-f0-9]{40}$/);
@@ -222,6 +224,63 @@ assert.equal(semanticResearch.evaluation_cases.filter(item => item.class === "C"
 assert.equal(semanticResearch.evaluation_cases.filter(item => item.class === "D").length, 32);
 assert.equal(semanticResearch.evaluation_cases.filter(item => item.class === "A" || item.class === "B").length, 0);
 assert.doesNotMatch(JSON.stringify(semanticResearch), /(?:contact_email|email_address|\"email\")/i, "Derived research must not contain contact fields");
+const dualTrackCategories = new Set([
+  ...semanticCategories,
+  "CHARACTER_FINISHING", "LIKENESS_CLEANUP", "SINGLE_ASSET_HANDOFF", "SUPPLIED_SCAN_REPAIR"
+]);
+const engagementTracks = new Set(["B2B_STUDIO", "INDIVIDUAL_FREELANCE"]);
+assert.equal(dualTrackResearch.status, "RESEARCH_ONLY_RUNTIME_LOCKED");
+assert.equal(dualTrackResearch.runtime_locked, true);
+assert.equal(dualTrackResearch.scheduled_collection_enabled, false);
+assert.equal(dualTrackResearch.automatic_paid_execution_enabled, false);
+assert.equal(dualTrackResearch.production_import_enabled, false);
+assert.equal(dualTrackResearch.outreach_enabled, false);
+assert.equal(dualTrackResearch.sources.length, 54);
+assert.equal(dualTrackResearch.queries.length, 96);
+assert.equal(dualTrackResearch.integration_priorities.length, 20);
+assert.equal(dualTrackResearch.evaluation_cases.length, 133);
+assert.equal(dualTrackResearch.active_opportunity_watchlist.length, 1);
+assert.equal(dualTrackResearch.partner_watchlist.length, 4);
+for (const source of dualTrackResearch.sources) {
+  assert.match(source.id, /^[a-z0-9_]+$/);
+  assert.equal(source.enabled, false, `Dual-track source must stay disabled: ${source.id}`);
+  assert.equal(source.runtime_eligible, false, `Dual-track source must stay runtime locked: ${source.id}`);
+  assert.ok(source.engagement_tracks.length > 0 && source.engagement_tracks.every((track) => engagementTracks.has(track)));
+  source.watchlist_urls.forEach(publicUrl);
+}
+for (const query of dualTrackResearch.queries) {
+  assert.equal(query.enabled, false, `Dual-track query must stay disabled: ${query.query_id}`);
+  assert.ok(semanticLanguages.has(query.language), `Unknown dual-track language: ${query.query_id}`);
+  assert.ok(dualTrackCategories.has(query.category), `Unknown dual-track category: ${query.query_id}`);
+  assert.ok(engagementTracks.has(query.engagement_track), `Unknown engagement track: ${query.query_id}`);
+  assert.ok(query.native_query && query.web_discovery_query && query.followup_query);
+}
+assert.deepEqual([...new Set(dualTrackResearch.queries.map((query) => query.language))].sort(), [...semanticLanguages].sort());
+assert.deepEqual([...new Set(dualTrackResearch.queries.map((query) => query.category))].sort(), [...dualTrackCategories].sort());
+assert.deepEqual(dualTrackResearch.integration_priorities.map((item) => item.rank), Array.from({length:20}, (_, index) => index + 1));
+for (const priority of dualTrackResearch.integration_priorities) {
+  assert.equal(priority.enabled, false);
+  priority.watchlist_urls.forEach(publicUrl);
+  priority.documentation_and_onboarding_urls.forEach(publicUrl);
+}
+const dualClassCounts = Object.fromEntries(["A","B","C","D","REJECT"].map((value) => [value,dualTrackResearch.evaluation_cases.filter((item) => item.class === value).length]));
+assert.deepEqual(dualClassCounts, {A:0,B:1,C:4,D:34,REJECT:94});
+const dualB = dualTrackResearch.active_opportunity_watchlist[0];
+assert.equal(dualB.class, "B");
+assert.equal(dualB.engagement_track, "INDIVIDUAL_FREELANCE");
+assert.equal(dualB.accepting_applications_verified, true);
+assert.equal(dualB.individual_eligibility.status, "PROVEN");
+assert.equal(dualB.outreach_locked, true);
+assert.equal(dualB.production_import_enabled, false);
+publicUrl(dualB.original_url);
+for (const partner of dualTrackResearch.partner_watchlist) {
+  assert.equal(partner.class, "C");
+  assert.equal(partner.accepting_applications_verified, false);
+  assert.equal(partner.outreach_locked, true);
+  assert.equal(partner.production_import_enabled, false);
+  publicUrl(partner.original_url);
+}
+assert.doesNotMatch(JSON.stringify(dualTrackResearch), /(?:contact_email|email_address|\"email\")/i, "Dual-track derived research must not contain contact fields");
 assert.equal(platformAlertPilot.linkedin_job_alerts.length, 8);
 assert.equal(platformAlertPilot.upwork_saved_searches.length, 11);
 assert.ok(platformAlertPilot.linkedin_job_alerts.length <= platformAlertPilot.official_limits.linkedin.maximum_job_alerts);
@@ -310,6 +369,11 @@ console.log(JSON.stringify({
   semantic_research_queries: semanticResearch.queries.length,
   semantic_evaluation_cases: semanticResearch.evaluation_cases.length,
   semantic_partner_watchlist: semanticResearch.partner_watchlist.length,
+  dual_track_research_sources: dualTrackResearch.sources.length,
+  dual_track_research_queries: dualTrackResearch.queries.length,
+  dual_track_research_candidates: dualTrackResearch.evaluation_cases.length,
+  dual_track_B_watchlist: dualTrackResearch.active_opportunity_watchlist.length,
+  dual_track_C_watchlist: dualTrackResearch.partner_watchlist.length,
   linkedin_alert_pilot_queries: platformAlertPilot.linkedin_job_alerts.length,
   upwork_saved_search_pilot_queries: platformAlertPilot.upwork_saved_searches.length,
   runtime_eligible_sources: runtimeEligible.length,
