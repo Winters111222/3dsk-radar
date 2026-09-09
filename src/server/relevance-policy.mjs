@@ -26,11 +26,21 @@ const INACTIVE_SOURCE_PATTERNS = Object.freeze([
   ,/\b(?:uzavret[áýé]|obsaden[áýé]|expirovan[áýé]|archivovan[áýé])\b/i
 ]);
 
-const INDIVIDUAL_EMPLOYMENT_PATTERNS = Object.freeze([
-  /\b(?:full[- ]time|permanent|employment|employee|staff position|entry[- ]level)\b/i,
-  /\b(?:annual salary|employee benefits|health insurance|paid vacation|work authorization|visa sponsorship)\b/i,
-  /\b(?:submit|send|upload) (?:your )?(?:cv|resume|r[eé]sum[eé])\b/i,
+const HARD_EMPLOYMENT_PATTERNS = Object.freeze([
+  /\b(?:full[- ]time|permanent|fixed[- ]term|contract[- ]to[- ]hire|employment|employee|staff position|entry[- ]level|payroll)\b/i,
+  /\b(?:annual salary|salary range|employee benefits|health insurance|paid vacation|work authorization|visa sponsorship)\b/i,
+  /\b(?:submit|send|upload) (?:your )?(?:cv|resume|r[eé]sum[eé])\b/i
+]);
+
+const EMPLOYMENT_ROLE_PATTERNS = Object.freeze([
   /\b(?:lead|senior|junior) (?:3d |character |technical )?(?:artist|producer|developer)\b/i
+]);
+
+const INDIVIDUAL_PROJECT_PATTERNS = Object.freeze([
+  /\b(?:freelance|freelancer|independent contractor|contractor|project[- ]based|one[- ]off|short[- ]term)\b/i,
+  /\b(?:fixed[- ]price|hourly|per asset|per model|per scan|single scan|one scan)\b/i,
+  /\b(?:need|seeking|looking for|hire)\b.{0,100}\b(?:cleanup|clean up|repair|retopolog(?:y|ist)|wrap3d|zbrush|photogrammetr(?:y|ist)|texture|sculpt)\b/i,
+  /\b(?:deliver|delivery|milestone|provided|supplied)\b.{0,100}\b(?:scan|mesh|model|head|face|body|character|texture)\b/i
 ]);
 
 const STUDIO_BUYER_PATTERNS = Object.freeze([
@@ -124,6 +134,7 @@ export function freshnessConfidence(freshnessBasis) {
 export function evaluateCandidateRelevance(candidate) {
   const text = candidateText(candidate);
   const commercialRole = String(candidate?.commercial_role || "").toUpperCase();
+  const engagementTrack = String(candidate?.engagement_track || "B2B_STUDIO").toUpperCase();
   if (["BUYER", "PARTNER", "EMPLOYER"].includes(commercialRole) && matchesAny(INACTIVE_SOURCE_PATTERNS, text)) {
     return { ok:false, rejection:"inactive_source_evidence" };
   }
@@ -137,7 +148,11 @@ export function evaluateCandidateRelevance(candidate) {
   if (commercialRole === "EMPLOYER") {
     return { ok:false, rejection:"individual_employment" };
   }
-  if (matchesAny(INDIVIDUAL_EMPLOYMENT_PATTERNS, text) && !matchesAny(STUDIO_BUYER_PATTERNS, text)) {
+  if (matchesAny(HARD_EMPLOYMENT_PATTERNS, text)) {
+    return { ok:false, rejection:"individual_employment" };
+  }
+  if (matchesAny(EMPLOYMENT_ROLE_PATTERNS, text)
+    && !(engagementTrack === "INDIVIDUAL_FREELANCE" && commercialRole === "BUYER" && matchesAny(INDIVIDUAL_PROJECT_PATTERNS, text))) {
     return { ok:false, rejection:"individual_employment" };
   }
   if (matchesAny(SOFTWARE_PIPELINE_PATTERNS, text) && !matchesAny(PRODUCTION_DELIVERABLE_PATTERNS, text)) {

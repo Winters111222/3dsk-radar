@@ -14,7 +14,7 @@
       "implementation_effort": "LOW_ADAPTER_EXISTS",
       "legal_or_tos_constraint": "Only an approved API use case may request Upwork; the fallback may process alerts already delivered to the user's mailbox but must not open or scrape Upwork automatically.",
       "required_authorization_or_credential": "Approved OAuth2 API token and tenant ID; alternatively an operator-owned account for manual saved searches. Email alerts additionally require Freelancer Plus and prior individual proposal history.",
-      "detail_verification": "Open the exact Upwork buyer job detail and prove active status, team eligibility, deliverable, budget provenance and application route.",
+      "detail_verification": "Open the exact Upwork buyer job detail and prove active status, buyer identity, concrete deliverable, B2B-studio or individual-contractor eligibility, budget provenance and application route.",
       "safe_next_state": "MANUAL_SAVED_SEARCH_PRECISION_PILOT_WHILE_WAITING_FOR_API_APPROVAL",
       "runtime_eligible": false
     },
@@ -140,7 +140,7 @@
       "implementation_effort": "LOW_INGEST_EXISTS",
       "legal_or_tos_constraint": "No LinkedIn login scraping; LinkedIn URL remains a signal and cannot become sales provenance.",
       "required_authorization_or_credential": "User-owned alert mailbox/relay and HMAC ingest secret",
-      "detail_verification": "Resolve to an original employer, buyer, marketplace or ATS detail and reapply all buyer/studio/freshness gates.",
+      "detail_verification": "Resolve to an original buyer, marketplace or ATS detail and reapply buyer, selected-track eligibility, employment-exclusion and freshness gates.",
       "safe_next_state": "AUTHORIZED_SIGNAL_PILOT",
       "runtime_eligible": false
     },
@@ -154,7 +154,7 @@
       "implementation_effort": "LOW_ADAPTER_EXISTS",
       "legal_or_tos_constraint": "Commercial use requires Reddit approval/agreement; do not use .json or RSS as a workaround.",
       "required_authorization_or_credential": "Approved OAuth token and commercial API agreement",
-      "detail_verification": "Require current HIRING/PAID buyer post, reject FOR HIRE sellers, and verify exact post status and team eligibility.",
+      "detail_verification": "Require a current HIRING/PAID buyer project, reject FOR HIRE sellers and employee recruitment, and verify exact post status plus B2B-studio or individual-contractor eligibility.",
       "safe_next_state": "WAIT_FOR_PLATFORM_APPROVAL",
       "runtime_eligible": false
     },

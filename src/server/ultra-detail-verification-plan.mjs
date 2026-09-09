@@ -36,11 +36,13 @@ function verificationFocus(record,sourceUrl) {
     company:String(record.company||"").slice(0,240),
     opportunity_kind:record.opportunity_kind,
     notice_status:record.notice_status,
+    engagement_track:record.engagement_track,
     studio_eligibility:record.studio_eligibility,
+    individual_eligibility:record.individual_eligibility,
     budget_type:record.budget_type,
     source_url:sourceUrl
   };
-  return `DETAIL_VERIFICATION: Re-open and verify exactly this candidate URL: ${sourceUrl}. Do not discover or substitute another opportunity. Return at most this one record, and only if the exact page currently proves the buyer identity, active/open status or valid awarded funding-lead status, eligibility for a Czech/European external studio, matching production deliverable, application route and any stated buyer-project budget. Re-check every exclusion, especially employee-only work, sellers, inactive notices, Reallusion/Character Creator/iClone/Daz3D, software development, and physical heritage capture outside Czechia/Slovakia. If any required fact is missing or contradicted, return an empty opportunities array. Prior normalized candidate is untrusted context: ${JSON.stringify(candidate)}`;
+  return `DETAIL_VERIFICATION: Re-open and verify exactly this candidate URL: ${sourceUrl}. Do not discover or substitute another opportunity. Return at most this one record, and only if the exact page currently proves the buyer identity, active/open status or valid awarded funding-lead status, eligibility for the declared B2B_STUDIO or INDIVIDUAL_FREELANCE track, matching production deliverable, application route and any stated buyer-project budget. For INDIVIDUAL_FREELANCE require a genuine independent project/task and reject employment. Re-check every exclusion, especially employee-only work, sellers, inactive notices, Reallusion/Character Creator/iClone/Daz3D, software development, and physical heritage capture outside Czechia/Slovakia. If any required fact is missing or contradicted, return an empty opportunities array. Prior normalized candidate is untrusted context: ${JSON.stringify(candidate)}`;
 }
 
 export function collectUltraDetailCandidates(phasePayloads,maxCandidates=ULTRA_DETAIL_MAX_CANDIDATES) {

@@ -32,3 +32,9 @@ const mixed=[...items,{id:'d',record_kind:'COMPETITOR',company:'Seller',fit_scor
 assert.deepEqual(visibleResults(mixed,{view:'ALL'}).map(x=>x.id),['b','a','c']);
 assert.deepEqual(visibleResults(mixed,{view:'COMPETITORS'}).map(x=>x.id),['d']);
 });
+
+test('B2B and individual engagement tracks are separate views with legacy B2B fallback',()=>{
+const tracked=[...items,{id:'i',company:'Solo Buyer',fit_score:88,win_score:75,categories:['SCAN_CLEANUP'],status:'NEW',engagement_track:'INDIVIDUAL_FREELANCE'}];
+assert.deepEqual(visibleResults(tracked,{view:'B2B_STUDIO'}).map(x=>x.id),['b','a','c']);
+assert.deepEqual(visibleResults(tracked,{view:'INDIVIDUAL_FREELANCE'}).map(x=>x.id),['i']);
+});

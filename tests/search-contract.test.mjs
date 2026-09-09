@@ -30,7 +30,7 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.equal(OPPORTUNITY_CATEGORIES.includes("VISUAL_AI_MOTION"), false);
   assert.equal(body.text.format.schema.properties.opportunities.items.properties.categories.items.enum.includes("VISUAL_AI_MOTION"), false);
   const candidate = body.text.format.schema.properties.opportunities.items;
-  for (const field of ["commercial_role","notice_status","studio_eligibility","eligibility_reason","scope_fit","source_updated_date","acceptance_source_url"]) {
+  for (const field of ["commercial_role","notice_status","engagement_track","studio_eligibility","eligibility_reason","individual_eligibility","individual_eligibility_reason","scope_fit","source_updated_date","acceptance_source_url"]) {
     assert.ok(candidate.required.includes(field), field);
   }
   assert.ok(body.instructions.includes("Freshness is mandatory"));
@@ -39,6 +39,8 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.ok(body.instructions.includes("Do not sign in, use cookies or sessions"));
   assert.ok(body.instructions.includes("RealityCapture, ZBrush, Substance Painter and Faceform Wrap3D"));
   assert.ok(body.instructions.includes("Hard exclusions: omit every Reallusion"));
+  assert.ok(body.instructions.includes("Search two distinct engagement tracks"));
+  assert.ok(body.instructions.includes("INDIVIDUAL_FREELANCE requires an explicit buyer-posted freelance/project route"));
   assert.ok(body.instructions.includes("physical scanning of museum objects"));
   assert.ok(body.instructions.includes("LOW confidence"));
   for (const category of ["HUMAN_DATA_CAPTURE", "CULTURAL_HERITAGE_3D", "HERITAGE_POSTPROCESSING", "HERITAGE_FUNDING_PARTNERSHIP"]) {
@@ -54,6 +56,7 @@ test("search schema clamps result count and covers required opportunity kinds", 
   assert.deepEqual(kindEnum, ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"]);
   assert.ok(SEARCH_INTENTS.includes("character production overflow"));
   assert.ok(SEARCH_INTENTS.includes("facial scan processing contract"));
+  assert.ok(SEARCH_INTENTS.includes("single human scan mesh repair"));
   assert.ok(SEARCH_INTENTS.includes("AI human dataset photogrammetry capture vendor"));
   assert.ok(SEARCH_INTENTS.includes("3D digitalizace sbírkových předmětů veřejná zakázka"));
   assert.ok(SEARCH_INTENTS.includes("3D digitalizácia zbierkových predmetov verejné obstarávanie"));

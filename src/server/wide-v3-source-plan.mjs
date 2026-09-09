@@ -126,11 +126,11 @@ const shard = (id, label, domains, focus, signalOnlyDomains = []) => Object.free
 // separate exact budget, request caps and at least one ready official adapter.
 export const WIDE_V3_SEARCH_SHARDS = Object.freeze([
   shard("marketplaces_core", "Direct marketplaces — core", ["upwork.com", "freelancer.com", "peopleperhour.com", "guru.com"],
-    "Find buyer-posted, current human photogrammetry, scan cleanup, Wrap/basemesh, digital-human, facial/FACS or realistic-character production projects. Reject seller profiles and service listings."),
+    "Find buyer-posted, current human photogrammetry, scan cleanup, Wrap/basemesh, digital-human, facial/FACS or realistic-character production projects. Include both B2B studio/team work and genuine individual freelance tasks, including a single supplied scan, but classify them separately. Reject employee roles, seller profiles and service listings."),
   shard("communities_paid", "Paid 3D and game communities", ["reddit.com", "forums.unrealengine.com", "polycount.com", "blenderartists.org"],
     "Find current paid or hiring posts with a real buyer brief. Reject FOR HIRE, unpaid, rev-share-only, portfolio and seller posts."),
   shard("contract_boards", "Contract and freelance boards", ["workwithindies.com", "remotegamejobs.com", "hitmarker.net", "gamesjobsdirect.com", "artstation.com", "gamejobs.co", "vfxengine.com"],
-    "Find worldwide or remote contract/freelance work that can accept a studio vendor. Ordinary employee roles are signals, not open B2B opportunities."),
+    "Find worldwide or remote project-based contract/freelance work that accepts either a studio vendor or an independent specialist, and classify the engagement track. Ordinary employee roles remain signals, not open opportunities."),
   shard("ats_external_development", "ATS external-development signals", ["greenhouse.io", "lever.co", "ashbyhq.com", "smartrecruiters.com", "workable.com", "teamtailor.com", "recruitee.com"],
     "Find vendor management, outsourcing, co-development, external development and production-overflow demand on original employer ATS details."),
   shard("procurement", "Public procurement", ["ted.europa.eu", "find-tender.service.gov.uk", "contractsfinder.service.gov.uk", "sam.gov", "canadabuys.canada.ca", "ungm.org", "procurement-notices.undp.org", "worldbank.org"],

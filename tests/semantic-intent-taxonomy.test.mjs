@@ -12,7 +12,7 @@ test("semantic taxonomy covers all eight researched buyer-intent categories", ()
 
 test("every WIDE_MAX shard receives latent buyer language without changing hard limits", () => {
   const coverage = semanticIntentCoverage();
-  assert.equal(WIDE_MAX_PLAN_VERSION, "semantic-buyer-intent-v3");
+  assert.equal(WIDE_MAX_PLAN_VERSION, "dual-engagement-track-v4");
   assert.equal(WIDE_MAX_SEARCH_SHARDS.length, 25);
   for (const shard of WIDE_MAX_SEARCH_SHARDS) {
     assert.ok(coverage[shard.id]?.length > 0, shard.id);

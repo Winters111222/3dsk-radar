@@ -1,4 +1,4 @@
-import { COMMERCIAL_ROLES, FRESHNESS_BASES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES } from "./source-truth.mjs";
+import { COMMERCIAL_ROLES, ENGAGEMENT_TRACKS, FRESHNESS_BASES, INDIVIDUAL_ELIGIBILITY_VALUES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES } from "./source-truth.mjs";
 import { RECORD_KINDS, isSalesOpportunityRecord, recordKindOf } from "../server/record-classification.mjs";
 
 export const STATUS_VALUES = ["NEW", "INTERESTING", "CONTACTED", "IGNORE"];
@@ -71,8 +71,13 @@ export function validateOpportunity(opportunity) {
   if (recordKind === "SALES_OPPORTUNITY" && !OPPORTUNITY_KINDS.includes(opportunity.opportunity_kind)) errors.push("invalid:opportunity_kind");
   if (recordKind !== "SALES_OPPORTUNITY" && opportunity.opportunity_kind !== null) errors.push("invalid:non_sales_opportunity_kind");
   if (!COMMERCIAL_ROLES.includes(opportunity.commercial_role)) errors.push("invalid:commercial_role");
+  if (recordKind === "SALES_OPPORTUNITY" && ["EMPLOYER", "SELLER", "UNKNOWN"].includes(opportunity.commercial_role)) errors.push("invalid:sales_commercial_role");
   if (!NOTICE_STATUSES.includes(opportunity.notice_status)) errors.push("invalid:notice_status");
   if (!STUDIO_ELIGIBILITY_VALUES.includes(opportunity.studio_eligibility)) errors.push("invalid:studio_eligibility");
+  if (recordKind === "SALES_OPPORTUNITY" && !ENGAGEMENT_TRACKS.includes(opportunity.engagement_track)) errors.push("invalid:engagement_track");
+  if (recordKind === "SALES_OPPORTUNITY" && !INDIVIDUAL_ELIGIBILITY_VALUES.includes(opportunity.individual_eligibility)) errors.push("invalid:individual_eligibility");
+  if (recordKind === "SALES_OPPORTUNITY" && opportunity.engagement_track === "B2B_STUDIO" && opportunity.studio_eligibility !== "YES") errors.push("invalid:b2b_studio_eligibility");
+  if (recordKind === "SALES_OPPORTUNITY" && opportunity.engagement_track === "INDIVIDUAL_FREELANCE" && opportunity.individual_eligibility !== "YES") errors.push("invalid:individual_freelance_eligibility");
   if (!SCOPE_FITS.includes(opportunity.scope_fit)) errors.push("invalid:scope_fit");
   if (recordKind === "SALES_OPPORTUNITY" && !FRESHNESS_BASES.includes(opportunity.freshness_basis)) errors.push("invalid:freshness_basis");
   if (recordKind !== "SALES_OPPORTUNITY" && opportunity.freshness_basis !== null && !FRESHNESS_BASES.includes(opportunity.freshness_basis)) errors.push("invalid:freshness_basis");

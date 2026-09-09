@@ -11,7 +11,7 @@ export const CATEGORIES = {
 };
 export const SORTS = {
   fit_score: "Fit", win_score: "Win", title: "Opportunity", company: "Company",
-  opportunity_kind: "Type", budget_type: "Budget provenance", published_date: "Date",
+  opportunity_kind: "Type", engagement_track: "B2B / Individual", budget_type: "Budget provenance", published_date: "Date",
   first_seen: "First found", last_seen: "Last found", company_last_contacted_at: "Last outreach", contact_email: "Contact", status: "Status",
   company_bookmarked: "Bookmark", source_url: "Source"
 };
@@ -29,10 +29,14 @@ export function visibleResults(items, filters) {
   };
   return items.filter(item => {
     const recordKind = recordKindOf(item);
+    const engagementTrack = item.engagement_track || "B2B_STUDIO";
     const viewMatches = view === "COMPETITORS"
       ? recordKind === "COMPETITOR"
       : isSalesOpportunityRecord(item)
-        && (view === "ALL" || (view === "BOOKMARKED" ? item.company_bookmarked : item.opportunity_kind === view));
+        && (view === "ALL"
+          || (view === "BOOKMARKED" ? item.company_bookmarked
+            : view === "B2B_STUDIO" || view === "INDIVIDUAL_FREELANCE" ? engagementTrack === view
+              : item.opportunity_kind === view));
     return viewMatches &&
     (status === "ALL" || item.status === status) && item.fit_score >= minFit &&
     (!categories.length || categories.some(category => item.categories?.includes(category)));

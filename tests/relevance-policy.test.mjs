@@ -82,6 +82,16 @@ test("every employer vacancy is rejected even when it mentions an external contr
   assert.equal(evaluateCandidateRelevance(contractor).rejection, "individual_employment");
 });
 
+test("individual track still rejects fixed-term, payroll and contract-to-hire recruitment", () => {
+  for (const summary of [
+    "Fixed-term role on payroll for a senior character artist.",
+    "Contract-to-hire position with a salary range and benefits."
+  ]) {
+    const result = evaluateCandidateRelevance({...base,commercial_role:"BUYER",engagement_track:"INDIVIDUAL_FREELANCE",summary});
+    assert.equal(result.rejection, "individual_employment");
+  }
+});
+
 test("source evidence that says closed wins over model labels", () => {
   const inactive = {...base, commercial_role:"BUYER", summary:"This job is no longer accepting applications."};
   assert.equal(evaluateCandidateRelevance(inactive).rejection, "inactive_source_evidence");

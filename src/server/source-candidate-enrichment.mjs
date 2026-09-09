@@ -14,10 +14,10 @@ const EXCLUDED_TERMS = [
   "laser scanner equipment", "medical animation", "museum immersive", "motion design", "after effects"
 ];
 const EQUIPMENT_TERMS = ["purchase of scanner", "supply of scanner", "scanner equipment", "camera equipment", "hardware supply"];
-const INDIVIDUAL_ONLY_TERMS = [
-  "individual consultant", "individual contractor", "candidate must be an individual", "employment contract",
-  "full-time employee", "part-time employee", "salary range", "payroll"
+const INDIVIDUAL_FREELANCE_TERMS = [
+  "individual consultant", "individual contractor", "candidate must be an individual", "independent contractor"
 ];
+const EMPLOYMENT_TERMS = ["employment contract", "full-time employee", "part-time employee", "salary range", "payroll"];
 
 function values(value) {
   if (value == null) return [];
@@ -128,9 +128,9 @@ function serviceContract(detail, raw) {
   return /\b(service|services|consulting|production|outsourc)/.test(text) && !/\b(goods only|supplies only)\b/.test(text);
 }
 
-function individualOnlyContract(detail, raw) {
+function individualFreelanceContract(detail, raw) {
   const text = allText(detail, raw);
-  return INDIVIDUAL_ONLY_TERMS.some((term) => text.includes(term));
+  return INDIVIDUAL_FREELANCE_TERMS.some((term) => text.includes(term)) && !EMPLOYMENT_TERMS.some((term) => text.includes(term));
 }
 
 function budgetCandidate(detail, facts, sourceUrl) {
@@ -179,13 +179,16 @@ export function enrichSourceCandidate(candidate, detail, { nowIso } = {}) {
   const categories = categoryList(raw, text);
   const company = facts.buyers[0] || null;
   if (!company) return { opportunity:null, rejection:"detail_buyer_missing", enrichment:{ source_id:detail.source_id, source_identity:detail.source_identity, fetched_at:detail.fetched_at } };
-  const studioEligibility = scopeFit === "OUT_OF_SCOPE" || scopeFit === "EQUIPMENT" || individualOnlyContract(detail, raw)
+  const individualFreelance = individualFreelanceContract(detail, raw);
+  const engagementTrack = individualFreelance ? "INDIVIDUAL_FREELANCE" : "B2B_STUDIO";
+  const studioEligibility = scopeFit === "OUT_OF_SCOPE" || scopeFit === "EQUIPMENT" || individualFreelance
     ? "NO"
     : (facts.noticeStatus === "OPEN" && serviceContract(detail, raw) ? "YES" : "UNKNOWN");
+  const individualEligibility = individualFreelance && facts.noticeStatus === "OPEN" && serviceContract(detail, raw) ? "YES" : "UNKNOWN";
   const budget = budgetCandidate(detail, facts, sourceUrl);
   const publishedDate = dateOnly(raw.publication_date || (detail.source_id === TED_SOURCE_ID ? facts.notice?.["publication-date"] : facts.release?.date));
   const sourceUpdatedDate = dateOnly(raw.source_updated_date || facts.release?.date);
-  const score = scores(scopeFit, facts.noticeStatus, studioEligibility, facts.contactEmail, budget.budget_type, publishedDate || sourceUpdatedDate, nowIso);
+  const score = scores(scopeFit, facts.noticeStatus, engagementTrack === "B2B_STUDIO" ? studioEligibility : individualEligibility, facts.contactEmail, budget.budget_type, publishedDate || sourceUpdatedDate, nowIso);
   const normalizedInput = {
     title:first(detail.source_id === TED_SOURCE_ID ? facts.notice?.["notice-title"] : facts.tender?.title) || raw.title,
     company,
@@ -193,8 +196,11 @@ export function enrichSourceCandidate(candidate, detail, { nowIso } = {}) {
     opportunity_kind:facts.noticeStatus === "OPEN" ? "OPEN_OPPORTUNITY" : "POTENTIAL_LEAD",
     commercial_role:"BUYER",
     notice_status:facts.noticeStatus,
+    engagement_track:engagementTrack,
     studio_eligibility:studioEligibility,
-    eligibility_reason:studioEligibility === "YES" ? "Official public services procurement with no individual-employment signal; qualification requirements still require manual review." : "Studio eligibility was not proven by the official detail record.",
+    eligibility_reason:studioEligibility === "YES" ? "Official public services procurement supports supplier delivery; qualification requirements still require manual review." : "Studio eligibility was not proven by the official detail record.",
+    individual_eligibility:individualEligibility,
+    individual_eligibility_reason:individualEligibility === "YES" ? "Official detail explicitly restricts the service contract to an individual consultant or contractor." : "Individual freelance eligibility was not proven by the official detail record.",
     scope_fit:scopeFit,
     categories,
     location:facts.location,
@@ -234,7 +240,9 @@ export function enrichSourceCandidate(candidate, detail, { nowIso } = {}) {
       source_url:sourceUrl,
       notice_status:facts.noticeStatus,
       commercial_role:"BUYER",
+      engagement_track:engagementTrack,
       studio_eligibility:studioEligibility,
+      individual_eligibility:individualEligibility,
       scope_fit:scopeFit,
       categories,
       deadline:facts.deadline,
