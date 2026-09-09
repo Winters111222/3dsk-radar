@@ -55,7 +55,7 @@ test("precision passes only with at least 30 reviews and 80 percent verified A/B
 test("small or noisy samples stay locked and expose per-source and per-query yield", () => {
   const candidates = [
     accepted("one"),
-    rejected("two", {platform:"linkedin",pilot_query_id:"linkedin_digital_human",signal_url:"https://www.linkedin.com/jobs/view/2/",original_url:"https://www.linkedin.com/jobs/view/2/"})
+    rejected("two", {platform:"linkedin",pilot_query_id:"linkedin_character_artist",signal_url:"https://www.linkedin.com/jobs/view/2/",original_url:"https://www.linkedin.com/jobs/view/2/"})
   ];
   const report = evaluatePlatformAlertPrecision({schema_version:1,candidates}, pilot);
   assert.equal(report.status, "SOURCE_SPECIFIC_PRECISION_NOT_PASSED");
@@ -63,14 +63,14 @@ test("small or noisy samples stay locked and expose per-source and per-query yie
   assert.equal(report.gates.precision_passed, false);
   assert.equal(report.source_breakdown.linkedin.measured_precision, 0);
   assert.equal(report.source_breakdown.upwork.measured_precision, 1);
-  assert.equal(report.query_breakdown.linkedin_digital_human.reviewed_candidates, 1);
+  assert.equal(report.query_breakdown.linkedin_character_artist.reviewed_candidates, 1);
 });
 
 test("LinkedIn A/B requires resolution beyond the employment-platform signal", () => {
   assert.throws(
     () => evaluatePlatformAlertPrecision({schema_version:1,candidates:[accepted("li", {
       platform:"linkedin",
-      pilot_query_id:"linkedin_digital_human",
+      pilot_query_id:"linkedin_character_artist",
       signal_url:"https://www.linkedin.com/jobs/view/1/",
       original_url:"https://www.linkedin.com/jobs/view/1/"
     })]}, pilot),
@@ -90,4 +90,16 @@ test("non-sales outcomes require an outreach lock and explicit reason", () => {
     () => evaluatePlatformAlertPrecision({schema_version:1,candidates:[rejected("bad", {outreach_locked:false})]}, pilot),
     /PLATFORM_ALERT_NONSALES_OUTREACH_LOCK_REQUIRED/
   );
+});
+
+test("live-calibrated pilot records only created alerts and keeps runtime locked", () => {
+  assert.deepEqual(pilot.operator_observations.linkedin.created_alert_ids, ["linkedin_character_artist"]);
+  assert.deepEqual(pilot.operator_observations.upwork.created_saved_search_ids, ["upwork_scan_repair", "upwork_human_scans"]);
+  assert.equal(pilot.operator_observations.upwork.upwork_scan_repair_observed_results, 8);
+  assert.equal(pilot.operator_observations.upwork.upwork_human_scans_direct_matches, 1);
+  assert.equal(pilot.operator_observations.upwork.upwork_wrap_fitting_observed_results, 0);
+  assert.equal(pilot.linkedin_job_alerts.find((item) => item.id === "linkedin_character_artist").enabled, false);
+  assert.equal(pilot.upwork_saved_searches.find((item) => item.id === "upwork_scan_repair").enabled, false);
+  assert.equal(pilot.upwork_saved_searches.find((item) => item.id === "upwork_human_scans").enabled, false);
+  assert.equal(pilot.production_import_enabled, false);
 });

@@ -102,6 +102,20 @@ Upwork saved search je operator-review feed; nelze jej označit jako aktivní
 e-mailový monitoring bez skutečně doručeného platformního alertu. Ani jedna
 platforma se nestane runtime zdrojem pouhým vytvořením dotazu.
 
+### Živá kalibrace 2026-09-09
+
+Vlastník účtů ručně a přes oficiální UI vytvořil jeden globální LinkedIn alert
+`\"character artist\"` a dva Upwork saved searches. LinkedIn ukázal 46 výsledků
+a správce alertů potvrdil denní doručení e-mailem i notifikací. Upwork broad
+scan-cleanup dotaz ukázal 8 výsledků; human-scan dotaz ukázal 2 výsledky, z
+nichž jeden byl přímý ongoing full-body human photogrammetry cleanup. Samostatný
+Wrap3D / topology-transfer dotaz měl 0 výsledků a nebyl uložen.
+
+Pozorování neopravňuje runtime aktivaci: počty jsou pouze časově označený
+kalibrační vzorek, nikoli garantovaná výtěžnost. MetaHuman byl z aktivního
+Upwork pilotu odstraněn podle potvrzeného skutečného zaměření operátora na
+cleanup skenů. Všechny nové signály nadále procházejí stejnými truth gates.
+
 ## Offline měření výtěžnosti
 
 Ručně ověřené kandidáty lze bez sítě a bez AI vyhodnotit příkazem

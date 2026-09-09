@@ -6,6 +6,21 @@
   "automatic_account_changes_enabled": false,
   "production_import_enabled": false,
   "gmail_label": "3dsk-radar",
+  "operator_observations": {
+    "observed_at": "2026-09-09",
+    "linkedin": {
+      "created_alert_ids": ["linkedin_character_artist"],
+      "delivery_verified": "DAILY_EMAIL_AND_NOTIFICATION",
+      "observed_results": 46
+    },
+    "upwork": {
+      "created_saved_search_ids": ["upwork_scan_repair", "upwork_human_scans"],
+      "upwork_scan_repair_observed_results": 8,
+      "upwork_human_scans_observed_results": 2,
+      "upwork_human_scans_direct_matches": 1,
+      "upwork_wrap_fitting_observed_results": 0
+    }
+  },
   "official_limits": {
     "linkedin": {
       "maximum_job_alerts": 20,
@@ -27,7 +42,7 @@
     }
   },
   "linkedin_job_alerts": [
-    {"id":"linkedin_digital_human","category":"HUMAN_DIGITAL_DOUBLE","search_phrase":"digital human","frequency":"DAILY","email_required":true,"enabled":false},
+    {"id":"linkedin_character_artist","category":"HUMAN_DIGITAL_DOUBLE","search_phrase":"\"character artist\"","frequency":"DAILY","email_required":true,"enabled":false},
     {"id":"linkedin_digital_double","category":"HUMAN_DIGITAL_DOUBLE","search_phrase":"digital double","frequency":"DAILY","email_required":true,"enabled":false},
     {"id":"linkedin_realistic_character","category":"HUMAN_DIGITAL_DOUBLE","search_phrase":"realistic 3D character","frequency":"DAILY","email_required":true,"enabled":false},
     {"id":"linkedin_scan_cleanup","category":"SCAN_CLEANUP_WRAP","search_phrase":"3D scan cleanup","frequency":"DAILY","email_required":true,"enabled":false},
@@ -37,8 +52,8 @@
     {"id":"linkedin_heritage_3d","category":"MUSEUM_DIGITISATION","search_phrase":"cultural heritage 3D","frequency":"DAILY","email_required":true,"enabled":false}
   ],
   "upwork_saved_searches": [
-    {"id":"upwork_digital_humans","category":"HUMAN_DIGITAL_DOUBLE","boolean_query":"(\"digital human\" OR \"digital double\" OR \"realistic character\" OR MetaHuman) NOT (Reallusion OR iClone OR \"Character Creator\" OR Daz)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
-    {"id":"upwork_scan_repair","category":"SCAN_CLEANUP_WRAP","boolean_query":"(\"scan cleanup\" OR \"mesh cleanup\" OR retopology OR \"topology transfer\" OR \"scan repair\") NOT (Reallusion OR iClone OR \"Character Creator\" OR Daz)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_human_scans","category":"SCAN_CLEANUP_WRAP","boolean_query":"\"human photogrammetry\" OR \"full body scan\" OR \"body scan\" OR \"face scan\" OR \"head scan\"","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
+    {"id":"upwork_scan_repair","category":"SCAN_CLEANUP_WRAP","boolean_query":"(\"3D scan\" OR photogrammetry OR \"scanned model\") AND (cleanup OR \"clean up\" OR repair OR retopology OR topology OR holes OR fingers OR texture) NOT (printing OR miniature OR figurine OR STL OR Reallusion OR iClone OR Daz)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
     {"id":"upwork_human_photogrammetry","category":"PHOTOGRAMMETRY_ASSETS","boolean_query":"(photogrammetry OR \"photo reconstruction\" OR \"image based modeling\") AND (human OR character OR face OR body) NOT (aerial OR drone OR GIS)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
     {"id":"upwork_wrap_fitting","category":"SCAN_CLEANUP_WRAP","boolean_query":"(Wrap3D OR \"R3DS Wrap\" OR \"basemesh fitting\" OR \"topology fitting\") NOT (Reallusion OR iClone OR \"Character Creator\" OR Daz)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
     {"id":"upwork_likeness_sculpt","category":"HUMAN_DIGITAL_DOUBLE","boolean_query":"(ZBrush OR sculpting) AND (scan OR \"digital double\" OR likeness) NOT (miniature OR figurine OR printing)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
