@@ -26,6 +26,9 @@ test('director interactions render real app code with isolated, read-only API mo
   await import('../src/app.js');
   for(let i=0;i<30;i++)await Promise.resolve();
   const click=selector=>document.querySelector(selector).click();
+  assert.equal(document.querySelector(".results-layout").classList.contains("cards-mode"),false);
+  assert.equal(document.querySelector("#table-layout").getAttribute("aria-pressed"),"true");
+  assert.equal(document.querySelector("#search-tools").open,false);
   assert.ok(document.querySelectorAll('#opportunity-body tr[data-id]').length>0);
   assert.ok(document.querySelectorAll('#detail-panel .detail-disclosure').length>=3);
   assert.match(document.querySelector('#search-footprint-content').textContent,/Human cleanup/);

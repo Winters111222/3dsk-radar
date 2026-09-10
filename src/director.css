@@ -213,3 +213,18 @@ button:focus-visible,a:focus-visible,select:focus-visible,summary:focus-visible,
   .results-layout:not(.cards-mode) td { display:table-cell; padding:12px; }
   .results-layout:not(.cards-mode) td::before { display:none; }
 }
+
+/* Compact director overview: counts remain available through the result tabs. */
+.workspace-intro { padding:20px 0 16px; }
+.workspace-intro h2 { font-size:28px; }
+.summary-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.summary-card { flex:1 1 150px; padding:12px 16px; }
+.summary-card:nth-child(n+5) { display:none; }
+.summary-card .value { font-size:24px; }
+.summary-card .sub { display:none; }
+#diagnostics-tools .search-cost-panel { margin:12px 0; }
+.results-layout:not(.cards-mode) { grid-template-columns:minmax(0,1fr); }
+.results-layout:not(.cards-mode) .detail-panel { position:static; max-height:none; }
+.results-layout:not(.cards-mode) .table-scroll { max-height:640px; }
+.results-layout:not(.cards-mode) td[data-label="Type"] .minor-line { display:none; }
+@media(max-width:760px) { .summary-card { flex-basis:calc(50% - 8px); } }
