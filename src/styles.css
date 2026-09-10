@@ -115,6 +115,14 @@ tr[data-id]:hover td, tr.is-selected td { background:#171d24; }
 .kind-badge.lead { color:#f4cf74; border-color:#5c4a20; background:#211b0e; }
 .kind-badge.funding { color:#aee3be; border-color:#315d40; background:#102018; }
 .kind-badge.competitor { color:#d7b6ff; border-color:#563d72; background:#1c1426; }
+.kind-badge.rejected { color:#f2a28e; border-color:#6a3d32; background:#241510; }
+.rejected-row td { background:rgba(52,26,20,.18); }
+.rejected-row:hover td,.rejected-row.is-selected td { background:#211713; }
+.rejected-status-select { min-width:116px; border-color:#6a3d32; }
+.rejected-detail { background:linear-gradient(180deg,#241914,#15110f); }
+.rejected-lock { margin-bottom:16px; padding:14px; display:grid; gap:6px; border:1px solid #6a3d32; border-radius:12px; background:#241510; }
+.rejected-lock strong { color:#f2a28e; font-size:10px; letter-spacing:.1em; }
+.rejected-lock span { color:#d7b0a6; font-size:12px; line-height:1.5; }
 .intelligence-lock { margin-bottom:16px; padding:14px; display:grid; gap:6px; border:1px solid #563d72; border-radius:12px; background:#1c1426; }
 .intelligence-lock strong { color:#d7b6ff; font-size:10px; letter-spacing:.1em; }
 .intelligence-lock span { color:#bca7d2; font-size:12px; line-height:1.5; }

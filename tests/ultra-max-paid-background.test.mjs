@@ -66,7 +66,8 @@ test("one prepared background action advances all six paid phases and persists o
   globalThis.__RADAR_TEST_ULTRA_SEARCH_RUNNER__=async(input)=>{
     calls+=1;
     const detail=input.searchProfile==="ULTRA_DETAIL_VERIFICATION";
-    const records=input.searchProfile==="ULTRA_CORE_DISCOVERY"||detail?[candidate()]:[];
+    const core=input.searchProfile==="ULTRA_CORE_DISCOVERY";
+    const records=core||detail?[candidate()]:[];
     return {
       attempts:1,
       openai_request_count:input.shards.length,
@@ -77,6 +78,7 @@ test("one prepared background action advances all six paid phases and persists o
       search_status:"COMPLETE",
       records,
       opportunities:records,
+      rejected_candidates:core?[{id:"rejected-background-1",title:"Old human scan task",company:"Buyer",summary:"Candidate is no longer active.",source_url:"https://www.upwork.com/freelance-jobs/apply/Old-human-scan_~0999",source_id:"upwork",rejection_reason:"inactive_notice",rejection_stage:"NORMALIZATION",review_status:"PENDING",outreach_locked:true,first_seen:NOW,last_seen:NOW}]:[],
       coverage:input.shards.map((shard)=>({
         shard_id:shard.id,
         shard_label:shard.label,
@@ -125,6 +127,10 @@ test("one prepared background action advances all six paid phases and persists o
   assert.equal(snapshot.last_search.forensic_audit.funnel.detail_candidates_verified,1);
   assert.equal(snapshot.last_search.forensic_audit.funnel.accounting_complete,true);
   assert.equal(snapshot.last_search.forensic_audit.accepted_candidate_ledger[0].source_url,SOURCE);
+  assert.equal(snapshot.rejected_candidates.length,1);
+  assert.equal(snapshot.rejected_candidates[0].rejection_reason,"inactive_notice");
+  assert.equal(snapshot.rejected_candidates[0].contact_email,null);
+  assert.equal(snapshot.last_search.counters.rejected_workspace_total,1);
 });
 
 test("background paid phase rejects auth, preview context and missing exact confirmation before dispatch", async t => {

@@ -64,3 +64,11 @@ test("paid search diagnostics expose required-shard coverage, per-source yield a
   assert.match(app,/web_search_calls/);
   assert.match(html,/AGGREGATED COUNTS ONLY/);
 });
+
+test("rejected candidates have a separate review-only view with locked sales actions",()=>{
+  for(const marker of ["data-view=\"REJECTED\"","KEEP FOR REVIEW","DISMISS","OUTREACH & PROMOTION LOCKED","rejected-candidate-status"]){
+    assert.match(`${html}\n${app}`,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")));
+  }
+  assert.match(app,/detail_verification_failed/);
+  assert.match(styles,/\.rejected-lock/);
+});

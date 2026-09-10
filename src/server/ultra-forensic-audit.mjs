@@ -70,9 +70,11 @@ function acceptedLedger(payloads, detailResults) {
       byUrl.set(sourceUrl, entry);
     }
   }
-  const detailByUrl = new Map((detailResults || []).map((item) => [normalizeUrl(item?.source_url), item?.status]));
+  const detailByUrl = new Map((detailResults || []).map((item) => [normalizeUrl(item?.source_url), item]));
   for (const entry of byUrl.values()) {
-    entry.detail_status = detailByUrl.get(entry.source_url) || "NOT_SELECTED";
+    const result=detailByUrl.get(entry.source_url);
+    entry.detail_status = result?.status || "NOT_SELECTED";
+    if (result?.rejection_reason) entry.rejection_reason=result.rejection_reason;
   }
   return [...byUrl.values()].sort((left, right) => left.source_url.localeCompare(right.source_url));
 }
@@ -105,17 +107,26 @@ export function buildUltraForensicAudit({run, phaseOutputs, detailOutput, persis
   const verifiedNotPersisted = Math.max(0, verified - finalNew - finalUpdated);
   const accountedNonFinal = preTruthRejected + duplicateOccurrences + detailRejected + verifiedNotPersisted;
   const aggregateReasons = {};
+  const exactCandidateLevelRejectionsAvailable=phaseOutputs.length===ULTRA_FORENSIC_DISCOVERY_PHASE_IDS.length
+    && phaseOutputs.every((output)=>Array.isArray((output?.payload||output)?.rejected_candidates));
   for (const item of discovery) {
     for (const [reason, count] of Object.entries(item.rejection_reasons)) {
       aggregateReasons[reason] = integer(aggregateReasons[reason]) + count;
     }
   }
+  for (const item of verification.candidate_results || []) {
+    if (item?.status!=="REJECTED") continue;
+    const reason=String(item.rejection_reason||"detail_verification_failed");
+    aggregateReasons[reason]=integer(aggregateReasons[reason])+1;
+  }
   return {
     schema_version:ULTRA_FORENSIC_SCHEMA_VERSION,
-    privacy:"ACCEPTED_URLS_AND_AGGREGATED_REJECTIONS_ONLY",
+    privacy:exactCandidateLevelRejectionsAvailable?"PUBLIC_CANDIDATE_REVIEW_RECORDS_NO_CONTACT_DATA":"ACCEPTED_URLS_AND_AGGREGATED_REJECTIONS_ONLY",
     run_id:run.run_id,
-    exact_candidate_level_rejections_available:false,
-    limitation:"Raw candidates rejected before normalization are intentionally not persisted; their URL-level reasons cannot be reconstructed after the run.",
+    exact_candidate_level_rejections_available:exactCandidateLevelRejectionsAvailable,
+    limitation:exactCandidateLevelRejectionsAvailable
+      ? "Rejected candidates are review-only and never become sales records without passing the existing truth gates."
+      : "Historical phase payloads did not retain every pre-truth candidate; only accepted exact URLs and aggregate reasons are reconstructable.",
     funnel:{
       candidates_seen:totalSeen,
       accepted_occurrences:acceptedOccurrences,
