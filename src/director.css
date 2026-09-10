@@ -89,6 +89,8 @@ tr[data-id]:hover td,tr.is-selected td { background:#edf2f9; }
 .score.high { color:#16714b; background:#eaf6ef; border-color:#b8ddc7; }
 .score.medium { color:#865d08; background:#fff5da; border-color:#eed79d; }
 .score.low { color:#b52f36; background:#fceced; border-color:#eec2c6; }
+/* Override the legacy dark-theme number and label colors in both result views. */
+.score strong, .score.high small, .score.medium small, .score.low small { color:inherit; }
 .kind-badge,.tag,.provenance,.location-badge { background:#f3f5f8; color:#4c5d73; border-color:#dbe1e9; font-size:10px; white-space:normal; }
 .kind-badge.open,.provenance.published { color:#176644; background:#eaf6ef; border-color:#b8ddc7; }
 .kind-badge.lead,.provenance.estimated { color:#845906; background:#fff6df; border-color:#e9d6a4; }
