@@ -48,4 +48,16 @@ export function visibleResults(items, filters) {
     return comparison * (sortDirection === "asc" ? 1 : -1) || b.fit_score-a.fit_score || String(a.id).localeCompare(String(b.id));
   });
 }
+
+export function visibleRejectedResults(items,filters={}) {
+  const {categories=[],sortKey="win_score",sortDirection="desc"}=filters;
+  const key=Object.hasOwn(SORTS,sortKey)?sortKey:"win_score";
+  return [...items].filter((item)=>!categories.length||categories.some((category)=>item.categories?.includes(category))).sort((left,right)=>{
+    const leftValue=left?.[key]??null,rightValue=right?.[key]??null;
+    if (leftValue===null&&rightValue!==null) return 1;
+    if (rightValue===null&&leftValue!==null) return -1;
+    const comparison=leftValue===null?0:typeof leftValue==="number"?leftValue-rightValue:String(leftValue).localeCompare(String(rightValue),"en",{numeric:true,sensitivity:"base"});
+    return comparison*(sortDirection==="asc"?1:-1)||String(left.id).localeCompare(String(right.id));
+  });
+}
 import { isSalesOpportunityRecord, recordKindOf } from "../server/record-classification.mjs";

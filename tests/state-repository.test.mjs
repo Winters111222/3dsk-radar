@@ -107,3 +107,24 @@ test("competitor status update preserves hidden contact and reply history while 
  const stored=await store.get("opportunities/opp-1");
  assert.equal(stored.contact_email,"historic@seller.example");assert.equal(stored.reply_body,"Historic body");assert.equal(stored.status,"IGNORE");
 });
+
+test("rejected candidates persist separately, retain decisions and never expose contact data",async()=>{
+ const store=memoryStore(),repo=createStateRepository(store),now="2026-09-10T08:00:00Z";
+ const item={id:"rejected-12345678",title:"Human scan cleanup",company:"Buyer",summary:"Raw candidate",source_url:"https://www.upwork.com/freelance-jobs/apply/Human-scan_~0123",rejection_reason:"inactive_notice",rejection_stage:"NORMALIZATION",review_status:"PENDING",contact_email:"unsafe@example.com"};
+ const merged=await repo.mergeRejectedCandidatesWithStats([item],now);
+ assert.deepEqual({created:merged.created,updated:merged.updated,total:merged.total},{created:1,updated:0,total:1});
+ let saved=(await repo.snapshot()).rejected_candidates[0];
+ assert.equal(saved.contact_email,null);assert.equal(saved.outreach_locked,true);assert.equal(saved.review_status,"PENDING");
+ saved=await repo.setRejectedCandidateReviewStatus(item.id,"KEEP","2026-09-10T09:00:00Z");
+ assert.equal(saved.review_status,"KEEP");
+ await repo.mergeRejectedCandidatesWithStats([{...item,summary:"Seen again"}],"2026-09-11T08:00:00Z");
+ saved=(await createStateRepository(store).listRejectedCandidates())[0];
+ assert.equal(saved.review_status,"KEEP");assert.equal(saved.summary,"Seen again");
+});
+
+test("a historical detail rejection can be materialized for manual review without promotion",async()=>{
+ const repo=createStateRepository(memoryStore());
+ await repo.saveSearchRun({completed_at:"2026-09-10T07:45:00Z",forensic_audit:{accepted_candidate_ledger:[{candidate_id:"candidate-legacy-1",title:"Full-body scan cleanup",source_url:"https://www.upwork.com/freelance-jobs/apply/Full-body_~0999",source_id:"upwork",detail_status:"REJECTED"}]}});
+ const saved=await repo.setRejectedCandidateReviewStatus("candidate-legacy-1","KEEP","2026-09-10T10:00:00Z");
+ assert.equal(saved.review_status,"KEEP");assert.equal(saved.rejection_reason,"detail_verification_failed");assert.equal((await repo.listOpportunities()).length,0);assert.equal((await repo.listRejectedCandidates()).length,1);
+});

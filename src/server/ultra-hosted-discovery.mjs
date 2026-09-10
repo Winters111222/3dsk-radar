@@ -19,6 +19,7 @@ function payloadFor(result,estimatedCost,phaseId,searchProfile) {
     search_profile:searchProfile,
     search_status:result.search_status,
     records:result.records||result.opportunities||[],
+    rejected_candidates:result.rejected_candidates||[],
     coverage:result.coverage||[],
     diagnostics:result.diagnostics||null,
     source_context:result.official_source_discovery||null,

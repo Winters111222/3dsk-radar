@@ -273,6 +273,14 @@ test("normalization reports measured rejection and duplicate counters", () => {
   assert.equal(normalized.competitors[0].company,"Seller");
 });
 
+test("normalization retains a sanitized review-only record for every rejected candidate",()=>{
+  const stale=candidate({published_date:"2026-07-01",contact_email:"private@example.com",contact_name:"Private Person"});
+  const normalized=normalizeSearchResponse(response([stale]),{nowIso:NOW,maxResults:12});
+  assert.equal(normalized.opportunities.length,0);assert.equal(normalized.rejected_candidates.length,1);
+  const rejected=normalized.rejected_candidates[0];
+  assert.match(rejected.id,/^rejected-[a-f0-9]{24}$/);assert.equal(rejected.rejection_reason,"stale_or_unverified");assert.equal(rejected.review_status,"PENDING");assert.equal(rejected.outreach_locked,true);assert.equal(Object.hasOwn(rejected,"contact_email"),false);assert.equal(rejected.source_url,"https://studio.example/jobs/vendor");
+});
+
 test("non-sales records never consume the configured sales-result limit", () => {
   const sellerUrl="https://seller.example/services/game-art",secondBuyer="https://buyer-two.example/rfp";
   const normalized=normalizeSearchResponse(response([

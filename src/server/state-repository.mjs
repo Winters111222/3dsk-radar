@@ -14,6 +14,9 @@ const SOURCE_SIGNAL_PREFIX = "source-signals/";
 const ULTRA_MAX_RUN_PREFIX = "ultra-max-runs/";
 const ULTRA_MAX_RUN_REQUEST_PREFIX = "ultra-max-run-requests/";
 const HERITAGE_GRANT_IMPORT_PREFIX = "heritage-grant-imports/";
+const REJECTED_CANDIDATE_PREFIX = "rejected-candidates/";
+const REJECTED_CANDIDATE_SNAPSHOT_KEY = "metadata/rejected-candidates-v1";
+export const REJECTED_REVIEW_STATUSES = Object.freeze(["PENDING","KEEP","DISMISSED"]);
 
 function safeStateId(value) {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{8,80}$/.test(value)) throw new Error("STATE_ID_INVALID");
@@ -80,6 +83,36 @@ async function writeOpportunitySnapshot(store, opportunities) {
   await store.setJSON(OP_SNAPSHOT_KEY, opportunities);
 }
 
+async function readRejectedCandidateSnapshot(store) {
+  const value=await store.get(REJECTED_CANDIDATE_SNAPSHOT_KEY,{type:"json"});
+  return Array.isArray(value)?value:[];
+}
+
+async function writeRejectedCandidateSnapshot(store, items) {
+  await store.setJSON(REJECTED_CANDIDATE_SNAPSHOT_KEY,items);
+}
+
+function safeRejectedCandidate(item) {
+  if (!item) return item;
+  return {
+    ...item,
+    review_record_kind:"REJECTED_CANDIDATE",
+    outreach_locked:true,
+    contact_name:null,
+    contact_role:null,
+    contact_email:null,
+    contact_email_source:null,
+    reply_to:null,
+    reply_subject:null,
+    reply_body:null
+  };
+}
+
+function rejectedFingerprint(item) {
+  const url=normalizeUrl(item?.source_url);
+  return url?`url:${url}`:`id:${item?.id}`;
+}
+
 async function readStoredOpportunities(store) {
   const snapshot = await readOpportunitySnapshot(store);
   const items = snapshot ?? await listJSON(store, OP_PREFIX);
@@ -106,6 +139,72 @@ export function createStateRepository(store) {
 
     async listCompanies() {
       return (await listJSON(store, COMPANY_PREFIX)).filter(Boolean);
+    },
+
+    async listRejectedCandidates() {
+      return (await readRejectedCandidateSnapshot(store)).filter(Boolean).map(safeRejectedCandidate);
+    },
+
+    async mergeRejectedCandidatesWithStats(incoming, nowIso) {
+      const existing=await readRejectedCandidateSnapshot(store);
+      const byFingerprint=new Map(existing.map((item)=>[rejectedFingerprint(item),item]));
+      let created=0,updated=0;
+      for (const candidate of Array.isArray(incoming)?incoming:[]) {
+        if (!candidate?.id) continue;
+        const key=rejectedFingerprint(candidate),previous=byFingerprint.get(key);
+        const next=safeRejectedCandidate({
+          ...previous,
+          ...candidate,
+          id:previous?.id||candidate.id,
+          review_status:REJECTED_REVIEW_STATUSES.includes(previous?.review_status)?previous.review_status:"PENDING",
+          first_seen:previous?.first_seen||candidate.first_seen||nowIso,
+          last_seen:nowIso
+        });
+        byFingerprint.set(key,next);
+        if (previous) updated+=1; else created+=1;
+        await store.setJSON(`${REJECTED_CANDIDATE_PREFIX}${safeStateId(next.id)}`,next);
+      }
+      const merged=[...byFingerprint.values()].sort((a,b)=>String(b.last_seen||"").localeCompare(String(a.last_seen||"")));
+      await writeRejectedCandidateSnapshot(store,merged);
+      return {created,updated,total:merged.length,rejected_candidates:merged.map(safeRejectedCandidate)};
+    },
+
+    async setRejectedCandidateReviewStatus(id, reviewStatus, nowIso) {
+      if (!REJECTED_REVIEW_STATUSES.includes(reviewStatus)) throw new Error("REJECTED_REVIEW_STATUS_INVALID");
+      let items=await readRejectedCandidateSnapshot(store);
+      let current=items.find((item)=>item?.id===id)||null;
+      if (!current) {
+        const last=await this.lastSearchRun();
+        const ledger=last?.forensic_audit?.accepted_candidate_ledger;
+        const entry=Array.isArray(ledger)?ledger.find((item)=>item?.candidate_id===id&&item?.detail_status==="REJECTED"):null;
+        if (!entry) return null;
+        current={
+          id:entry.candidate_id,
+          review_record_kind:"REJECTED_CANDIDATE",
+          title:entry.title||"Rejected candidate",
+          company:"Buyer not established",
+          summary:"The discovery candidate passed preliminary gates but failed exact-URL detail verification.",
+          source_url:normalizeUrl(entry.source_url),
+          source_id:entry.source_id||null,
+          published_date:null,
+          engagement_track:"UNKNOWN",
+          categories:[],
+          fit_score:0,
+          win_score:0,
+          rejection_reason:"detail_verification_failed",
+          rejection_stage:"DETAIL_VERIFICATION",
+          review_status:"PENDING",
+          outreach_locked:true,
+          first_seen:last?.completed_at||nowIso,
+          last_seen:last?.completed_at||nowIso
+        };
+        items=[...items,current];
+      }
+      const next=safeRejectedCandidate({...current,review_status:reviewStatus,reviewed_at:nowIso,updated_at:nowIso});
+      items=items.map((item)=>item?.id===next.id?next:item);
+      await store.setJSON(`${REJECTED_CANDIDATE_PREFIX}${safeStateId(next.id)}`,next);
+      await writeRejectedCandidateSnapshot(store,items);
+      return next;
     },
 
     async getCompany(company) {
@@ -423,6 +522,7 @@ export function createStateRepository(store) {
         return { ...item, company_key: company.company_key, company_bookmarked: company.bookmarked, company_last_contacted_at: company.last_contacted_at, company_contact_count: company.contact_count };
       });
       const sales = hydrated.filter(isSalesOpportunityRecord);
+      const rejectedCandidates=await this.listRejectedCandidates();
       return {
         last_search: await this.lastSearchRun(),
         summary:{
@@ -437,7 +537,8 @@ export function createStateRepository(store) {
         records:hydrated,
         // Backward-compatible alias for clients created before record_kind existed.
         opportunities: hydrated,
-        companies
+        companies,
+        rejected_candidates:rejectedCandidates
       };
     }
   };

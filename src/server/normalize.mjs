@@ -105,6 +105,33 @@ function safeScore(value) {
   return Math.max(0, Math.min(100, Math.round(number)));
 }
 
+function rejectedCandidate(candidate, rejectionReason, nowIso) {
+  const sourceUrl = normalizeUrl(candidate?.source_url);
+  const title = safeString(candidate?.title) || "Untitled candidate";
+  const company = safeString(candidate?.company) || "Buyer not established";
+  const identity = sourceUrl || `${company}|${title}|${safeString(candidate?.published_date) || "undated"}`;
+  return {
+    id:`rejected-${createHash("sha256").update(identity).digest("hex").slice(0,24)}`,
+    review_record_kind:"REJECTED_CANDIDATE",
+    title:title.slice(0,240),
+    company:company.slice(0,200),
+    summary:(safeString(candidate?.summary) || "No candidate summary was returned.").slice(0,1200),
+    source_url:sourceUrl,
+    source_id:sourceIdForCandidate(candidate),
+    published_date:safeString(candidate?.published_date),
+    engagement_track:["B2B_STUDIO","INDIVIDUAL_FREELANCE"].includes(candidate?.engagement_track) ? candidate.engagement_track : "UNKNOWN",
+    categories:safeList(candidate?.categories,8),
+    fit_score:safeScore(candidate?.fit_score),
+    win_score:safeScore(candidate?.win_score),
+    rejection_reason:diagnosticRejectionCode(rejectionReason),
+    rejection_stage:"NORMALIZATION",
+    review_status:"PENDING",
+    outreach_locked:true,
+    first_seen:nowIso,
+    last_seen:nowIso
+  };
+}
+
 export function normalizeBudget(candidate, verifiedSourceUrls = new Set()) {
   const claimedType = ["PUBLISHED", "ESTIMATED", "UNKNOWN"].includes(candidate.budget_type) ? candidate.budget_type : "UNKNOWN";
   const source = normalizeUrl(candidate.budget_source_url);
@@ -471,6 +498,7 @@ export function normalizeSearchResponse(response, {
   const parsed = parseStructuredSearchResponse(response);
   const acceptedRecords = [];
   const rejections = [];
+  const rejectedCandidates = [];
   const outcomes = [];
   const candidateLimit = Math.max(1, Math.min(150, Number(maxCandidates) || 30));
   const candidates = parsed.opportunities.slice(0, candidateLimit);
@@ -482,6 +510,7 @@ export function normalizeSearchResponse(response, {
     } else {
       const rejection = diagnosticRejectionCode(normalized.rejection);
       rejections.push(rejection);
+      rejectedCandidates.push(rejectedCandidate(candidate,rejection,nowIso));
       outcomes.push({ source_id:sourceIdForCandidate(candidate), rejection });
     }
   }
@@ -500,6 +529,7 @@ export function normalizeSearchResponse(response, {
     competitors,
     source_platforms:sourcePlatforms,
     rejections,
+    rejected_candidates:rejectedCandidates,
     verified_source_count: verifiedSourceUrls.size,
     ...(indexDiscovery ? { diagnostics:buildIndexDiscoveryDiagnostics({ verifiedSourceUrls, outcomes, accepted:acceptedRecords, returned:opportunities }) } : {}),
     counters: {

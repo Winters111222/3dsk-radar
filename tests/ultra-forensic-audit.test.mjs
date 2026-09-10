@@ -42,7 +42,14 @@ test("forensic audit accounts for pre-truth rejection, cross-phase duplicates an
   });
   assert.equal(audit.accepted_candidate_ledger.length,2);
   assert.equal(audit.accepted_candidate_ledger[0].accepted_occurrences,3);
-  assert.deepEqual(audit.rejection_reasons,{inactive_notice:1,individual_employment:2,out_of_scope:2,partner_without_buyer_signal:1});
+  assert.deepEqual(audit.rejection_reasons,{detail_verification_failed:1,inactive_notice:1,individual_employment:2,out_of_scope:2,partner_without_buyer_signal:1});
+});
+
+test("forensic audit reports candidate-level availability only for the new retained schema",()=>{
+  const outputs=["CORE_DISCOVERY","PROCUREMENT_FUNDING","MULTILINGUAL_LONG_TAIL","SIGNAL_EXPANSION","ADAPTIVE_FOLLOWUP"].map((phaseId)=>({payload:{phase_id:phaseId,records:[],rejected_candidates:[],diagnostics:{rejection_reasons:{},source_yield:[]}},usage:{}}));
+  const audit=buildUltraForensicAudit({run:{run_id:"retained-run"},phaseOutputs:outputs,detailOutput:{payload:{verification:{candidate_results:[]}}}});
+  assert.equal(audit.exact_candidate_level_rejections_available,true);
+  assert.equal(audit.privacy,"PUBLIC_CANDIDATE_REVIEW_RECORDS_NO_CONTACT_DATA");
 });
 
 test("forensic audit labels missing historical operation evidence without inventing candidates", () => {
