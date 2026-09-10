@@ -30,7 +30,9 @@
     panel.id = "search-cost-panel";
     panel.className = "panel search-cost-panel";
     panel.setAttribute("aria-live", "polite");
-    summary.insertAdjacentElement("afterend", panel);
+    const diagnostics = document.querySelector("#diagnostics-tools");
+    if (diagnostics) diagnostics.append(panel);
+    else summary.insertAdjacentElement("afterend", panel);
     return panel;
   }
 

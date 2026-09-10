@@ -316,7 +316,7 @@ function applyTeamSnapshot(payload){
 async function loadTeamState(){
   if(!accessCode()){showToast("Enter team access code first.");els.accessCode.focus();return;}
   sessionStorage.setItem(ACCESS_SESSION_KEY,accessCode());els.connect.disabled=true;
-  try{applyTeamSnapshot(await api("/api/opportunities"));await Promise.all([loadSourceRunSnapshot(),loadUltraSnapshot()]);els.scanNote.textContent="Saved results loaded. Reloading this page does not start a paid search.";}
+  try{applyTeamSnapshot(await api("/api/opportunities"));document.querySelector("#search-tools").open=false;await Promise.all([loadSourceRunSnapshot(),loadUltraSnapshot()]);els.scanNote.textContent="Saved results loaded. Reloading this page does not start a paid search.";}
   catch(error){showToast(error.message);els.scanNote.textContent=`Saved results could not be loaded: ${error.message}`;}
   finally{els.connect.disabled=false;}
 }
