@@ -33,6 +33,22 @@ uživatelově Upwork session ověřit, že lze stále podat proposal, stav platb
 riziko nového klienta, aktuální buyer response a realistickou požadovanou
 rychlost. Konfigurace sama nabídku nepodá a nezapisuje ji do sales workspace.
 
+### Upwork likeness watch item — 10. 9. 2026
+
+Do individuální větve byl přidán také přesný detail `High-End 3D Likeness
+Sculptor: Two Photorealistic Children's Busts for Bronze Casting`. Kupující
+požaduje dvě realistické lidské busty podle fotografií, high-poly ZBrush zdroj
+a uzavřenou geometrii pro 3D tisk nebo CNC. Přihlášený detail potvrdil aktivní
+application route za 12 Connects, ověřenou platbu i telefon a stav 15–20
+návrhů bez pohovoru.
+
+Záznam zůstává `SIGNAL_D` se stavem
+`VERIFIED_ACTIVE_WATCH_BUDGET_UNKNOWN`: detail neuvádí konkrétní hodinovou
+sazbu ani fixed budget a nový klient má tři zveřejněné práce, ale nulovou míru
+najmutí. Před případným povýšením na A/B se musí potvrdit cena, skutečný hiring
+intent, portfolio fit pro dětskou likeness a práva/souhlasy k referenčním
+fotografiím nezletilých. Radar nekupuje Connects a proposal nepodává.
+
 ## Povinné údaje review
 
 Každý kandidát obsahuje platformu, ID konkrétního alertu/search/watchlistu,

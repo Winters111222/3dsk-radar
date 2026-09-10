@@ -67,7 +67,7 @@ test("30-day prospective plan starts only by operator action and preserves every
   assert.equal(prospective.paid_search_enabled, false);
   assert.deepEqual(prospective.tracks.map((item) => item.id), ["B2B_STUDIO", "INDIVIDUAL_FREELANCE"]);
   assert.deepEqual(prospective.operator_sources.map((item) => item.platform), ["linkedin", "upwork", "freelancer"]);
-  assert.equal(prospective.starting_watchlist.length, 2);
+  assert.equal(prospective.starting_watchlist.length, 3);
   const upwork = prospective.starting_watchlist.find((item) => item.id === "upwork_full_body_human_scan_cleanup_ongoing");
   assert.equal(upwork.track, "INDIVIDUAL_FREELANCE");
   assert.equal(upwork.status, "REVERIFY_LOGGED_IN_APPLICATION_ROUTE_AND_CLIENT");
@@ -76,5 +76,16 @@ test("30-day prospective plan starts only by operator action and preserves every
   assert.ok(upwork.public_facts.includes("PAID_TEST"));
   assert.equal(upwork.sales_import_enabled, false);
   assert.equal(upwork.outreach_locked, true);
+  const likeness = prospective.starting_watchlist.find((item) => item.id === "upwork_two_photorealistic_children_busts");
+  assert.equal(likeness.track, "INDIVIDUAL_FREELANCE");
+  assert.equal(likeness.qualification, "SIGNAL_D");
+  assert.equal(likeness.status, "VERIFIED_ACTIVE_WATCH_BUDGET_UNKNOWN");
+  assert.match(likeness.original_url, /^https:\/\/www\.upwork\.com\/freelance-jobs\/apply\//);
+  assert.ok(likeness.public_facts.includes("TWO_PHOTOREALISTIC_HUMAN_BUSTS"));
+  assert.ok(likeness.operator_verified_facts.includes("PAYMENT_VERIFIED"));
+  assert.ok(likeness.operator_verified_facts.includes("LOGGED_IN_APPLICATION_ROUTE_VISIBLE"));
+  assert.ok(likeness.missing_truth.includes("BUYER_RATE_OR_FIXED_BUDGET"));
+  assert.equal(likeness.sales_import_enabled, false);
+  assert.equal(likeness.outreach_locked, true);
   assert.equal(prospective.starting_watchlist.find((item) => item.id === "fl_unity_realistic").status, "REVERIFY_BEFORE_COUNTING");
 });

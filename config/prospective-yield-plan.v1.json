@@ -73,6 +73,42 @@
       "outreach_locked": true
     },
     {
+      "id": "upwork_two_photorealistic_children_busts",
+      "platform": "upwork",
+      "track": "INDIVIDUAL_FREELANCE",
+      "original_url": "https://www.upwork.com/freelance-jobs/apply/High-End-Likeness-Sculptor-Two-Photorealistic-Children-Busts-for-Bronze-Casting_~022095916632313683071",
+      "public_evidence_observed_at": "2026-09-10",
+      "operator_evidence_observed_at": "2026-09-10",
+      "public_facts": [
+        "WORLDWIDE_REMOTE",
+        "TWO_PHOTOREALISTIC_HUMAN_BUSTS",
+        "LIKENESS_FROM_MULTIVIEW_PHOTOS",
+        "ZBRUSH_HIGH_POLY_SOURCE",
+        "WATERTIGHT_PRINT_AND_CNC_READY",
+        "FOUR_TO_EIGHT_WEEK_MILESTONE_SCOPE",
+        "EXPERT_LESS_THAN_30_HOURS_PER_WEEK",
+        "FIFTEEN_TO_TWENTY_PROPOSALS_ZERO_INTERVIEWS"
+      ],
+      "operator_verified_facts": [
+        "LOGGED_IN_APPLICATION_ROUTE_VISIBLE",
+        "TWELVE_CONNECTS_REQUIRED",
+        "PAYMENT_VERIFIED",
+        "PHONE_VERIFIED",
+        "CLIENT_THREE_JOBS_POSTED_ZERO_PERCENT_HIRE_RATE",
+        "ONE_OPEN_JOB"
+      ],
+      "qualification": "SIGNAL_D",
+      "status": "VERIFIED_ACTIVE_WATCH_BUDGET_UNKNOWN",
+      "missing_truth": [
+        "BUYER_RATE_OR_FIXED_BUDGET",
+        "CLIENT_HIRING_INTENT_GIVEN_ZERO_PERCENT_HIRE_RATE",
+        "PORTFOLIO_FIT_FOR_CHILD_LIKENESS",
+        "MINOR_REFERENCE_IMAGE_RIGHTS_AND_CONSENT"
+      ],
+      "sales_import_enabled": false,
+      "outreach_locked": true
+    },
+    {
       "id": "fl_unity_realistic",
       "platform": "freelancer",
       "track": "INDIVIDUAL_FREELANCE",
