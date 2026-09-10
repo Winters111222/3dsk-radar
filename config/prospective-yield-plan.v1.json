@@ -48,6 +48,31 @@
   ],
   "starting_watchlist": [
     {
+      "id": "upwork_full_body_human_scan_cleanup_ongoing",
+      "platform": "upwork",
+      "track": "INDIVIDUAL_FREELANCE",
+      "original_url": "https://www.upwork.com/freelance-jobs/apply/Scan-Cleanup-Full-Body-Human-Photogrammetry-Ongoing_~022093482015133487827",
+      "public_evidence_observed_at": "2026-09-10",
+      "public_facts": [
+        "WORLDWIDE_REMOTE",
+        "FULL_BODY_HUMAN_SCAN_CLEANUP",
+        "REALITYCAPTURE_RAW_OUTPUT",
+        "HANDS_FINGERS_HAIR_FACE_HOLES",
+        "PAID_TEST",
+        "ONGOING_20_TO_50_MODELS_PER_EVENT",
+        "BUYER_RATE_12_TO_30_USD_HOURLY"
+      ],
+      "status": "REVERIFY_LOGGED_IN_APPLICATION_ROUTE_AND_CLIENT",
+      "missing_truth": [
+        "LOGGED_IN_APPLY_ROUTE",
+        "PAYMENT_VERIFICATION_AND_CLIENT_RISK",
+        "CURRENT_BUYER_RESPONSE",
+        "REALISTIC_THROUGHPUT_AND_QUALITY_EXPECTATION"
+      ],
+      "sales_import_enabled": false,
+      "outreach_locked": true
+    },
+    {
       "id": "fl_unity_realistic",
       "platform": "freelancer",
       "track": "INDIVIDUAL_FREELANCE",

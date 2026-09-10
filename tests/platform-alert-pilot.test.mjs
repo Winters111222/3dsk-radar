@@ -67,5 +67,14 @@ test("30-day prospective plan starts only by operator action and preserves every
   assert.equal(prospective.paid_search_enabled, false);
   assert.deepEqual(prospective.tracks.map((item) => item.id), ["B2B_STUDIO", "INDIVIDUAL_FREELANCE"]);
   assert.deepEqual(prospective.operator_sources.map((item) => item.platform), ["linkedin", "upwork", "freelancer"]);
-  assert.equal(prospective.starting_watchlist[0].status, "REVERIFY_BEFORE_COUNTING");
+  assert.equal(prospective.starting_watchlist.length, 2);
+  const upwork = prospective.starting_watchlist.find((item) => item.id === "upwork_full_body_human_scan_cleanup_ongoing");
+  assert.equal(upwork.track, "INDIVIDUAL_FREELANCE");
+  assert.equal(upwork.status, "REVERIFY_LOGGED_IN_APPLICATION_ROUTE_AND_CLIENT");
+  assert.match(upwork.original_url, /^https:\/\/www\.upwork\.com\/freelance-jobs\/apply\//);
+  assert.ok(upwork.public_facts.includes("REALITYCAPTURE_RAW_OUTPUT"));
+  assert.ok(upwork.public_facts.includes("PAID_TEST"));
+  assert.equal(upwork.sales_import_enabled, false);
+  assert.equal(upwork.outreach_locked, true);
+  assert.equal(prospective.starting_watchlist.find((item) => item.id === "fl_unity_realistic").status, "REVERIFY_BEFORE_COUNTING");
 });

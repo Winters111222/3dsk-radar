@@ -20,6 +20,19 @@ Výchozí Freelancer B `fl_unity_realistic` se do nového období automaticky
 nepočítá. Má stav `REVERIFY_BEFORE_COUNTING`, protože aktivitu, rozsah a bid
 cestu je nutné znovu potvrdit na originálním detailu.
 
+### Aktuální Upwork B watch item — 10. 9. 2026
+
+Přesný veřejný detail `3D Scan Cleanup — Full-Body Human Photogrammetry
+(Ongoing)` byl 10. 9. 2026 znovu dostupný. Uváděl worldwide remote práci,
+RealityCapture raw output, opravy rukou, prstů, vlasů, obličeje a děr, dávky
+20–50 modelů z jedné akce, placený test a buyer rate 12–30 USD/h.
+
+Jde o velmi silnou shodu pro `INDIVIDUAL_FREELANCE`, ale zůstává ve stavu
+`REVERIFY_LOGGED_IN_APPLICATION_ROUTE_AND_CLIENT`. Před započtením je nutné v
+uživatelově Upwork session ověřit, že lze stále podat proposal, stav platby a
+riziko nového klienta, aktuální buyer response a realistickou požadovanou
+rychlost. Konfigurace sama nabídku nepodá a nezapisuje ji do sales workspace.
+
 ## Povinné údaje review
 
 Každý kandidát obsahuje platformu, ID konkrétního alertu/search/watchlistu,

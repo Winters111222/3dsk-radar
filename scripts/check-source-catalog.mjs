@@ -300,6 +300,15 @@ assert.equal(prospectiveYieldPlan.automatic_outreach_enabled, false);
 assert.equal(prospectiveYieldPlan.production_import_enabled, false);
 assert.equal(prospectiveYieldPlan.paid_search_enabled, false);
 assert.deepEqual(prospectiveYieldPlan.operator_sources.map((item) => item.platform), ["linkedin", "upwork", "freelancer"]);
+assert.equal(prospectiveYieldPlan.starting_watchlist.length, 2);
+for (const item of prospectiveYieldPlan.starting_watchlist) {
+  assert.equal(item.sales_import_enabled, false);
+  assert.equal(item.outreach_locked, true);
+}
+const prospectiveUpwork = prospectiveYieldPlan.starting_watchlist.find((item) => item.id === "upwork_full_body_human_scan_cleanup_ongoing");
+assert.equal(prospectiveUpwork.track, "INDIVIDUAL_FREELANCE");
+assert.equal(prospectiveUpwork.status, "REVERIFY_LOGGED_IN_APPLICATION_ROUTE_AND_CLIENT");
+publicUrl(prospectiveUpwork.original_url);
 for (const alert of platformAlertPilot.linkedin_job_alerts) {
   assert.equal(alert.enabled, false);
   assert.equal(alert.frequency, "DAILY");
