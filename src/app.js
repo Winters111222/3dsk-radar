@@ -1,4 +1,5 @@
 import { CATEGORIES, SORTS, visibleRejectedResults, visibleResults } from "./lib/result-view.mjs";
+import { searchFootprint } from "./lib/search-footprint.mjs";
 import { bandForScore, contactDisplay, STATUS_VALUES } from "./lib/domain.mjs";
 import { continueSourceRunLoop, isTerminalSourceRun, sourceCandidateView, sourceRunProgress } from "./lib/source-run-view.mjs";
 import { continueUltraMaxLoop, isUltraMaxTerminal, ultraNativePhase, ultraNativeProgress } from "./lib/ultra-max-view.mjs";
@@ -143,7 +144,26 @@ function renderRejectedDetail(item){els.detail.innerHTML=`
 <div class="detail-section"><h4>RAW CANDIDATE SUMMARY</h4><p>${escapeHtml(item.summary||"No summary retained.")}</p></div>
 <div class="detail-section"><h4>SAFETY</h4><p>No contact data is retained. Manual review status never promotes this record into sales. A future verified discovery must pass all normal truth gates.</p></div>
 <div class="detail-actions">${item.source_url?`<a class="action-button full" href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">OPEN ORIGINAL SOURCE · MANUAL CHECK</a>`:'<button class="action-button full" type="button" disabled>ORIGINAL URL NOT VERIFIED</button>'}<button class="action-button" data-rejected-decision="KEEP" type="button">KEEP FOR REVIEW</button><button class="action-button" data-rejected-decision="DISMISSED" type="button">DISMISS</button><button class="action-button full" type="button" disabled>OUTREACH & PROMOTION LOCKED</button></div></div>`;}
-function renderDetail(){ const item=selectedRecord(); if(!item){els.detail.innerHTML='<div class="detail-empty">Select a record.</div>';return;} if(state.view==="REJECTED"){renderRejectedDetail(item);return;} if(!isSalesOpportunityRecord(item)){renderIntelligenceDetail(item);return;} const budget=budgetView(item),company=companyStateFor(item),days=daysSince(company.last_contacted_at),recent=days!==null&&days<=30,replyLocked=state.datasetMode!=="FIXTURE"&&!state.replyEnabled; const contact=item.contact_email?`<p><strong>${escapeHtml(item.contact_email)}</strong><br><span class="muted">Public source verified.</span></p>`:'<p><strong>Email not publicly available</strong><br><span class="muted">No address will be inferred.</span></p>'; els.detail.innerHTML=`
+function renderDetail(){
+  renderDetailContent();
+  const body=els.detail.querySelector(".detail-body");if(!body)return;
+  const sections=[...body.querySelectorAll(":scope > .detail-section")];
+  const lookup=title=>sections.find(section=>section.querySelector("h4")?.textContent===title);
+  const score=body.querySelector(".score-pair");
+  if(score){const note=document.createElement("p");note.className="microcopy";note.textContent="Fit = capability match. Win = heuristic attractiveness, not a probability of winning.";score.after(note);}
+  const anchor=lookup("SOURCE STATUS")||sections[0];
+  if(anchor)for(const title of ["SUMMARY","BUDGET","WHY IT FITS","RISKS / GAPS"]){const section=lookup(title);if(section&&section!==anchor)body.insertBefore(section,anchor);}
+  for(const title of ["SOURCE STATUS","DISCOVERY HISTORY","COMPANY OUTREACH HISTORY","SOURCE EVIDENCE"]){
+    const section=lookup(title);if(!section)continue;
+    const drawer=document.createElement("details"),summary=document.createElement("summary");drawer.className="detail-disclosure";summary.textContent=title.toLowerCase().replace(/^./,letter=>letter.toUpperCase());
+    section.before(drawer);drawer.append(summary,section);
+  }
+  const actions=body.querySelector(".detail-actions"),reply=body.querySelector(".reply-section");
+  const firstDisclosure=body.querySelector(".detail-disclosure");
+  if(actions&&firstDisclosure)body.insertBefore(actions,firstDisclosure);
+  if(reply&&firstDisclosure)body.insertBefore(reply,firstDisclosure);
+}
+function renderDetailContent(){ const item=selectedRecord(); if(!item){els.detail.innerHTML='<div class="detail-empty">Select a record.</div>';return;} if(state.view==="REJECTED"){renderRejectedDetail(item);return;} if(!isSalesOpportunityRecord(item)){renderIntelligenceDetail(item);return;} const budget=budgetView(item),company=companyStateFor(item),days=daysSince(company.last_contacted_at),recent=days!==null&&days<=30,replyLocked=state.datasetMode!=="FIXTURE"&&!state.replyEnabled; const contact=item.contact_email?`<p><strong>${escapeHtml(item.contact_email)}</strong><br><span class="muted">Public source verified.</span></p>`:'<p><strong>Email not publicly available</strong><br><span class="muted">No address will be inferred.</span></p>'; els.detail.innerHTML=`
 <div class="detail-head"><div class="detail-title-row"><div><p class="eyebrow">${item.opportunity_kind==="OPEN_OPPORTUNITY"?"OPEN OPPORTUNITY":isFundingLead(item)?"FUNDING / PARTNERSHIP · VERIFY ELIGIBILITY":"POTENTIAL LEAD · NOT AN ACTIVE REQUEST"}</p><h3>${escapeHtml(item.title)}</h3><p class="detail-company">${escapeHtml(item.company)} · ${escapeHtml(item.location)}</p></div><button class="star-button detail-star ${item.company_bookmarked?"is-starred":""}" data-bookmark-company="${escapeHtml(item.company)}" type="button">${item.company_bookmarked?"★":"☆"}</button></div><div class="detail-tags">${kindBadge(item)}${item.categories.slice(0,5).map((x)=>`<span class="tag">${escapeHtml(x)}</span>`).join("")}</div></div>
 <div class="detail-body">${recent?`<div class="repeat-warning"><strong>RECENT OUTREACH</strong><span>This company was emailed ${days===0?"today":`${days} days ago`}. Review history before sending again.</span></div>`:""}${manualVerificationRequired(item)?`<div class="manual-source-warning"><strong>MANUAL SOURCE CHECK REQUIRED</strong><span>Found through allowlisted hosted web search (${escapeHtml(item.discovery_source_id||"approved source")}). Open the original source and confirm that it is active, relevant and accepts the declared ${escapeHtml(trackLabel(item))} delivery mode before continuing. Radar did not log in, use cookies, or directly crawl this platform.</span><div class="manual-source-actions"><a href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">OPEN ORIGINAL SOURCE</a><button type="button" data-verify-source="1">I CHECKED IT · MARK VERIFIED</button></div></div>`:manualVerificationComplete(item)?`<div class="manual-source-verified"><strong>SOURCE MANUALLY VERIFIED</strong><span>Checked ${escapeHtml(formatTimestamp(item.manual_verified_at))} against this exact source URL.</span></div>`:""}
 <div class="score-pair"><div class="score-card"><span>FIT SCORE</span><strong>${item.fit_score}</strong><span>${bandForScore(item.fit_score)} MATCH</span></div><div class="score-card"><span>WIN SCORE</span><strong>${item.win_score}</strong><span>${item.win_band} · HEURISTIC</span></div></div>
@@ -153,7 +173,15 @@ function renderDetail(){ const item=selectedRecord(); if(!item){els.detail.inner
 <div class="detail-section"><h4>COMPANY OUTREACH HISTORY</h4><p><strong>${company.contact_count||0} email${company.contact_count===1?"":"s"} recorded</strong>${company.last_contacted_at?` · last ${escapeHtml(formatTimestamp(company.last_contacted_at))}`:""}</p>${historyMarkup(company)}</div>
 <div class="detail-section"><h4>SOURCE EVIDENCE</h4>${evidenceMarkup(item)}</div>
 ${replyMarkup(item)}<div class="detail-actions">${manualVerificationRequired(item)?'<button class="action-button" type="button" disabled>CONTACT LOCKED</button>':item.contact_email?'<button class="action-button" data-copy="email" type="button">COPY EMAIL</button>':`<a class="action-button" href="${escapeHtml(item.apply_url)}" target="_blank" rel="noreferrer">OPEN CONTACT / APPLY</a>`}<a class="action-button" href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">${manualVerificationRequired(item)?"OPEN SOURCE · VERIFY":"OPEN SOURCE"}</a><button class="action-button sent full" data-mark-sent="1" type="button" ${manualVerificationRequired(item)?"disabled":""}>✓ MARK EMAIL SENT</button><button class="action-button primary full" data-generate-response="1" type="button" ${manualVerificationRequired(item)||replyLocked?"disabled":""}>${replyLocked?"GENERATE RESPONSE · PAID LOCKED":item.reply_body?"REGENERATE RESPONSE":"GENERATE RESPONSE"}</button><button class="action-button" data-copy-subject="1" type="button" ${item.reply_subject&&!manualVerificationRequired(item)?"":"disabled"}>COPY SUBJECT</button><button class="action-button" data-copy-response="1" type="button" ${item.reply_body&&!manualVerificationRequired(item)?"":"disabled"}>COPY RESPONSE</button></div></div>`; }
-function renderAll(){renderSummary();renderRunCounters();renderSearchDiagnostics();renderSourceRun();renderUltraMax();renderTable();renderDetail();}
+function renderSearchFootprint(){
+  const report=searchFootprint(state.lastRun), output=document.querySelector("#search-footprint-content"), metric=value=>value===null?"not recorded":String(value);
+  const domains=new Map(); for(const item of report.links){if(!domains.has(item.domain))domains.set(item.domain,[]);domains.get(item.domain).push(item);}
+  output.innerHTML=`<p class="microcopy">${report.completedAt?`Last saved search: ${escapeHtml(formatTimestamp(report.completedAt))}.`:"No saved search history loaded."} Hosted-index consultation does not mean Radar directly crawled a website. Counts can include repeated URL consultations across phases.</p>
+  <details open><summary>1. Search topics (${report.topics.length})</summary>${report.topics.length?`<ul>${report.topics.map(item=>`<li><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.status)} · ${metric(item.calls)} web calls · ${metric(item.consulted)} URL consultations${item.error?` · ${escapeHtml(item.error)}`:""}</span></li>`).join("")}</ul>`:'<p class="microcopy">Search topics were not recorded for this run.</p>'}</details>
+  <details><summary>2. Websites with recorded activity (${report.sources.length})</summary>${report.sources.length?`<ul>${report.sources.map(item=>`<li><strong>${escapeHtml(item.label)}</strong><span>${metric(item.consulted)} URL consultations · ${metric(item.candidates)} candidates · ${metric(item.rejected)} rejected · ${metric(item.returned)} returned at discovery stage (not necessarily final sales)</span></li>`).join("")}</ul>`:'<p class="microcopy">No per-website activity was recorded.</p>'}</details>
+  <details><summary>3. Retained candidate URLs (${report.links.length})</summary><p class="microcopy">Only URLs retained in this run’s candidate ledger. This is not a complete browsing history; an included URL is not proof of an active or verified opportunity.</p>${[...domains].map(([domain,items])=>`<details class="footprint-domain"><summary>${escapeHtml(domain)} (${items.length})</summary><ul>${items.map(item=>`<li><a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a><span>Detail result: ${escapeHtml(item.status)}</span></li>`).join("")}</ul></details>`).join("")||'<p class="microcopy">No candidate-level URLs were retained in this run.</p>'}</details>`;
+}
+function renderAll(){renderSummary();renderRunCounters();renderSearchDiagnostics();renderSearchFootprint();renderSourceRun();renderUltraMax();renderTable();renderDetail();}
 function selectOpportunity(id){state.selectedId=id;renderTable();renderDetail();if(window.matchMedia("(max-width: 760px)").matches){els.detail.scrollIntoView({behavior:"smooth",block:"start"});els.detail.focus({preventScroll:true});}}
 let toastTimer; function showToast(text){clearTimeout(toastTimer);els.toast.textContent=text;els.toast.classList.add("is-visible");toastTimer=setTimeout(()=>els.toast.classList.remove("is-visible"),2400);}
 async function copyText(value,label){try{await navigator.clipboard.writeText(value);showToast(`${label} copied`);}catch{showToast("Clipboard unavailable");}}
@@ -325,6 +353,9 @@ const sortSelect=document.querySelector("#sort-select"), sortDirection=document.
 sortSelect.innerHTML=Object.entries(SORTS).map(([key,label])=>`<option value="${key}">${label}</option>`).join("");
 categoryOptions.innerHTML=Object.entries(CATEGORIES).map(([key,label])=>`<label class="category-choice"><input type="checkbox" value="${key}"><span>${label}</span></label>`).join("");
 function renderSort(){
+  els.statusFilter.disabled=state.view==="REJECTED";
+  els.fitFilter.disabled=state.view==="REJECTED";
+  document.querySelectorAll("[data-view]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.view===state.view)));
   sortSelect.value=state.sortKey;
   sortDirection.textContent=state.sortDirection==="desc"?"↓ Descending":"↑ Ascending";
   document.querySelectorAll("[data-sort]").forEach(button=>{
@@ -347,6 +378,21 @@ function updateCategories(){
 }
 categoryOptions.addEventListener("change",updateCategories);
 document.querySelector("#clear-categories").addEventListener("click",()=>{categoryOptions.querySelectorAll("input").forEach(input=>input.checked=false);updateCategories();});
+const savedSearch=document.querySelector("#opportunity-search"),searchTools=document.querySelector("#search-tools");
+savedSearch.addEventListener("input",()=>{state.query=savedSearch.value;renderTable();});
+document.querySelector("#open-search-tools").addEventListener("click",()=>{searchTools.open=!searchTools.open;if(searchTools.open)searchTools.scrollIntoView({behavior:"smooth",block:"start"});});
+searchTools.addEventListener("toggle",()=>document.querySelector("#open-search-tools").setAttribute("aria-expanded",String(searchTools.open)));
+const footprintDrawer=document.querySelector("#search-footprint");
+document.querySelector("#open-search-footprint").addEventListener("click",()=>{footprintDrawer.open=true;footprintDrawer.scrollIntoView({behavior:"smooth",block:"start"});});
+footprintDrawer.addEventListener("toggle",()=>document.querySelector("#open-search-footprint").setAttribute("aria-expanded",String(footprintDrawer.open)));
+for(const mode of ["list","table"])document.querySelector(`#${mode}-layout`).addEventListener("click",()=>{
+  document.querySelector(".results-layout").classList.toggle("cards-mode",mode==="list");
+  for(const option of ["list","table"])document.querySelector(`#${option}-layout`).setAttribute("aria-pressed",String(option===mode));
+});
+document.querySelector("#reset-filters").addEventListener("click",()=>{
+  savedSearch.value="";state.query="";state.status="ALL";state.minFit=0;els.statusFilter.value="ALL";els.fitFilter.value="0";
+  categoryOptions.querySelectorAll("input").forEach(input=>input.checked=false);updateCategories();
+});
 
 async function loadDemo(){
   const response=await fetch("/fixtures/opportunities.json");

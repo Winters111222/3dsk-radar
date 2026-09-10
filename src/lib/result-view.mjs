@@ -15,6 +15,10 @@ export const SORTS = {
   first_seen: "First found", last_seen: "Last found", company_last_contacted_at: "Last outreach", contact_email: "Contact", status: "Status",
   company_bookmarked: "Bookmark", source_url: "Source"
 };
+export function matchesSavedSearch(item, query = "") {
+  const text = [item.title,item.company,item.summary,...(item.categories || []).map(category=>CATEGORIES[category] || category)].join(" ").toLocaleLowerCase();
+  return String(query).trim().toLocaleLowerCase().split(/\s+/).filter(Boolean).every(word=>text.includes(word));
+}
 const dates = new Set(["published_date", "company_last_contacted_at", "first_seen", "last_seen"]);
 const numbers = new Set(["fit_score", "win_score", "company_bookmarked"]);
 export function visibleResults(items, filters) {
@@ -37,7 +41,7 @@ export function visibleResults(items, filters) {
           || (view === "BOOKMARKED" ? item.company_bookmarked
             : view === "B2B_STUDIO" || view === "INDIVIDUAL_FREELANCE" ? engagementTrack === view
               : item.opportunity_kind === view));
-    return viewMatches &&
+    return viewMatches && matchesSavedSearch(item, filters.query) &&
     (status === "ALL" || item.status === status) && item.fit_score >= minFit &&
     (!categories.length || categories.some(category => item.categories?.includes(category)));
   }).sort((a,b) => {
@@ -52,7 +56,7 @@ export function visibleResults(items, filters) {
 export function visibleRejectedResults(items,filters={}) {
   const {categories=[],sortKey="win_score",sortDirection="desc"}=filters;
   const key=Object.hasOwn(SORTS,sortKey)?sortKey:"win_score";
-  return [...items].filter((item)=>!categories.length||categories.some((category)=>item.categories?.includes(category))).sort((left,right)=>{
+  return [...items].filter((item)=>matchesSavedSearch(item,filters.query)&&(!categories.length||categories.some((category)=>item.categories?.includes(category)))).sort((left,right)=>{
     const leftValue=left?.[key]??null,rightValue=right?.[key]??null;
     if (leftValue===null&&rightValue!==null) return 1;
     if (rightValue===null&&leftValue!==null) return -1;

@@ -49,10 +49,13 @@ try {
   await check("/src/styles.css", "text/css", [".results-layout", ".detail-panel"]);
   await check("/src/stage3.css", "text/css", [".star-button", ".repeat-warning", ".outreach.recent"]);
   await check("/src/stage4.css", "text/css", [".reply-section", ".search-cost-panel", ".search-cost-value"]);
+  await check("/src/director.css", "text/css", [".cards-mode", "#search-footprint"]);
+  await check("/src/lib/search-footprint.mjs", "text/javascript", ["searchFootprint"]);
+  await check("/assets/3dsk-logo.svg", "image/svg+xml", ["<svg"]);
   const fixtureText = await check("/fixtures/opportunities.json", "application/json", ["OPEN_OPPORTUNITY", "POTENTIAL_LEAD"]);
   const fixtures = JSON.parse(fixtureText);
   if (!Array.isArray(fixtures) || fixtures.length < 2) throw new Error("fixture dataset is unexpectedly small");
-  console.log(JSON.stringify({ ok: true, cost_usd: 0, http_paths_checked: 7, fixture_records: fixtures.length }, null, 2));
+  console.log(JSON.stringify({ ok: true, cost_usd: 0, http_paths_checked: 10, fixture_records: fixtures.length }, null, 2));
 } finally {
   child.kill("SIGTERM");
 }
