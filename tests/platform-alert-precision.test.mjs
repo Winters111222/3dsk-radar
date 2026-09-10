@@ -7,6 +7,7 @@ const accepted = (id, overrides = {}) => ({
   id,
   platform:"upwork",
   pilot_query_id:"upwork_scan_repair",
+  engagement_track:"INDIVIDUAL_FREELANCE",
   signal_url:`https://www.upwork.com/jobs/~${id}`,
   original_url:`https://www.upwork.com/jobs/~${id}`,
   reviewed_at:"2026-09-08T22:00:00Z",
@@ -16,7 +17,8 @@ const accepted = (id, overrides = {}) => ({
   original_detail_verified:true,
   active_status_verified:true,
   buyer_identity_verified:true,
-  studio_eligibility_verified:true,
+  studio_eligibility_verified:false,
+  individual_eligibility_verified:true,
   deliverable_verified:true,
   application_route_verified:true,
   human_subject_verified:true,
@@ -44,6 +46,8 @@ test("precision passes only with at least 30 reviews and 80 percent verified A/B
   assert.deepEqual(report.totals, {
     reviewed_candidates:30,
     accepted_relevant_hits:24,
+    accepted_a:24,
+    accepted_b:0,
     measured_precision:0.8,
     partner_c:0,
     signal_d:0,
@@ -51,12 +55,15 @@ test("precision passes only with at least 30 reviews and 80 percent verified A/B
   });
   assert.equal(report.runtime_activation, "LOCKED");
   assert.equal(report.outreach_automation_enabled, false);
+  assert.equal(report.source_gates.upwork.status, "PRECISION_PASSED");
+  assert.equal(report.source_gates.linkedin.status, "PRECISION_NOT_PASSED");
+  assert.equal(report.source_gates.freelancer.status, "PRECISION_NOT_PASSED");
 });
 
 test("small or noisy samples stay locked and expose per-source and per-query yield", () => {
   const candidates = [
     accepted("one"),
-    rejected("two", {platform:"linkedin",pilot_query_id:"linkedin_character_artist",signal_url:"https://www.linkedin.com/jobs/view/2/",original_url:"https://www.linkedin.com/jobs/view/2/"})
+    rejected("two", {platform:"linkedin",pilot_query_id:"linkedin_character_artist",engagement_track:"B2B_STUDIO",signal_url:"https://www.linkedin.com/jobs/view/2/",original_url:"https://www.linkedin.com/jobs/view/2/"})
   ];
   const report = evaluatePlatformAlertPrecision({schema_version:1,candidates}, pilot);
   assert.equal(report.status, "SOURCE_SPECIFIC_PRECISION_NOT_PASSED");
@@ -64,6 +71,10 @@ test("small or noisy samples stay locked and expose per-source and per-query yie
   assert.equal(report.gates.precision_passed, false);
   assert.equal(report.source_breakdown.linkedin.measured_precision, 0);
   assert.equal(report.source_breakdown.upwork.measured_precision, 1);
+  assert.equal(report.source_gates.upwork.sample_size_passed, false);
+  assert.equal(report.track_breakdown.INDIVIDUAL_FREELANCE.measured_precision, 1);
+  assert.equal(report.track_breakdown.B2B_STUDIO.reviewed_candidates, 1);
+  assert.equal(report.track_breakdown.B2B_STUDIO.measured_precision, 0);
   assert.equal(report.query_breakdown.linkedin_character_artist.reviewed_candidates, 1);
 });
 
@@ -84,6 +95,31 @@ test("A/B cannot pass without every truth gate", () => {
     () => evaluatePlatformAlertPrecision({schema_version:1,candidates:[accepted("bad", {buyer_identity_verified:false})]}, pilot),
     /PLATFORM_ALERT_ACCEPTED_BUYER_IDENTITY_VERIFIED_REQUIRED/
   );
+});
+
+test("selected engagement track requires its own eligibility proof", () => {
+  assert.throws(
+    () => evaluatePlatformAlertPrecision({schema_version:1,candidates:[accepted("individual", {individual_eligibility_verified:false})]}, pilot),
+    /PLATFORM_ALERT_ACCEPTED_INDIVIDUAL_ELIGIBILITY_VERIFIED_REQUIRED/
+  );
+  const b2b = accepted("b2b", {
+    engagement_track:"B2B_STUDIO",
+    studio_eligibility_verified:true,
+    individual_eligibility_verified:false
+  });
+  assert.equal(evaluatePlatformAlertPrecision({schema_version:1,candidates:[b2b]}, pilot).track_breakdown.B2B_STUDIO.accepted_relevant_hits, 1);
+});
+
+test("Freelancer is a manual review lane and not an automated connector", () => {
+  const item = accepted("freelancer", {
+    platform:"freelancer",
+    pilot_query_id:"freelancer_human_scan_cleanup",
+    signal_url:"https://www.freelancer.com/projects/zbrush/example-human-scan-cleanup",
+    original_url:"https://www.freelancer.com/projects/zbrush/example-human-scan-cleanup"
+  });
+  const report = evaluatePlatformAlertPrecision({schema_version:1,candidates:[item]}, pilot);
+  assert.equal(report.source_breakdown.freelancer.accepted_relevant_hits, 1);
+  assert.equal(report.runtime_activation, "LOCKED");
 });
 
 test("non-sales outcomes require an outreach lock and explicit reason", () => {

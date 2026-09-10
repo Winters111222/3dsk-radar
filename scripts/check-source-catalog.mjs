@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const read = async (name) => JSON.parse(await readFile(new URL(`../config/${name}`, import.meta.url), "utf8"));
-const [catalog, queries, evidence, qualification, deepResearchWatchlist, deepResearchQueries, deepResearchAliases, semanticResearch, dualTrackResearch, platformAlertPilot] = await Promise.all([
+const [catalog, queries, evidence, qualification, deepResearchWatchlist, deepResearchQueries, deepResearchAliases, semanticResearch, dualTrackResearch, platformAlertPilot, prospectiveYieldPlan] = await Promise.all([
   read("opportunity-sources.v1.json"),
   read("search-query-packs.v1.json"),
   read("source-evidence-cases.v1.json"),
@@ -13,7 +13,8 @@ const [catalog, queries, evidence, qualification, deepResearchWatchlist, deepRes
   read("deep-research-source-aliases.v1.json"),
   read("semantic-research-derived.v1.json"),
   read("dual-track-research-derived.v1.json"),
-  read("platform-alert-pilot.v1.json")
+  read("platform-alert-pilot.v1.json"),
+  read("prospective-yield-plan.v1.json")
 ]);
 const lanes = new Set(["DIRECT_BUYER", "HIRING_SIGNAL", "PROCUREMENT", "PARTNERSHIP", "DISABLED"]);
 const observations = new Set(["HTML_OBSERVED", "DOCUMENTATION_OBSERVED", "INDEX_ONLY", "PARTIAL_ACCESS", "UNVERIFIED", "UNAVAILABLE"]);
@@ -75,6 +76,7 @@ for (const artifact of [deepResearchWatchlist, deepResearchQueries, deepResearch
 assert.equal(semanticResearch.schema_version, 1);
 assert.equal(dualTrackResearch.schema_version, 1);
 assert.equal(platformAlertPilot.schema_version, 1);
+assert.equal(prospectiveYieldPlan.schema_version, 1);
 assert.equal(catalog.status, "RESEARCH_CATALOG_NOT_RUNTIME_CONFIG");
 assert.match(catalog.based_on_sha, /^[a-f0-9]{40}$/);
 assert.equal(queries.status, "PROPOSED_NOT_RUNTIME_CONFIG");
@@ -283,8 +285,21 @@ for (const partner of dualTrackResearch.partner_watchlist) {
 assert.doesNotMatch(JSON.stringify(dualTrackResearch), /(?:contact_email|email_address|\"email\")/i, "Dual-track derived research must not contain contact fields");
 assert.equal(platformAlertPilot.linkedin_job_alerts.length, 8);
 assert.equal(platformAlertPilot.upwork_saved_searches.length, 11);
+assert.equal(platformAlertPilot.freelancer_manual_watchlists.length, 2);
 assert.ok(platformAlertPilot.linkedin_job_alerts.length <= platformAlertPilot.official_limits.linkedin.maximum_job_alerts);
 assert.ok(platformAlertPilot.upwork_saved_searches.length <= platformAlertPilot.official_limits.upwork.maximum_saved_searches);
+assert.equal(platformAlertPilot.official_limits.freelancer.automation_permission_required, true);
+assert.equal(platformAlertPilot.freelancer_manual_watchlists.every((item) => item.enabled === false && item.automation_permission === "REQUIRED_NOT_GRANTED"), true);
+assert.equal(prospectiveYieldPlan.duration_days, 30);
+assert.equal(prospectiveYieldPlan.started_at, null);
+assert.equal(prospectiveYieldPlan.ends_at, null);
+assert.equal(prospectiveYieldPlan.runtime_activation, "LOCKED");
+assert.equal(prospectiveYieldPlan.automatic_collection_enabled, false);
+assert.equal(prospectiveYieldPlan.automatic_platform_login_enabled, false);
+assert.equal(prospectiveYieldPlan.automatic_outreach_enabled, false);
+assert.equal(prospectiveYieldPlan.production_import_enabled, false);
+assert.equal(prospectiveYieldPlan.paid_search_enabled, false);
+assert.deepEqual(prospectiveYieldPlan.operator_sources.map((item) => item.platform), ["linkedin", "upwork", "freelancer"]);
 for (const alert of platformAlertPilot.linkedin_job_alerts) {
   assert.equal(alert.enabled, false);
   assert.equal(alert.frequency, "DAILY");
@@ -298,6 +313,14 @@ for (const search of platformAlertPilot.upwork_saved_searches) {
   assert.ok(semanticCategories.has(search.category));
   assert.ok(typeof search.boolean_query === "string" && search.boolean_query.trim(), `Empty Upwork query: ${search.id}`);
   assert.doesNotMatch(search.boolean_query, /(?:^|\s)[+!-](?=\w)/, `Unsupported Upwork operator: ${search.id}`);
+}
+for (const watchlist of platformAlertPilot.freelancer_manual_watchlists) {
+  assert.equal(watchlist.enabled, false);
+  assert.equal(watchlist.automation_permission, "REQUIRED_NOT_GRANTED");
+  assert.equal(watchlist.discovery_method, "MANUAL_NATIVE_SEARCH_AND_ORIGINAL_DETAIL_REVIEW");
+  assert.equal(watchlist.engagement_track, "INDIVIDUAL_FREELANCE");
+  assert.equal(watchlist.human_subject_required, true);
+  assert.ok(dualTrackCategories.has(watchlist.category));
 }
 [platformAlertPilot.official_limits.linkedin.documentation_url, ...platformAlertPilot.official_limits.upwork.documentation_urls].forEach(publicUrl);
 for (const profile of queries.run_profiles) {
@@ -376,6 +399,7 @@ console.log(JSON.stringify({
   dual_track_C_watchlist: dualTrackResearch.partner_watchlist.length,
   linkedin_alert_pilot_queries: platformAlertPilot.linkedin_job_alerts.length,
   upwork_saved_search_pilot_queries: platformAlertPilot.upwork_saved_searches.length,
+  freelancer_manual_watchlist_queries: platformAlertPilot.freelancer_manual_watchlists.length,
   runtime_eligible_sources: runtimeEligible.length,
   enabled_crawlers: 0, network_requests: 0, openai_requests: 0
 }, null, 2));

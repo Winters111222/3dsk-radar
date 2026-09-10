@@ -129,15 +129,23 @@ cleanup skenů. Všechny nové signály nadále procházejí stejnými truth gat
 Ručně ověřené kandidáty lze bez sítě a bez AI vyhodnotit příkazem
 `npm run report:alerts:precision -- <manual-review.json>`. Každý A/B výsledek
 musí doložit originální detail, aktivní stav, kupujícího, způsobilost externího
-studia, konkrétní deliverable, budget provenance a aplikační cestu. C, D a
+studia pro `B2B_STUDIO` nebo jednotlivce pro `INDIVIDUAL_FREELANCE`, konkrétní
+deliverable, budget provenance a aplikační cestu. C, D a
 odmítnuté položky musí zůstat outreach-locked a mít explicitní důvod.
 LinkedIn A/B navíc musí být vyřešen na originální buyer/ATS zdroj mimo samotnou
 LinkedIn job URL; platformní alert zůstává pouze `signal_url`.
 
-Report ukáže precision celkem, po platformě i po jednotlivém pilotním dotazu.
+Report ukáže precision celkem, po platformě, po koleji i po jednotlivém pilotním dotazu.
 Zdroj projde pouze při nejméně 30 ručně posouzených kandidátech a alespoň 80 %
-ověřených A/B výsledků. Ani PASS automaticky neaktivuje runtime; výstup vždy
+ověřených A/B výsledků. Samostatné `source_gates` brání tomu, aby úspěšný Upwork
+vzorek zakryl slabý LinkedIn nebo Freelancer vzorek. Ani PASS automaticky neaktivuje runtime; výstup vždy
 ponechá `runtime_activation: LOCKED`.
+
+Freelancer je zahrnut jen jako ruční review lane. Dvě research-derived oblasti
+`freelancer_human_scan_cleanup` a `freelancer_character_finishing` jsou
+default-off a výslovně uvádějí, že oprávnění k automatizaci nebylo uděleno.
+Veřejný detail lze ručně zkontrolovat, ale radar se k účtu nepřihlašuje, nečte
+jej automaticky a nepodává nabídku.
 
 ## Gaty pro preview canary
 

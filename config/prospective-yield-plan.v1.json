@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "status": "OPERATOR_START_REQUIRED_RUNTIME_LOCKED",
+  "duration_days": 30,
+  "started_at": null,
+  "ends_at": null,
+  "runtime_activation": "LOCKED",
+  "automatic_collection_enabled": false,
+  "automatic_platform_login_enabled": false,
+  "automatic_outreach_enabled": false,
+  "production_import_enabled": false,
+  "paid_search_enabled": false,
+  "review_policy": {
+    "minimum_reviewed_candidates_per_source": 30,
+    "minimum_precision": 0.8,
+    "precision_definition": "verified_A_or_B / reviewed_candidates",
+    "count_duplicates_once": true,
+    "require_original_detail": true,
+    "require_selected_track_eligibility": true,
+    "require_human_subject_for_microtasks": true
+  },
+  "tracks": [
+    {"id":"B2B_STUDIO","report_separately":true},
+    {"id":"INDIVIDUAL_FREELANCE","report_separately":true}
+  ],
+  "operator_sources": [
+    {
+      "platform": "linkedin",
+      "mode": "USER_CREATED_DAILY_EMAIL_ALERT",
+      "configured_acquisition_ids": ["linkedin_character_artist"],
+      "original_detail_rule": "RESOLVE_BEYOND_LINKEDIN_TO_BUYER_OR_ATS_SOURCE",
+      "automation": "LOCKED"
+    },
+    {
+      "platform": "upwork",
+      "mode": "USER_CREATED_NATIVE_SAVED_SEARCHES",
+      "configured_acquisition_ids": ["upwork_scan_repair", "upwork_human_scans", "upwork_3d_mesh_repair", "upwork_zbrush_scan_cleanup", "upwork_3d_scan_retopology"],
+      "original_detail_rule": "VERIFY_EXACT_BUYER_JOB_IN_LOGGED_IN_OPERATOR_SESSION",
+      "automation": "LOCKED"
+    },
+    {
+      "platform": "freelancer",
+      "mode": "MANUAL_NATIVE_SEARCH_ONLY",
+      "configured_acquisition_ids": ["freelancer_human_scan_cleanup", "freelancer_character_finishing"],
+      "original_detail_rule": "VERIFY_EXACT_PROJECT_AND_BID_ROUTE_MANUALLY",
+      "automation": "REQUIRES_WRITTEN_PERMISSION_NOT_GRANTED"
+    }
+  ],
+  "starting_watchlist": [
+    {
+      "id": "fl_unity_realistic",
+      "platform": "freelancer",
+      "track": "INDIVIDUAL_FREELANCE",
+      "status": "REVERIFY_BEFORE_COUNTING",
+      "sales_import_enabled": false,
+      "outreach_locked": true
+    }
+  ],
+  "completion_rule": "Do not infer yield from search result counts. Complete only after 30 calendar days and report reviewed, A, B, C, D and rejected separately by source, acquisition and engagement track."
+}

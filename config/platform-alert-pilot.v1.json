@@ -64,6 +64,12 @@
         "https://support.upwork.com/hc/en-us/articles/1500007921782-How-to-use-advanced-search-techniques-to-find-jobs",
         "https://support.upwork.com/hc/en-us/articles/36001273797907-How-to-get-instant-job-alerts"
       ]
+    },
+    "freelancer": {
+      "automation_permission_required": true,
+      "public_discovery_is_not_automation_permission": true,
+      "allowed_pilot_method": "MANUAL_NATIVE_SEARCH_AND_ORIGINAL_DETAIL_REVIEW",
+      "runtime_activation": "LOCKED"
     }
   },
   "linkedin_job_alerts": [
@@ -89,11 +95,16 @@
     {"id":"upwork_production_overflow","category":"REMOTE_OVERFLOW","boolean_query":"(\"production overflow\" OR \"external art team\" OR outsourcing OR subcontractor OR vendor) AND (character OR human OR 3D)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false},
     {"id":"upwork_remote_heritage","category":"MUSEUM_DIGITISATION","boolean_query":"(\"cultural heritage\" OR museum OR artefact) AND (3D OR photogrammetry OR reconstruction) AND (remote OR cleanup OR processing)","delivery_expectation":"MANUAL_FEED_UNLESS_ACCOUNT_ALERT_ELIGIBLE","enabled":false}
   ],
+  "freelancer_manual_watchlists": [
+    {"id":"freelancer_human_scan_cleanup","category":"SCAN_CLEANUP_WRAP","lane":"HUMAN_SCAN_MICROTASK","engagement_track":"INDIVIDUAL_FREELANCE","human_subject_required":true,"discovery_method":"MANUAL_NATIVE_SEARCH_AND_ORIGINAL_DETAIL_REVIEW","automation_permission":"REQUIRED_NOT_GRANTED","enabled":false},
+    {"id":"freelancer_character_finishing","category":"CHARACTER_FINISHING","lane":"HUMAN_SCAN_MICROTASK","engagement_track":"INDIVIDUAL_FREELANCE","human_subject_required":true,"discovery_method":"MANUAL_NATIVE_SEARCH_AND_ORIGINAL_DETAIL_REVIEW","automation_permission":"REQUIRED_NOT_GRANTED","enabled":false}
+  ],
   "truth_contract": {
     "linkedin_role": "SIGNAL_ONLY_EMPLOYMENT_BIASED",
     "upwork_saved_search_role": "OPERATOR_REVIEW_FEED",
     "upwork_email_role": "SIGNAL_ONLY_IF_PLATFORM_DELIVERS",
-    "required_final_verification": ["ORIGINAL_DETAIL", "ACTIVE_STATUS", "BUYER_IDENTITY", "STUDIO_ELIGIBILITY", "DELIVERABLE", "BUDGET_PROVENANCE", "APPLICATION_ROUTE"],
+    "freelancer_role": "MANUAL_OPERATOR_REVIEW_ONLY_WITHOUT_AUTOMATION_PERMISSION",
+    "required_final_verification": ["ORIGINAL_DETAIL", "ACTIVE_STATUS", "BUYER_IDENTITY", "SELECTED_TRACK_ELIGIBILITY", "DELIVERABLE", "BUDGET_PROVENANCE", "APPLICATION_ROUTE"],
     "human_microtask_additional_verification": ["HUMAN_SUBJECT"],
     "outreach_locked_until_verified": true
   }
