@@ -45,9 +45,15 @@ Závazný Search scope: [`docs/PRODUCT_DECISION_SEARCH_SCOPE_CZ.md`](docs/PRODUC
 
 Deep Research source gap, deduplikace a CZ/SK grantová lane: [`docs/DEEP_RESEARCH_SOURCE_GAP_AND_ACTIVATION_20260908_CZ.md`](docs/DEEP_RESEARCH_SOURCE_GAP_AND_ACTIVATION_20260908_CZ.md). Import drží 50 zdrojů, 71 watchlist URL a 52 query shardů default-off. Aktivní grant s explicitním 3D scope nebo konkrétní podpořený příjemce se může zobrazit jen jako `FUNDING / PARTNERSHIP` / `POTENTIAL_LEAD`; grant ani jeho částka nejsou buyer objednávka ani buyer project budget.
 
+Navazující sémantický výzkum Astry a jeho fail-closed integrace: [`docs/SEMANTIC_RESEARCH_INTEGRATION_20260908_CZ.md`](docs/SEMANTIC_RESEARCH_INTEGRATION_20260908_CZ.md). Přidává latentní buyer-intent taxonomii a evaluační matici 47 zdrojů / 64 dotazů / 107 kandidátů; 5 partnerských C a 32 signálů D zůstává mimo sales a všechny konkrétní source dotazy jsou default-off.
+
 Maximum hosted-index profil `WIDE_MAX` (25 shardů / 75 web calls / 100 výsledků / 5 USD): [`docs/WIDE_MAX_SEARCH_CZ.md`](docs/WIDE_MAX_SEARCH_CZ.md)
 
 Roadmapa vícekolového `ULTRA_MAX` root-runu: [`docs/ULTRA_MAX_ROADMAP_CZ.md`](docs/ULTRA_MAX_ROADMAP_CZ.md). První code-only milník zavádí sedm perzistentních, přesně omezených fází pod jedním root capem; neaktivuje síť, placené hledání ani produkční endpoint.
+
+Forenzní audit prvního produkčního ULTRA běhu a oprava budoucí observability: [`docs/ULTRA_MAX_POST_RUN_FORENSIC_20260908_CZ.md`](docs/ULTRA_MAX_POST_RUN_FORENSIC_20260908_CZ.md).
+
+Seřazený source-gap report včetně access/credential/ToS/detail-verification kontraktů: [`docs/SOURCE_GAP_REPORT_20260908_CZ.md`](docs/SOURCE_GAP_REPORT_20260908_CZ.md). Strojová autorita je `config/source-gap-report.v1.json`; všechny záznamy zůstávají runtime zamčené.
 
 Relevance a yield optimalizace po prvním WIDE_MAX auditu: [`docs/SEARCH_RELEVANCE_AND_YIELD_OPTIMIZATION_20260908_CZ.md`](docs/SEARCH_RELEVANCE_AND_YIELD_OPTIMIZATION_20260908_CZ.md)
 
@@ -88,5 +94,7 @@ Aktuální produkční checkpoint: [`docs/CHECKPOINT_WIDE_INDEX_PRODUCTION_20260
 Jednorázová legacy reclassification je chráněna production-only endpointem, přesným snapshot digestem, očekávaným rozdělením 3/3/1, idempotencí a okamžitým readbackem. Endpoint není obecný editor a bez exact confirmation kontraktu nic nezapisuje.
 
 WIDE V3 source acquisition: [`docs/WIDE_V3_SOURCE_ACQUISITION_CZ.md`](docs/WIDE_V3_SOURCE_ACQUISITION_CZ.md). Přidává default-off plán osmi vyhledávacích okruhů, fail-closed adaptéry pro oficiální Upwork, Reddit, Bluesky a Mastodon API a podepsaný replay-safe ingest pro LinkedIn alerty a autorizované Telegram/Discord boty. LinkedIn a sociální URL jsou jen discovery signál s povinným přechodem na originální buyer/ATS zdroj; žádný login scraping ani obcházení ochrany není implementováno. Produkční dispatcher WIDE V3 přijme pouze přesné limity 3 USD, 32 výsledků, 8 modelových requestů, 24 hosted-search calls, nejvýše 5 official-source requestů a samostatně povolených 5 Firecrawl requestů; bez nové explicitní aktivace zůstává celý profil zamčený.
+
+Upwork/LinkedIn alert bridge: [`docs/UPWORK_LINKEDIN_ALERT_BRIDGE_CZ.md`](docs/UPWORK_LINKEDIN_ALERT_BRIDGE_CZ.md). Offline normalizátor zpracuje pouze alerty, které platforma doručila do uživatelovy schránky, kanonizuje přesné job/post URL a předá je existujícímu podepsanému ingestu jako outreach-locked discovery signály. Default-off pilot obsahuje osm LinkedIn alert queries a osm Upwork saved searches; Upwork saved search negarantuje e-mailový alert, protože instantní alerty mají samostatnou Freelancer Plus / proposal-history způsobilost. Neobsahuje login automatizaci ani platformní scraping a nic nezapíná.
 
 Bluesky search používá podporovanou app-password session přes uživatelův PDS; anonymní `searchPosts` zůstal po potvrzeném HTTP 403 vypnutý. Bluesky spotřebuje přesně dva official-source requesty (session + search), takže společný WIDE V3 strop je pět HTTP requestů. Handle a odvolatelné app password jsou pouze server-side konfigurace a žádný session token se neukládá.

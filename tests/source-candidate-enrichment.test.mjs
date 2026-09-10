@@ -89,10 +89,11 @@ test("inactive, missing-buyer and visual-motion-only detail fail closed", () => 
   assert.ok(["studio_ineligible", "out_of_scope"].includes(motion.rejection));
 });
 
-test("an individual-only procurement cannot become a studio opportunity", () => {
+test("an individual-only service procurement becomes a separate individual freelance opportunity", () => {
   const individual = enrichSourceCandidate(candidate(), detail({ tender:{ title:"Digital human individual consultant", description:"Candidate must be an individual contractor for 3D character production services.", status:"active", tenderPeriod:{ endDate:"2026-09-20T12:00:00Z" } } }), { nowIso:NOW });
-  assert.equal(individual.opportunity, null);
-  assert.equal(individual.rejection, "studio_ineligible");
+  assert.equal(individual.rejection, null);
+  assert.equal(individual.opportunity.engagement_track, "INDIVIDUAL_FREELANCE");
+  assert.equal(individual.opportunity.individual_eligibility, "YES");
   assert.equal(individual.enrichment.studio_eligibility, "NO");
 });
 

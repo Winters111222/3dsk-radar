@@ -93,7 +93,7 @@ test("sales summary excludes competitors and source platforms",async()=>{
  await repo.saveOpportunity(opportunity({id:"competitor",record_kind:"COMPETITOR",canonical_url:"https://seller.example/services",company:"Seller",fit_score:99}));
  await repo.saveOpportunity(opportunity({id:"platform",record_kind:"SOURCE_PLATFORM",canonical_url:"https://index.example/archive",company:"Jobs Index",fit_score:100}));
  const snapshot=await repo.snapshot();
- assert.deepEqual(snapshot.summary,{opportunities:1,companies:1,high_fit:0,competitors:1,source_platforms:1});
+ assert.deepEqual(snapshot.summary,{opportunities:1,b2b_opportunities:1,individual_opportunities:0,companies:1,high_fit:0,competitors:1,source_platforms:1});
 });
 
 test("competitor status update preserves hidden contact and reply history while sales actions fail closed",async()=>{

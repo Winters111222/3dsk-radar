@@ -30,6 +30,7 @@ const QUERY_BY_SOURCE = Object.freeze({
 
 const SHARDS_BY_SOURCE = Object.freeze({
   upwork_official:Object.freeze(["marketplaces_core", "worldwide_multilingual"]),
+  upwork_alert_bridge:Object.freeze(["marketplaces_core", "worldwide_multilingual"]),
   reddit_official:Object.freeze(["communities_paid", "social_signals", "worldwide_multilingual"]),
   bluesky_public:Object.freeze(["social_signals", "worldwide_multilingual"]),
   mastodon_official:Object.freeze(["social_signals"]),

@@ -1,6 +1,8 @@
 export const COMMERCIAL_ROLES = ["BUYER", "EMPLOYER", "SELLER", "PARTNER", "UNKNOWN"];
 export const NOTICE_STATUSES = ["OPEN", "UPCOMING", "CLOSED", "AWARDED", "CANCELLED", "UNKNOWN"];
 export const STUDIO_ELIGIBILITY_VALUES = ["YES", "NO", "UNKNOWN"];
+export const INDIVIDUAL_ELIGIBILITY_VALUES = ["YES", "NO", "UNKNOWN"];
+export const ENGAGEMENT_TRACKS = ["B2B_STUDIO", "INDIVIDUAL_FREELANCE"];
 export const SCOPE_FITS = ["CORE", "CHARACTER_ADJACENT", "OUT_OF_SCOPE", "EQUIPMENT"];
 export const FRESHNESS_BASES = ["PUBLISHED_DATE", "SOURCE_UPDATED_DATE", "ACTIVE_ACCEPTANCE_EVIDENCE"];
 
@@ -27,7 +29,9 @@ export function evaluateSourceTruth({
   requestedKind,
   commercialRole,
   noticeStatus,
+  engagementTrack = "B2B_STUDIO",
   studioEligibility,
+  individualEligibility = "UNKNOWN",
   scopeFit,
   publishedDate,
   sourceUpdatedDate,
@@ -44,8 +48,15 @@ export function evaluateSourceTruth({
   if (INACTIVE_NOTICE_STATUSES.has(noticeStatus) && !awardedFundingLead) return { ok:false, rejection:"inactive_notice" };
   if (commercialRole === "EMPLOYER") return { ok:false, rejection:"individual_employment" };
   if (commercialRole === "UNKNOWN") return { ok:false, rejection:"unknown_commercial_role" };
-  if (studioEligibility === "NO") return { ok:false, rejection:"studio_ineligible" };
-  if (studioEligibility !== "YES") return { ok:false, rejection:"studio_eligibility_unproven" };
+  if (!ENGAGEMENT_TRACKS.includes(engagementTrack)) return { ok:false, rejection:"engagement_track_unproven" };
+  if (engagementTrack === "B2B_STUDIO") {
+    if (studioEligibility === "NO") return { ok:false, rejection:"studio_ineligible" };
+    if (studioEligibility !== "YES") return { ok:false, rejection:"studio_eligibility_unproven" };
+  } else {
+    if (commercialRole !== "BUYER") return { ok:false, rejection:"individual_buyer_unproven" };
+    if (individualEligibility === "NO") return { ok:false, rejection:"individual_contractor_ineligible" };
+    if (individualEligibility !== "YES") return { ok:false, rejection:"individual_eligibility_unproven" };
+  }
   if (EXCLUDED_SCOPE_FITS.has(scopeFit)) return { ok:false, rejection:"out_of_scope" };
 
   const recentPublished = isRecentSourceDate(publishedDate, nowIso, maxAgeDays);
@@ -56,7 +67,8 @@ export function evaluateSourceTruth({
 
   let opportunityKind = requestedKind;
   if (requestedKind === "OPEN_OPPORTUNITY") {
-    const provenOpenBuyerRequest = commercialRole === "BUYER" && noticeStatus === "OPEN" && studioEligibility === "YES";
+    const eligibleDelivery = engagementTrack === "B2B_STUDIO" ? studioEligibility === "YES" : individualEligibility === "YES";
+    const provenOpenBuyerRequest = commercialRole === "BUYER" && noticeStatus === "OPEN" && eligibleDelivery;
     if (!provenOpenBuyerRequest) opportunityKind = "POTENTIAL_LEAD";
   }
 

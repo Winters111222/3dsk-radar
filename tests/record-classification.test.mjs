@@ -103,6 +103,28 @@ test("generic partner label without a current buyer signal is rejected", () => {
   assert.equal(result.rejection, "partner_without_buyer_signal");
 });
 
+test("multilingual supplier requests count as concrete buyer signals", () => {
+  for (const summary of [
+    "Wir suchen einen externen Dienstleister für realistische 3D-Figuren.",
+    "Nous recherchons un prestataire pour une série de personnages réalistes.",
+    "Buscamos proveedor para producir personajes humanos 3D.",
+    "Cerchiamo un fornitore per modelli umani realistici.",
+    "Szukamy podwykonawcy do produkcji postaci 3D.",
+    "Hledáme dodavatele pro dávkové čištění 3D skenů.",
+    "Hľadáme dodávateľa na spracovanie 3D skenov."
+  ]) {
+    const result = classifyRecordCandidate({
+      source_url:"https://buyer.example/request/1",
+      title:"External production",
+      company:"Buyer",
+      commercial_role:"PARTNER",
+      summary
+    });
+    assert.equal(result.record_kind, "SALES_OPPORTUNITY", summary);
+    assert.equal(result.concrete_buyer_signal, true, summary);
+  }
+});
+
 test("active CZ/SK 3D heritage funding is a partner lead, never buyer demand", () => {
   const result = classifyRecordCandidate(record({
     source_url:"https://www.mk.gov.cz/digitalizace-kulturnich-statku-a-narodnich-kulturnich-pamatek-cs-2941",

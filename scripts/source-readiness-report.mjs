@@ -31,6 +31,21 @@ export function buildSourceReadinessReport(qualification) {
       };
     });
 
+  const zeroCostCollectorIds = new Set(["ted_eu", "find_tender_uk", "contracts_finder_uk"]);
+  const zeroCostCollectors = qualification.sources
+    .filter((source) => zeroCostCollectorIds.has(source.source_id))
+    .map((source) => ({
+      source_id:source.source_id,
+      access_status:source.access_status || "UNREVIEWED",
+      access_ready:source.access_status === policy.required_access_status,
+      yield_status:source.yield_status || "NOT_MEASURED",
+      reviewed_candidates:Number(source.reviewed_candidates || 0),
+      accepted_relevant_hits:Number(source.accepted_relevant_hits || 0),
+      measured_precision:Number.isFinite(source.measured_precision) ? source.measured_precision : null,
+      runtime_eligible:source.runtime_eligible === true,
+      decision:source.runtime_eligible ? "RUNTIME_ELIGIBLE" : "MEASURE_MORE_KEEP_LOCKED"
+    }));
+
   return {
     ok:sources.every((source) => source.runtime_eligible === false),
     mode:"OFFLINE_TIER_A_READINESS",
@@ -48,6 +63,7 @@ export function buildSourceReadinessReport(qualification) {
       yield_ready:sources.filter((source) => source.yield_status === policy.required_yield_status).length,
       runtime_eligible:sources.filter((source) => source.runtime_eligible).length
     },
+    zero_cost_collectors:zeroCostCollectors,
     network_requests:0,
     openai_requests:0,
     cost_usd:0,

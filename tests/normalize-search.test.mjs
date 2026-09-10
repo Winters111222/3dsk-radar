@@ -213,6 +213,43 @@ test("normalizer requires positive studio eligibility and rejects inactive sourc
   assert.equal(normalizeCandidate(candidate({summary:"This job is no longer available."}), verified, NOW).rejection, "inactive_source_evidence");
 });
 
+test("individual freelance project is retained separately without weakening employment rejection", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  const result = normalizeCandidate(candidate({
+    title:"Freelance full-body scan cleanup",
+    summary:"Fixed-price freelance project to repair one supplied full-body human scan and deliver the cleaned mesh.",
+    engagement_track:"INDIVIDUAL_FREELANCE",
+    studio_eligibility:"NO",
+    individual_eligibility:"YES",
+    individual_eligibility_reason:"Buyer explicitly accepts a remote independent contractor for this project.",
+    categories:["SCAN_CLEANUP","PHOTOGRAMMETRY_PROCESSING"]
+  }), verified, NOW);
+  assert.equal(result.rejection, null);
+  assert.equal(result.opportunity.engagement_track, "INDIVIDUAL_FREELANCE");
+  assert.equal(result.opportunity.individual_eligibility, "YES");
+
+  const employment = normalizeCandidate(candidate({
+    title:"Full-time senior character artist",
+    summary:"Permanent employee role with annual salary and benefits.",
+    engagement_track:"INDIVIDUAL_FREELANCE",
+    studio_eligibility:"NO",
+    individual_eligibility:"YES"
+  }), verified, NOW);
+  assert.equal(employment.rejection, "individual_employment");
+});
+
+test("individual lane fails closed when contractor eligibility is unknown", () => {
+  const verified = new Set([normalizeUrl(PRIMARY)]);
+  const result = normalizeCandidate(candidate({
+    title:"Human scan cleanup project",
+    summary:"Project to clean a supplied human scan.",
+    engagement_track:"INDIVIDUAL_FREELANCE",
+    studio_eligibility:"UNKNOWN",
+    individual_eligibility:"UNKNOWN"
+  }), verified, NOW);
+  assert.equal(result.rejection, "individual_eligibility_unproven");
+});
+
 test("software pipeline engineering without production assets is rejected", () => {
   const verified = new Set([normalizeUrl(PRIMARY)]);
   const result = normalizeCandidate(candidate({

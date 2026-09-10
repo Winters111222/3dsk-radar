@@ -86,9 +86,9 @@ test("WIDE_MAX has exact five-dollar, 25-shard and bounded-concurrency boundarie
   assert.equal(config.shards.length, 25);
   assert.equal(config.firecrawl_enabled, false);
   assert.equal(config.official_sources_enabled, false);
-  assert.equal(config.run_id, "prod-wide-max-search-20260908-deep-source-layer-v2");
-  assert.equal(config.operation_id, "wide-max-search-deep-source-layer-v2");
-  assert.equal(config.reservation_id, "wide-max-budget-deep-source-layer-v2");
+  assert.equal(config.run_id, "prod-wide-max-search-20260908-dual-engagement-track-v4");
+  assert.equal(config.operation_id, "wide-max-search-dual-engagement-track-v4");
+  assert.equal(config.reservation_id, "wide-max-budget-dual-engagement-track-v4");
 });
 
 test("WIDE_MAX fails closed on altered bounds or any Firecrawl activation", () => {

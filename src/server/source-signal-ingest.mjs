@@ -3,13 +3,27 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 export const SOURCE_SIGNAL_MAX_BYTES = 65_536;
 export const SOURCE_SIGNAL_MAX_CLOCK_SKEW_SECONDS = 300;
 export const SOURCE_SIGNAL_IDS = Object.freeze([
+  "upwork_alert_bridge",
   "linkedin_alert_bridge",
   "telegram_authorized_channels",
   "discord_authorized_channels"
 ]);
 
 const SOURCE_RULES = Object.freeze({
-  linkedin_alert_bridge:{ gate:"RADAR_LINKEDIN_SIGNAL_ENABLED", domains:["linkedin.com"] },
+  upwork_alert_bridge:{
+    gate:"RADAR_UPWORK_SIGNAL_ENABLED",
+    domains:["upwork.com"],
+    paths:[/^\/jobs\/~[a-z0-9]+\/?$/i, /^\/freelance-jobs\/apply\/[^/]+_~[a-z0-9]+\/?$/i]
+  },
+  linkedin_alert_bridge:{
+    gate:"RADAR_LINKEDIN_SIGNAL_ENABLED",
+    domains:["linkedin.com"],
+    paths:[
+      /^\/jobs\/view\/\d+\/?$/i,
+      /^\/feed\/update\/urn:li:activity:\d+\/?$/i,
+      /^\/posts\/[^/]+\/?$/i
+    ]
+  },
   telegram_authorized_channels:{ gate:"RADAR_TELEGRAM_SOURCE_ENABLED", domains:["t.me"], allowlist:"TELEGRAM_SOURCE_ALLOWED_CHATS" },
   discord_authorized_channels:{ gate:"RADAR_DISCORD_SOURCE_ENABLED", domains:["discord.com", "discordapp.com"], allowlist:"DISCORD_SOURCE_ALLOWED_CHANNELS" }
 });
@@ -32,12 +46,14 @@ function clean(value, max) {
   return String(value || "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
-function validSourceUrl(value, domains) {
+function validSourceUrl(value, rule) {
   try {
     const url = new URL(String(value || ""));
     if (url.protocol !== "https:" || url.username || url.password) return null;
     const hostname = url.hostname.toLowerCase();
-    if (!domains.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`))) return null;
+    if (!rule.domains.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`))) return null;
+    if (rule.paths && !rule.paths.some((pattern) => pattern.test(url.pathname))) return null;
+    url.search = "";
     url.hash = "";
     return url.toString();
   } catch {
@@ -73,7 +89,7 @@ export function verifyAndNormalizeSourceSignal({ rawBody, timestamp, signature, 
   }
   const eventId = clean(body?.event_id, 240);
   const text = clean(body?.text, 4000);
-  const sourceUrl = validSourceUrl(body?.source_url, rule.domains);
+  const sourceUrl = validSourceUrl(body?.source_url, rule);
   const published = Date.parse(String(body?.published_at || ""));
   if (!eventId || !text || !sourceUrl || !Number.isFinite(published)) throw Object.assign(new Error("SOURCE_SIGNAL_PAYLOAD_INVALID"), { code:"SOURCE_SIGNAL_PAYLOAD_INVALID", status:400 });
   const signalId = `signal-${createHash("sha256").update(`${sourceId}:${eventId}`).digest("hex").slice(0, 40)}`;

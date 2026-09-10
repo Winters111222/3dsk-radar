@@ -11,6 +11,7 @@ function env(overrides = {}) {
   const values = {
     RADAR_SOURCE_SIGNAL_INGEST_ENABLED:"true",
     RADAR_LINKEDIN_SIGNAL_ENABLED:"true",
+    RADAR_UPWORK_SIGNAL_ENABLED:"true",
     RADAR_TELEGRAM_SOURCE_ENABLED:"true",
     TELEGRAM_SOURCE_ALLOWED_CHATS:"-100123,design-jobs",
     ...overrides
@@ -45,6 +46,23 @@ test("ingest rejects stale signatures, wrong domains and non-allowlisted channel
   assert.throws(() => verifyAndNormalizeSourceSignal({ rawBody:valid, timestamp:TS - 301, signature:signSourceSignal(valid, TS - 301, SECRET), secret:SECRET, getEnv:env(), nowMs:NOW }), /SOURCE_SIGNAL_TIMESTAMP_INVALID/);
   for (const rawBody of [body({channel_id:"other"}), body({source_url:"https://evil.example/42"})]) {
     assert.throws(() => verifyAndNormalizeSourceSignal({ rawBody, timestamp:TS, signature:signSourceSignal(rawBody, TS, SECRET), secret:SECRET, getEnv:env(), nowMs:NOW }));
+  }
+});
+
+test("marketplace and social alert bridges accept only exact supported routes", () => {
+  const accepted = [
+    body({ source_id:"upwork_alert_bridge", channel_id:null, source_url:"https://www.upwork.com/jobs/~0123?tracking=removed" }),
+    body({ source_id:"linkedin_alert_bridge", channel_id:null, source_url:"https://www.linkedin.com/jobs/view/123?tracking=removed" })
+  ];
+  for (const rawBody of accepted) {
+    const signal = verifyAndNormalizeSourceSignal({ rawBody, timestamp:TS, signature:signSourceSignal(rawBody, TS, SECRET), secret:SECRET, getEnv:env(), nowMs:NOW });
+    assert.equal(new URL(signal.source_url).search, "");
+  }
+  for (const rawBody of [
+    body({ source_id:"upwork_alert_bridge", channel_id:null, source_url:"https://www.upwork.com/services/product/seller" }),
+    body({ source_id:"linkedin_alert_bridge", channel_id:null, source_url:"https://www.linkedin.com/in/seller" })
+  ]) {
+    assert.throws(() => verifyAndNormalizeSourceSignal({ rawBody, timestamp:TS, signature:signSourceSignal(rawBody, TS, SECRET), secret:SECRET, getEnv:env(), nowMs:NOW }), /SOURCE_SIGNAL_PAYLOAD_INVALID/);
   }
 });
 

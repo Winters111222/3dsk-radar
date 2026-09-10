@@ -77,7 +77,7 @@ Typická session:
 
 # 3. Co 3D.sk umí — capability model
 
-Vyhledávač nesmí chápat 3D.sk jako běžného „3D artista“. Jde o **end-to-end human photogrammetry + AAA character production vendor** schopný dodat celý workflow nebo jen konkrétní část pipeline.
+Vyhledávač chápe 3D.sk ve dvou oddělených obchodních režimech: jako **end-to-end human photogrammetry + AAA character production vendor** a jako zdroj kvalifikovaného specialisty pro menší individuální freelance projekty. Oba režimy používají stejné skutečné capability; nesmějí se ale míchat ani zaměňovat za zaměstnání.
 
 ## 3.1 Capture / talent / rights
 
@@ -231,7 +231,12 @@ Doporučené pole:
 
 # 5. Co má Radar hledat
 
-Radar nehledá jen pracovní pozice. Hledá **obchodní příležitosti pro studio/vendor tým**.
+Radar nehledá klasická zaměstnání. Hledá dvě oddělené skupiny obchodních příležitostí:
+
+- `B2B_STUDIO`: vendor, studio, outsourcing, subdodávka, overflow, procurement nebo partnerství;
+- `INDIVIDUAL_FREELANCE`: buyer-posted freelance/project task vhodný pro jednoho kvalifikovaného specialistu, včetně jediného scanu nebo krátkého přesně vymezeného deliverable.
+
+Malý rozsah ani nízký počet assetů není důvod k odmítnutí. Individuální výsledek ale musí být skutečný projekt/kontrakt, nikoli permanentní, full-time, payroll, benefits nebo CV/resume nábor.
 
 ## 5.1 Nejvyšší priorita
 
@@ -387,6 +392,10 @@ title
 company
 summary
 opportunity_kind
+engagement_track
+studio_eligibility
+individual_eligibility
+individual_eligibility_reason
 categories[]
 location
 remote_scope

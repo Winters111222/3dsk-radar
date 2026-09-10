@@ -120,6 +120,11 @@ test("one prepared background action advances all six paid phases and persists o
   assert.equal(snapshot.last_search.returned_count,1);
   assert.equal(snapshot.last_search.retry_allowed,false);
   assert.equal(snapshot.last_search.estimated_cost_usd,run.usage.cost_microusd/1_000_000);
+  assert.equal(snapshot.last_search.forensic_audit.schema_version,1);
+  assert.equal(snapshot.last_search.forensic_audit.funnel.candidates_seen,1);
+  assert.equal(snapshot.last_search.forensic_audit.funnel.detail_candidates_verified,1);
+  assert.equal(snapshot.last_search.forensic_audit.funnel.accounting_complete,true);
+  assert.equal(snapshot.last_search.forensic_audit.accepted_candidate_ledger[0].source_url,SOURCE);
 });
 
 test("background paid phase rejects auth, preview context and missing exact confirmation before dispatch", async t => {

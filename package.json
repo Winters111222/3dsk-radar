@@ -15,9 +15,13 @@
     "accept:deployed:paid": "node scripts/deployed-paid-acceptance.mjs",
     "measure:collector:live": "node scripts/collector-yield-measurement.mjs",
     "report:sources:readiness": "node scripts/source-readiness-report.mjs",
+    "report:sources:gaps": "node scripts/source-gap-report.mjs",
+    "alert:normalize": "node scripts/normalize-source-alert.mjs",
+    "report:alerts:precision": "node scripts/platform-alert-precision-report.mjs",
     "report:competitors": "node scripts/competitor-audit-report.mjs",
     "accept:http": "node scripts/http-smoke.mjs",
-    "sources:check": "node scripts/check-source-catalog.mjs"
+    "sources:check": "node scripts/check-source-catalog.mjs",
+    "research:import:dual-track": "node scripts/import-dual-track-research.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "11.0.3",

@@ -1,8 +1,10 @@
+import { semanticIntentHintForShard } from "./semantic-intent-taxonomy.mjs";
+
 const shard = (id, label, allowedDomains, focus) => Object.freeze({
   id,
   label,
   allowed_domains:Object.freeze(allowedDomains),
-  focus
+  focus:`${focus} SEMANTIC_BUYER_INTENT: ${semanticIntentHintForShard(id)}`
 });
 
 const MARKETPLACES = ["upwork.com", "freelancer.com", "peopleperhour.com", "guru.com"];
@@ -15,12 +17,12 @@ const SLOVAK_HERITAGE = ["uvo.gov.sk", "josephine.proebiz.com"];
 const FRENCH_BUYER_MARKETPLACES = ["codeur.com"];
 const CZ_SK_HERITAGE_FUNDING = ["mk.gov.cz", "fpu.sk", "culture.gov.sk", "eeagrants.org"];
 
-const rejectNoise = "Require an active buyer purchasing a concrete production deliverable that a Czech/European external studio or team can deliver. Reject every employee vacancy even if it says contract, B2B or external development; also reject sellers, portfolios, training, hardware, unpaid/rev-share work, software/pipeline development, Reallusion Character Creator/CC3/CC4, iClone and Daz3D.";
+const rejectNoise = "Require an active buyer purchasing a concrete production deliverable eligible either for a Czech/European studio/team (B2B_STUDIO) or for a remote/geographically eligible independent specialist (INDIVIDUAL_FREELANCE), and classify the track explicitly. Small and single-asset freelance projects are valid. Reject every employee vacancy even if it says contract, B2B or external development; also reject sellers, portfolios, training, hardware, unpaid/rev-share work, software/pipeline development, Reallusion Character Creator/CC3/CC4, iClone and Daz3D.";
 
 // Bump this whenever the deployed shard set or its acceptance semantics change.
 // Paid-operation identity includes this version so a newly released plan cannot
 // replay results produced by an older plan on the same UTC date.
-export const WIDE_MAX_PLAN_VERSION = "deep-source-layer-v2";
+export const WIDE_MAX_PLAN_VERSION = "dual-engagement-track-v4";
 
 export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
   shard("human_face_body_marketplaces", "Human face/body capture · marketplaces", MARKETPLACES,
@@ -34,19 +36,19 @@ export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
   shard("wrap3d_face_pipeline", "Wrap3D face pipeline", [...MARKETPLACES, ...COMMUNITIES],
     `Find paid requests matching Faceform Wrap3D or R3DS Wrap work: scan-to-basemesh conforming, topology transfer, landmark-based wrapping, facial scan processing or production basemesh delivery. The listing need not name Wrap when the deliverable clearly matches. ${rejectNoise}`),
   shard("zbrush_scan_cleanup", "ZBrush scan cleanup", [...MARKETPLACES, ...COMMUNITIES],
-    `Find paid human or object scan-cleanup requests involving holes, fingers, hair, surface repair, sculpt cleanup, high-poly cleanup or production-ready mesh finishing suitable for ZBrush. ${rejectNoise}`),
+    `Find paid human, character or qualifying cultural-heritage scan-cleanup requests involving holes, fingers, hair, surface repair, sculpt cleanup, high-poly cleanup or production-ready mesh finishing suitable for ZBrush. Include one-scan freelance tasks; reject unrelated product, vehicle, machine and printable-miniature meshes. ${rejectNoise}`),
   shard("substance_scan_texturing", "Substance Painter scan texturing", [...MARKETPLACES, ...COMMUNITIES],
     `Find paid scan-texturing requests involving texture cleanup, reprojection, PBR material creation, Substance Painter finishing or delivery-ready texture sets from photogrammetry data. ${rejectNoise}`),
   shard("batch_scan_postproduction", "Batch scan post-production", [...MARKETPLACES, ...COMMUNITIES],
     `Find recurring, ongoing, volume or production-overflow requests for processing batches of human or object scans through reconstruction, cleanup, wrapping and texturing. ${rejectNoise}`),
   shard("realistic_human_marketplace_projects", "Realistic humans · buyer projects", MARKETPLACES,
-    `Find current buyer project briefs commissioning realistic human characters, scan-derived humans, facial assets, FACS/expression processing or digital doubles from a production team. Reject individual vacancies, stylized-only work and animation-only work. ${rejectNoise}`),
+    `Find current buyer project briefs commissioning realistic human characters, scan-derived humans, facial assets, FACS/expression processing or digital doubles from either a production team or an eligible individual specialist. Reject employee vacancies, stylized-only work and animation-only work. ${rejectNoise}`),
   shard("digital_double_marketplace_projects", "Digital doubles · buyer projects", MARKETPLACES,
     `Find current client projects buying digital-double, photoreal human, likeness, facial scan or scan-derived human-character assets. Require asset deliverables rather than an employee, programmer or realtime technical artist. ${rejectNoise}`),
   shard("character_overflow_communities", "Character overflow · communities", ["reddit.com", "forums.unrealengine.com", "polycount.com"],
     `Find current HIRING or PAID posts seeking an external team for realistic-human character overflow, scan cleanup, digital doubles or facial production. Reject FOR HIRE posts and individual permanent jobs. ${rejectNoise}`),
   shard("marketplace_paid_tests_batches", "Paid tests and batches · marketplaces", MARKETPLACES,
-    `Find current paid tests, pilots, batches, recurring volumes or overflow packages for human scans, heads, bodies, realistic characters, retopology, wrapping, cleanup or texturing. Prefer briefs that explicitly ask about team capacity. ${rejectNoise}`),
+    `Find current paid one-off tasks, single assets, tests, pilots, batches, recurring volumes or overflow packages for human scans, heads, bodies, realistic characters, retopology, wrapping, cleanup or texturing. Preserve both individual-specialist and team-capacity demand in separate tracks. ${rejectNoise}`),
   shard("een_business_requests", "EEN · business requests", EEN_REQUESTS,
     `Find exact current Enterprise Europe Network Business Request detail pages where a buyer seeks an outsourcing supplier, subcontractor or production partner for human 3D capture, photogrammetry processing, museum-object 3D work, digital humans or realistic characters. Reject Business Offers, Technology Offers and unfunded generic networking. ${rejectNoise}`),
   shard("een_technology_requests", "EEN · technology requests", EEN_REQUESTS,

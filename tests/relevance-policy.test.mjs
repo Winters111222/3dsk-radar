@@ -21,6 +21,34 @@ test("mandatory pipeline remains broad while Reallusion and Daz workflows fail c
   }
 });
 
+test("a brief replacing an excluded workflow is not rejected merely for naming it", () => {
+  const replacement = {...base, summary:"Replace the supplied Daz Studio character with a custom scan-derived production-ready human."};
+  assert.equal(evaluateCandidateRelevance(replacement).ok, true);
+  const prohibition = {...base, summary:"Do not use Character Creator; deliver a custom realistic human mesh."};
+  assert.equal(evaluateCandidateRelevance(prohibition).ok, true);
+});
+
+test("an explicit replacement does not hide a separate excluded workflow requirement", () => {
+  const result = evaluateCandidateRelevance({
+    ...base,
+    title:"Replace the Daz export step but retain Character Creator production",
+    description:"We need an external studio to replace Daz while the required Character Creator character workflow remains in use."
+  });
+  assert.deepEqual(result, {ok:false,rejection:"excluded_workflow"});
+});
+
+test("latent production deliverables preserve a mixed software brief for truth evaluation", () => {
+  const latent = {...base, summary:"Build a small batch tool and deliver deformation-ready heads with consistent topology and repaired fused fingers."};
+  assert.equal(evaluateCandidateRelevance(latent).ok, true);
+});
+
+test("multilingual closed evidence and supplier intent are distinguished", () => {
+  const closed = {...base, commercial_role:"BUYER", summary:"L'offerta è chiusa e archiviata."};
+  assert.equal(evaluateCandidateRelevance(closed).rejection, "inactive_source_evidence");
+  const external = {...base, commercial_role:"BUYER", title:"3D Character Artist", summary:"Szukamy podwykonawcy do produkcji partii realistycznych postaci 3D."};
+  assert.equal(evaluateCandidateRelevance(external).ok, true);
+});
+
 test("physical museum capture is CZ/SK only", () => {
   const museum = {...base, title:"Museum object 3D scanning", summary:"Onsite photogrammetry of collection artefacts.", categories:["CULTURAL_HERITAGE_3D","CAPTURE"]};
   assert.equal(evaluateCandidateRelevance({...museum,location:"Germany"}).rejection, "heritage_capture_outside_cz_sk");
@@ -52,6 +80,16 @@ test("every employer vacancy is rejected even when it mentions an external contr
   assert.equal(evaluateCandidateRelevance(employee).rejection, "individual_employment");
   const contractor = {...employee, title:"Contract scan artist", summary:"External freelance vendor contract for a supplied scan batch."};
   assert.equal(evaluateCandidateRelevance(contractor).rejection, "individual_employment");
+});
+
+test("individual track still rejects fixed-term, payroll and contract-to-hire recruitment", () => {
+  for (const summary of [
+    "Fixed-term role on payroll for a senior character artist.",
+    "Contract-to-hire position with a salary range and benefits."
+  ]) {
+    const result = evaluateCandidateRelevance({...base,commercial_role:"BUYER",engagement_track:"INDIVIDUAL_FREELANCE",summary});
+    assert.equal(result.rejection, "individual_employment");
+  }
 });
 
 test("source evidence that says closed wins over model labels", () => {

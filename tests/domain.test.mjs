@@ -29,6 +29,10 @@ test("opportunity_kind is reserved for sales records", () => {
   assert.equal(validateOpportunity({...competitor,opportunity_kind:"POTENTIAL_LEAD"}).errors.includes("invalid:non_sales_opportunity_kind"), true);
 });
 
+test("sales records reject employee roles even when an eligibility flag is incorrectly positive", () => {
+  assert.equal(validateOpportunity({...fixtures[0],commercial_role:"EMPLOYER"}).errors.includes("invalid:sales_commercial_role"), true);
+});
+
 test("budget provenance fails closed", () => {
   assert.equal(validateBudgetProvenance({ budget_type:"PUBLISHED", budget_published:null }).ok, false);
   assert.equal(validateBudgetProvenance({ budget_type:"ESTIMATED", budget_estimated_min:1, budget_estimated_max:2, budget_reason:"fixture" }).ok, true);

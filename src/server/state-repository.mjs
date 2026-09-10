@@ -427,6 +427,8 @@ export function createStateRepository(store) {
         last_search: await this.lastSearchRun(),
         summary:{
           opportunities:sales.length,
+          b2b_opportunities:sales.filter((item) => (item.engagement_track || "B2B_STUDIO") === "B2B_STUDIO").length,
+          individual_opportunities:sales.filter((item) => item.engagement_track === "INDIVIDUAL_FREELANCE").length,
           companies:new Set(sales.map((item) => companyKey(item.company))).size,
           high_fit:sales.filter((item) => item.fit_score >= 80).length,
           competitors:hydrated.filter((item) => item.record_kind === "COMPETITOR").length,

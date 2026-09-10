@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { bandForScore, validateOpportunity } from "../lib/domain.mjs";
-import { COMMERCIAL_ROLES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES, evaluateSourceTruth, isRecentSourceDate, normalizeSourceDate } from "../lib/source-truth.mjs";
+import { COMMERCIAL_ROLES, ENGAGEMENT_TRACKS, INDIVIDUAL_ELIGIBILITY_VALUES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES, evaluateSourceTruth, isRecentSourceDate, normalizeSourceDate } from "../lib/source-truth.mjs";
 import { OPPORTUNITY_CATEGORIES, REMOTE_SCOPES } from "./search-contract.mjs";
 import {
   INDEX_DISCOVERY_SOURCE_POLICIES,
@@ -293,7 +293,9 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
   const recordKind = classification.record_kind;
   const commercialRole = classification.effective_commercial_role;
   const noticeStatus = NOTICE_STATUSES.includes(candidate.notice_status) ? candidate.notice_status : "UNKNOWN";
+  const engagementTrack = ENGAGEMENT_TRACKS.includes(candidate.engagement_track) ? candidate.engagement_track : "B2B_STUDIO";
   const studioEligibility = STUDIO_ELIGIBILITY_VALUES.includes(candidate.studio_eligibility) ? candidate.studio_eligibility : "UNKNOWN";
+  const individualEligibility = INDIVIDUAL_ELIGIBILITY_VALUES.includes(candidate.individual_eligibility) ? candidate.individual_eligibility : "UNKNOWN";
   const scopeFit = SCOPE_FITS.includes(candidate.scope_fit) ? candidate.scope_fit : "OUT_OF_SCOPE";
   const publishedDate = normalizeSourceDate(candidate.published_date, nowIso);
   const sourceUpdatedDate = normalizeSourceDate(candidate.source_updated_date, nowIso);
@@ -308,7 +310,9 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
       requestedKind,
       commercialRole,
       noticeStatus,
+      engagementTrack,
       studioEligibility,
+      individualEligibility,
       scopeFit,
       publishedDate,
       sourceUpdatedDate,
@@ -392,8 +396,11 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
     opportunity_kind: opportunityKind,
     commercial_role: commercialRole,
     notice_status: noticeStatus,
+    engagement_track: engagementTrack,
     studio_eligibility: studioEligibility,
     eligibility_reason: safeString(candidate.eligibility_reason) || "Studio eligibility was not established by the source.",
+    individual_eligibility: individualEligibility,
+    individual_eligibility_reason: safeString(candidate.individual_eligibility_reason) || "Individual freelance eligibility was not established by the source.",
     scope_fit: scopeFit,
     categories,
     location: safeString(candidate.location) || "Not stated",
