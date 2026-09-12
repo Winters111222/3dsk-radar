@@ -433,4 +433,5 @@ async function init(){
   if(els.accessCode.value)await loadTeamState();
   else if(new URLSearchParams(location.search).get("demo")==="1")await loadDemo();
 }
-init();
+init().catch(error=>{showToast(error.message);window.dispatchEvent(new ErrorEvent("error",{error}));})
+  .finally(()=>window.dispatchEvent(new CustomEvent("radar:ready")));
