@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Radar loading screen — isolated visual check</title>
+<style>body{margin:20px;background:#e3e7ed;font:14px system-ui;color:#202c3c}header{display:flex;gap:16px;align-items:center;margin-bottom:20px}iframe{display:block;border:1px solid #aab6c5;background:#f5f6f8}button,select{padding:8px;font:inherit}</style>
+<header><strong>Isolated loading-screen check · no app / API calls</strong><label>Viewport <select id="size"><option value="1440,900">Desktop 1440 × 900</option><option value="390,844">Mobile 390 × 844</option><option value="320,568">Small mobile 320 × 568</option><option value="844,390">Landscape 844 × 390</option></select></label><button id="restart">Replay</button><button id="ready">Finish loading</button></header>
+<iframe title="Loading screen viewport"></iframe>
+<script>
+  // Uses the actual entry HTML, not a duplicated animation. No application modules,
+  // team credentials, fixtures or API endpoints are loaded by this visual harness.
+  let source;
+  async function replay(){
+    source ||= await(await fetch('../index.html')).text();
+    const page=new DOMParser().parseFromString(source,'text/html');
+    for(const script of page.querySelectorAll('script'))if(script.id!=='radar-boot-controller')script.remove();
+    for(const node of page.querySelectorAll('.app-shell,#toast'))node.remove();
+    const base=page.createElement('base');base.href=location.origin+'/';page.head.prepend(base);
+    const frame=document.querySelector('iframe'),[width,height]=document.querySelector('#size').value.split(',');
+    frame.width=width;frame.height=height;frame.srcdoc='<!doctype html>'+page.documentElement.outerHTML;
+  }
+  document.querySelector('#restart').onclick=replay;
+  document.querySelector('#size').onchange=replay;
+  document.querySelector('#ready').onclick=()=>document.querySelector('iframe').contentWindow.dispatchEvent(new Event('radar:ready'));
+  replay();
+</script></html>

@@ -23,8 +23,11 @@ test('director interactions render real app code with isolated, read-only API mo
       {ok:true,run:null,candidates:[]};
     return{ok:true,json:async()=>payload};
   };
+  let bootReady=false;
+  window.addEventListener('radar:ready',()=>{bootReady=true;assert.ok(document.querySelectorAll('#opportunity-body tr[data-id]').length>0,'ready follows team rendering');});
   await import('../src/app.js');
   for(let i=0;i<30;i++)await Promise.resolve();
+  assert.equal(bootReady,true,'initialization signals readiness after the saved workspace loads');
   const click=selector=>document.querySelector(selector).click();
   assert.equal(document.querySelector(".results-layout").classList.contains("cards-mode"),false);
   assert.equal(document.querySelector("#table-layout").getAttribute("aria-pressed"),"true");

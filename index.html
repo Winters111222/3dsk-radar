@@ -1,10 +1,88 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="radar-booting">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>3D.SK Opportunity Radar</title>
+  <!-- First-paint shell is inline: it must not wait for application assets. -->
+  <style id="radar-boot-style">
+    html.radar-booting { background:#f5f6f8; }
+    html.radar-booting .app-shell,html.radar-booting #toast { visibility:hidden!important; }
+    #radar-boot { position:fixed; inset:0; z-index:100000; display:grid; place-items:center; padding:24px; overflow:auto; background:#f5f6f8; color:#202c3c; font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; text-align:center; transition:opacity 280ms ease; }
+    #radar-boot.is-leaving { opacity:0; pointer-events:none; }
+    .radar-boot-content { width:min(100%,400px); margin:auto; }
+    #radar-boot .radar-boot-brand { display:block; margin:0 auto 36px; width:150px; height:36px; }
+    .radar-sonar { position:relative; width:min(58vw,240px); aspect-ratio:1; margin:0 auto 32px; border:1px solid #d8dfe7; border-radius:50%; background:radial-gradient(circle,#fff 0%,#eef1f5 100%); box-shadow:0 0 0 12px #e8ecf240,0 0 0 36px #e8ecf225; }
+    .radar-sonar::before,.radar-sonar::after { content:""; position:absolute; background:#d8dfe7; }
+    .radar-sonar::before { left:50%; top:0; height:100%; width:1px; }
+    .radar-sonar::after { top:50%; left:0; width:100%; height:1px; }
+    .radar-ring { position:absolute; inset:16.66%; border:1px solid #d8dfe7; border-radius:50%; }
+    .radar-ring-inner { inset:33.33%; }
+    .radar-sweep { position:absolute; inset:0; border-radius:50%; background:conic-gradient(from 0deg,transparent 0deg 270deg,#ce242b08 290deg,#ce242b35 359deg,transparent 360deg); animation:radar-sweep 3.2s linear infinite; }
+    .radar-core,.radar-blip { position:absolute; z-index:1; width:7px; height:7px; border-radius:50%; background:#ce242b; box-shadow:0 0 0 5px #ce242b0c; }
+    .radar-core { left:calc(50% - 3.5px); top:calc(50% - 3.5px); }
+    .radar-blip { left:68%; top:24%; animation:radar-pulse 3.2s ease-in-out infinite; }
+    .radar-blip-two { left:24%; top:62%; animation-delay:-1.6s; width:5px; height:5px; }
+    #radar-boot h2 { margin:0; font-size:clamp(24px,5vw,30px); font-weight:700; letter-spacing:-.04em; line-height:1.2; }
+    #radar-boot p { margin:12px 0 0; color:#526175; }
+    #radar-boot .radar-boot-caption { margin:20px 0 0; font-size:10px; letter-spacing:.18em; color:#697485; text-transform:uppercase; }
+    #radar-boot-skip { margin:26px 0 0; padding:9px 14px; border:1px solid #dce1e7; border-radius:8px; background:transparent; color:#526175; font:inherit; font-size:12px; cursor:pointer; }
+    #radar-boot-skip:focus-visible { outline:2px solid #315eac; outline-offset:4px; }
+    #radar-boot-notice { margin:16px auto; max-width:900px; padding:16px; background:#fff6df; color:#62480b; font:14px/1.5 system-ui,sans-serif; }
+    @keyframes radar-sweep { to { transform:rotate(360deg); } }
+    @keyframes radar-pulse { 0%,100% { opacity:.45; box-shadow:0 0 0 3px #ce242b08; } 40% { opacity:1; box-shadow:0 0 0 10px #ce242b00; } }
+    @media(max-height:550px) { #radar-boot .radar-boot-brand { margin-bottom:18px; } .radar-sonar { width:130px; margin-bottom:20px; } #radar-boot-skip { margin-top:14px; } }
+    @media(prefers-reduced-motion:reduce) { #radar-boot { transition:none; } #radar-boot * { animation:none!important; } }
+  </style>
+  <noscript><style>#radar-boot{display:none!important}html.radar-booting .app-shell{visibility:visible!important}</style></noscript>
+  <script id="radar-boot-controller">
+    (() => {
+      const root = document.documentElement, started = Date.now();
+      let finished = false, releaseTimer, removeTimer;
+      const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      function finish(reason = 'ready') {
+        if (finished) return;
+        finished = true;
+        clearTimeout(deadline);
+        window.removeEventListener('radar:ready', ready);
+        window.removeEventListener('error', failed, true);
+        releaseTimer = setTimeout(() => {
+          const overlay = document.getElementById('radar-boot');
+          const hadFocus = overlay?.contains(document.activeElement);
+          root.classList.remove('radar-booting');
+          if (reason === 'timeout' || reason === 'error') {
+            const notice = document.getElementById('radar-boot-notice');
+            notice.hidden = false;
+            notice.textContent = reason === 'timeout'
+              ? 'Loading is taking longer than expected. You can continue below; saved results may still be loading.'
+              : 'Radar could not finish starting. Please reload the page. Your saved team data has not been changed.';
+          }
+          overlay?.classList.add('is-leaving');
+          if (hadFocus) document.querySelector('.topbar h1')?.focus({preventScroll:true});
+          removeTimer = setTimeout(() => overlay?.remove(), reduced() ? 0 : 280);
+        }, reason === 'ready' && !reduced() ? Math.max(0,650-(Date.now()-started)) : 0);
+      }
+      const ready = () => finish('ready');
+      const failed = event => {
+        if (event.target?.tagName === 'SCRIPT' || event.error) finish('error');
+      };
+      const deadline = setTimeout(() => finish('timeout'), 10000);
+      window.addEventListener('radar:ready', ready);
+      window.addEventListener('error', failed, true);
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('radar-boot-skip')?.addEventListener('click', () => finish('skip'));
+      }, {once:true});
+      // A page restored from the back/forward cache must never restore its curtain.
+      window.addEventListener('pageshow', event => {
+        if (!event.persisted) return;
+        finished = true;
+        clearTimeout(deadline); clearTimeout(releaseTimer); clearTimeout(removeTimer);
+        root.classList.remove('radar-booting');
+        document.getElementById('radar-boot')?.remove();
+      });
+    })();
+  </script>
   <link rel="stylesheet" href="/src/styles.css">
   <link rel="stylesheet" href="/src/stage3.css">
   <link rel="stylesheet" href="/src/stage4.css">
@@ -12,11 +90,23 @@
   <link rel="stylesheet" href="/src/director.css">
 </head>
 <body>
+  <div id="radar-boot">
+    <div class="radar-boot-content">
+      <img class="radar-boot-brand" src="/assets/3dsk-logo.svg" alt="3D.sk" width="150" height="36">
+      <div class="radar-sonar" aria-hidden="true"><i class="radar-ring"></i><i class="radar-ring radar-ring-inner"></i><i class="radar-sweep"></i><i class="radar-core"></i><i class="radar-blip"></i><i class="radar-blip radar-blip-two"></i></div>
+      <h2>Opportunity Radar</h2>
+      <p role="status" aria-live="polite">Preparing your workspace…</p>
+      <p class="radar-boot-caption">3D.sk · Business development</p>
+      <button id="radar-boot-skip" type="button">Continue without waiting</button>
+    </div>
+  </div>
+  <p id="radar-boot-notice" role="alert" hidden></p>
+  <noscript><p>JavaScript is required to load your saved Radar results. Please enable it and reload this page.</p></noscript>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
         <a class="brand-mark" href="https://www.3d.sk/" target="_blank" rel="noreferrer" aria-label="3D.sk website"><img src="/assets/3dsk-logo.svg" alt="3D.sk" width="150" height="36"></a>
-        <div><p class="eyebrow">BUSINESS DEVELOPMENT</p><h1>Opportunity Radar</h1></div>
+        <div><p class="eyebrow">BUSINESS DEVELOPMENT</p><h1 tabindex="-1">Opportunity Radar</h1></div>
       </div>
       <div class="topbar-meta">
         <span id="ai-state" class="security-pill">Live AI locked until final acceptance</span>
