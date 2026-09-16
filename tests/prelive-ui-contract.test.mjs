@@ -56,3 +56,10 @@ test("browser exposes only ULTRA MAX as its paid search control", () => {
   assert.match(app, /\$15 hard cap/);
   assert.match(app, /no automatic retry/i);
 });
+
+test("historical companies and compact search history are available as first-class views", () => {
+  for (const marker of ["Companies &amp; people","Search history","company-directory","search-history-list"]) assert.match(html, new RegExp(marker));
+  assert.match(app, /renderCompanyDirectory/);
+  assert.match(app, /renderSearchHistoryList/);
+  assert.match(app, /payload\.search_history/);
+});

@@ -7,6 +7,8 @@ import { createHash } from "node:crypto";
 
 const OP_PREFIX = "opportunities/";
 const OP_SNAPSHOT_KEY = "metadata/opportunities-v1";
+const SEARCH_HISTORY_KEY = "metadata/search-history-v1";
+const SEARCH_HISTORY_LIMIT = 100;
 const COMPANY_PREFIX = "companies/";
 const SOURCE_RUN_PREFIX = "source-runs/";
 const SOURCE_RUN_REQUEST_PREFIX = "source-run-requests/";
@@ -81,6 +83,33 @@ async function readOpportunitySnapshot(store) {
 
 async function writeOpportunitySnapshot(store, opportunities) {
   await store.setJSON(OP_SNAPSHOT_KEY, opportunities);
+}
+
+function searchHistoryEntry(run) {
+  const counters=run?.counters||{};
+  const paid=run?.paid_execution||run?.paid_acceptance||{};
+  const completedAt=run?.completed_at||null;
+  const rawCost=run?.estimated_cost_usd??paid.settled_usd??null;
+  return {
+    id:String(run?.run_id||paid.run_id||run?.response_id||completedAt||"unknown"),
+    run_id:run?.run_id||paid.run_id||null,
+    completed_at:completedAt,
+    mode:run?.mode||run?.search_profile||"UNKNOWN",
+    search_status:run?.search_status||"COMPLETED",
+    estimated_cost_usd:rawCost!==null&&rawCost!==""&&Number.isFinite(Number(rawCost))?Number(rawCost):null,
+    returned_count:Number(run?.returned_count??counters.candidates_verified??0),
+    new_opportunities:Number(counters.new_opportunities??0),
+    updated_opportunities:Number(counters.updated_opportunities??0),
+    workspace_total:Number(counters.workspace_total??0),
+    source_urls_verified:Number(run?.verified_source_count??counters.source_urls_verified??0),
+    web_search_call_count:Number(run?.web_search_call_count??run?.usage?.web_search_calls??0),
+    openai_requests:Number(counters.openai_requests??paid.openai_requests??0)
+  };
+}
+
+async function readSearchHistory(store) {
+  const value=await store.get(SEARCH_HISTORY_KEY,{type:"json"});
+  return Array.isArray(value)?value:[];
 }
 
 async function readRejectedCandidateSnapshot(store) {
@@ -407,9 +436,20 @@ export function createStateRepository(store) {
 
     async saveSearchRun(run) {
       await store.setJSON("metadata/last-search", run);
+      const entry=searchHistoryEntry(run);
+      const current=await readSearchHistory(store);
+      const history=[entry,...current.filter((item)=>item?.id!==entry.id)].slice(0,SEARCH_HISTORY_LIMIT);
+      await store.setJSON(SEARCH_HISTORY_KEY,history);
+      return run;
     },
     async lastSearchRun() {
       return store.get("metadata/last-search", {type:"json"});
+    },
+    async listSearchRuns() {
+      const history=await readSearchHistory(store);
+      if(history.length)return history;
+      const last=await this.lastSearchRun();
+      return last?[searchHistoryEntry(last)]:[];
     },
 
     async getSourceRun(runId) {
@@ -556,6 +596,7 @@ export function createStateRepository(store) {
       const rejectedCandidates=await this.listRejectedCandidates();
       return {
         last_search: await this.lastSearchRun(),
+        search_history: await this.listSearchRuns(),
         summary:{
           opportunities:sales.length,
           b2b_opportunities:sales.filter((item) => (item.engagement_track || "B2B_STUDIO") === "B2B_STUDIO").length,

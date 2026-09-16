@@ -89,6 +89,8 @@ Produkční rozpočtový a idempotentní kontrakt: [`docs/PRODUCTION_SEARCH_SAFE
 
 Konkurenti a zdrojové platformy: [`docs/CHECKPOINT_COMPETITOR_CLASSIFICATION_IMPLEMENTED_20260906_CZ.md`](docs/CHECKPOINT_COMPETITOR_CLASSIFICATION_IMPLEMENTED_20260906_CZ.md). Server-owned `record_kind` odděluje skutečné sales příležitosti od outsourcingových sellerů a job/ATS platforem. Nesales records se nezapočítávají do sales summary ani limitu výsledků a contact/reply/outreach zůstává fail-closed.
 
+Historický adresář a historie hledání: [`docs/CHECKPOINT_COMPANY_DIRECTORY_SEARCH_HISTORY_20260916_CZ.md`](docs/CHECKPOINT_COMPANY_DIRECTORY_SEARCH_HISTORY_20260916_CZ.md). Záložka Companies & people seskupuje persistentní výsledky podle firmy a nové search běhy ukládají kompaktní, deduplikovaný archiv posledních 100 souhrnů.
+
 Aktuální produkční checkpoint: [`docs/CHECKPOINT_WIDE_INDEX_PRODUCTION_20260906_CZ.md`](docs/CHECKPOINT_WIDE_INDEX_PRODUCTION_20260906_CZ.md). Reklasifikace 3/3/1 je dokončená; WIDE běh po synchronous timeoutu používá explicitně spuštěnou Netlify Background Function a read-only status polling bez automatického retry.
 
 Jednorázová legacy reclassification je chráněna production-only endpointem, přesným snapshot digestem, očekávaným rozdělením 3/3/1, idempotencí a okamžitým readbackem. Endpoint není obecný editor a bez exact confirmation kontraktu nic nezapisuje.

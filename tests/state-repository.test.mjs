@@ -49,6 +49,16 @@ test("a new repository instance retains old opportunities, reply and last search
  assert.equal(saved.reply_body,"Saved body");assert.equal(saved.reply_subject,"Approved subject");assert.equal(saved.first_seen,"2026-09-05T09:00:00Z");assert.equal(saved.last_seen,"2026-09-12T09:00:00Z");assert.deepEqual(snap.last_search,run);
 });
 
+test("search history retains compact newest-first summaries without duplicating a run",async()=>{
+ const store=memoryStore(),repo=createStateRepository(store);
+ await repo.saveSearchRun({run_id:"run-00000001",completed_at:"2026-09-12T09:00:00Z",mode:"ULTRA_MAX",estimated_cost_usd:1.25,returned_count:4,counters:{new_opportunities:3,updated_opportunities:1,workspace_total:18,source_urls_verified:22,openai_requests:8},forensic_audit:{large:"not copied"}});
+ await repo.saveSearchRun({run_id:"run-00000002",completed_at:"2026-09-13T09:00:00Z",mode:"ULTRA_MAX",estimated_cost_usd:0.75,returned_count:2,counters:{new_opportunities:1,updated_opportunities:1,workspace_total:19}});
+ await repo.saveSearchRun({run_id:"run-00000002",completed_at:"2026-09-13T09:00:00Z",mode:"ULTRA_MAX",estimated_cost_usd:0.75,returned_count:2,counters:{new_opportunities:1,updated_opportunities:1,workspace_total:19}});
+ const history=(await createStateRepository(store).snapshot()).search_history;
+ assert.equal(history.length,2);assert.deepEqual(history.map((run)=>run.run_id),["run-00000002","run-00000001"]);
+ assert.equal(history[1].new_opportunities,3);assert.equal(history[1].forensic_audit,undefined);
+});
+
 test("legacy seller price is hidden on list and reply reads without rewriting history",async()=>{
  const store=memoryStore(),repo=createStateRepository(store);
  const item=opportunity({budget_type:"PUBLISHED",budget_published:"$240,000 annual license",reply_body:"Saved response",status:"INTERESTING"});
