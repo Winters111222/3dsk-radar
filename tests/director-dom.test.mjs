@@ -48,6 +48,10 @@ test('director interactions render real app code with isolated, read-only API mo
   assert.equal(document.querySelector('#status-filter').closest('label').hidden,true);
   assert.ok(document.querySelectorAll('[data-select-company]').length>0);
   assert.ok(document.querySelector('#company-directory-detail').textContent.length>0);
+  const companySort=document.querySelector('#company-directory-sort'),chooseCompanySort=value=>{companySort.querySelectorAll('option').forEach(option=>option.toggleAttribute('selected',option.value===value));companySort.dispatchEvent(new window.Event('change'));};chooseCompanySort('A_Z');
+  assert.match(document.querySelector('[data-select-company]').textContent,/Synthetic Atlas Interactive/);
+  chooseCompanySort('Z_A');
+  assert.match(document.querySelector('[data-select-company]').textContent,/Synthetic Northstar Games/);
   click('[data-view="ALL"]');
   click('[data-view="REJECTED"]');
   assert.match(document.querySelector('#detail-panel').textContent,/OUTREACH & PROMOTION LOCKED/);

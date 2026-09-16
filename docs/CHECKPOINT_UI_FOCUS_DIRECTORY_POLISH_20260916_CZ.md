@@ -13,6 +13,7 @@ Hlavní pracovní plocha byla ve výchozím stavu příliš široká a informač
 - Hlavní navigace má čtyři jasné sekce: Opportunities, Companies & people, Search history a Rejected.
 - B2B, Individual, Saved, Open, Potential leads a Competitors jsou nyní menší filtry uvnitř Opportunities.
 - Companies & people používá kompaktní rozložení seznam + detail. Detail obsahuje kontakty, poslední outreach, poznámku a přímé odkazy na uložené příležitosti.
+- Adresář firem má vlastní řazení `Recently found`, `Name A–Z` a `Name Z–A`; neovlivňuje řazení zakázek.
 - Neznámé a anonymní firmy jsou řazené až za pojmenované firmy.
 - V adresáři a historii se skrývají nerelevantní filtry, řazení a přepínače rozložení.
 - Opraven kolizní DOM selektor, kvůli kterému se dříve skrýval technický pre-live panel namísto viditelných výsledkových filtrů.

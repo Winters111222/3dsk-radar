@@ -58,7 +58,7 @@ test("browser exposes only ULTRA MAX as its paid search control", () => {
 });
 
 test("historical companies and compact search history are available as first-class views", () => {
-  for (const marker of ["Companies &amp; people","Search history","company-directory","company-directory-detail","search-history-list","Focus view","Full table"]) assert.match(html, new RegExp(marker));
+  for (const marker of ["Companies &amp; people","Search history","company-directory","company-directory-detail","company-directory-sort","Name A–Z","Name Z–A","search-history-list","Focus view","Full table"]) assert.match(html, new RegExp(marker));
   assert.match(app, /renderCompanyDirectory/);
   assert.match(app, /renderSearchHistoryList/);
   assert.match(app, /payload\.search_history/);
