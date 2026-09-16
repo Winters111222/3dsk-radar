@@ -91,6 +91,8 @@ Konkurenti a zdrojové platformy: [`docs/CHECKPOINT_COMPETITOR_CLASSIFICATION_IM
 
 Historický adresář a historie hledání: [`docs/CHECKPOINT_COMPANY_DIRECTORY_SEARCH_HISTORY_20260916_CZ.md`](docs/CHECKPOINT_COMPANY_DIRECTORY_SEARCH_HISTORY_20260916_CZ.md). Záložka Companies & people seskupuje persistentní výsledky podle firmy a nové search běhy ukládají kompaktní, deduplikovaný archiv posledních 100 souhrnů.
 
+UI focus a adresář: [`docs/CHECKPOINT_UI_FOCUS_DIRECTORY_POLISH_20260916_CZ.md`](docs/CHECKPOINT_UI_FOCUS_DIRECTORY_POLISH_20260916_CZ.md). Výchozí pracovní plocha používá Focus view se seznamem a detailem, hlavní navigace je oddělená od opportunity filtrů a Companies & people má kompaktní master-detail rozložení.
+
 Aktuální produkční checkpoint: [`docs/CHECKPOINT_WIDE_INDEX_PRODUCTION_20260906_CZ.md`](docs/CHECKPOINT_WIDE_INDEX_PRODUCTION_20260906_CZ.md). Reklasifikace 3/3/1 je dokončená; WIDE běh po synchronous timeoutu používá explicitně spuštěnou Netlify Background Function a read-only status polling bez automatického retry.
 
 Jednorázová legacy reclassification je chráněna production-only endpointem, přesným snapshot digestem, očekávaným rozdělením 3/3/1, idempotencí a okamžitým readbackem. Endpoint není obecný editor a bez exact confirmation kontraktu nic nezapisuje.

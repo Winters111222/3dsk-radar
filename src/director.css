@@ -230,3 +230,50 @@ button:focus-visible,a:focus-visible,select:focus-visible,summary:focus-visible,
 .results-layout:not(.cards-mode) .table-scroll { max-height:640px; }
 .results-layout:not(.cards-mode) td[data-label="Type"] .minor-line { display:none; }
 @media(max-width:760px) { .summary-card { flex-basis:calc(50% - 8px); } }
+
+/* Workspace polish: clear primary navigation, quieter filters and a focused default view. */
+.workspace-sections { gap:24px; padding:5px 0 0; }
+.workspace-sections .segment { flex:0 0 auto; min-height:42px; padding:11px 2px 10px; border-bottom:3px solid transparent; border-radius:0; background:transparent; color:#657387; font-size:12px; font-weight:750; }
+.workspace-sections .segment:hover { background:transparent; color:#26384d; }
+.workspace-sections .segment.is-active { border-bottom-color:#cf262e; background:transparent; color:#a31e28; }
+.opportunity-lanes { display:flex; flex-wrap:wrap; gap:7px; padding:12px 0 0; }
+.opportunity-lanes .segment { min-height:32px; padding:7px 10px; border:1px solid #dbe1e9; border-radius:999px; background:#f7f9fb; color:#5d6b7e; font-size:10px; }
+.opportunity-lanes .segment:hover { border-color:#b8c4d2; background:#f0f3f7; }
+.opportunity-lanes .segment.is-active { border-color:#9eb2ce; background:#eaf0f8; color:#274b7d; }
+.toolbar-controls { padding-top:2px; }
+.view-controls .action-button { white-space:nowrap; }
+.action-button.primary:disabled { border-color:#d8dee6; background:#eef1f5; color:#7a8796; opacity:1; }
+.cards-mode { grid-template-columns:minmax(360px,.82fr) minmax(500px,1.18fr); align-items:start; }
+.cards-mode .table-panel { overflow:hidden; }
+.cards-mode .section-heading { padding:17px 18px; }
+.cards-mode .table-scroll { max-height:calc(100vh - 150px); overflow:auto; padding:0; }
+.cards-mode tbody { gap:0; }
+.cards-mode tr[data-id] { grid-template-columns:28px minmax(0,1fr) auto; gap:8px 10px; padding:14px 16px; border:0; border-bottom:1px solid var(--line); border-radius:0; }
+.cards-mode tr[data-id]:last-child { border-bottom:0; }
+.cards-mode tr[data-id]:hover { border-color:var(--line); background:#f8fafc; }
+.cards-mode tr.is-selected { border:0; border-bottom:1px solid var(--line); box-shadow:inset 3px 0 #315eac; background:#eef4fb; }
+.cards-mode .opportunity-title { font-size:14px; line-height:1.35; }
+.cards-mode td[data-label="Bookmark"] { grid-column:3; }
+.cards-mode td[data-label="Company"] { grid-column:2 / -1; }
+.cards-mode td[data-label="Type"] { grid-column:2 / -1; }
+.cards-mode td[data-label="Fit"] { grid-column:2; }
+.cards-mode td[data-label="Win"] { grid-column:3; }
+.cards-mode td[data-label="Budget"] { grid-column:2 / -1; }
+.cards-mode td[data-label="Status"] { grid-column:2; }
+.cards-mode td[data-label="Source"] { grid-column:3; }
+.cards-mode td[data-label="Date"] { grid-column:2; }
+.cards-mode td[data-label="Outreach"] { grid-column:3; }
+.cards-mode td[data-label="Note"] { grid-column:2 / -1; }
+.cards-mode .detail-panel { top:16px; max-height:calc(100vh - 32px); }
+@media(max-width:1100px) {
+  .cards-mode { grid-template-columns:minmax(0,1fr); }
+  .cards-mode .table-scroll { max-height:none; overflow:visible; }
+  .cards-mode .detail-panel { position:static; max-height:none; overflow:visible; }
+}
+@media(max-width:760px) {
+  .workspace-sections { display:flex; gap:16px; overflow-x:auto; flex-wrap:nowrap; scrollbar-width:thin; }
+  .workspace-sections .segment { flex:0 0 auto; }
+  .opportunity-lanes { display:flex; overflow-x:auto; flex-wrap:nowrap; padding-bottom:3px; scrollbar-width:thin; }
+  .opportunity-lanes .segment { flex:0 0 auto; min-height:36px; }
+  .cards-mode tr[data-id] { grid-template-columns:24px minmax(0,1fr) auto; padding:13px 14px; }
+}

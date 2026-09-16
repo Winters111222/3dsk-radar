@@ -1,16 +1,41 @@
-.archive-panel{padding:18px}
-.archive-panel .section-heading p{margin:5px 0 0;color:#748291}
-.archive-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px;margin-top:16px}
-.archive-card{display:grid;gap:13px;border:1px solid #dfe4eb;border-radius:12px;background:#fff;padding:15px;color:#253b55}
+.archive-panel{order:6;padding:0;overflow:hidden}
+.archive-panel .section-heading{border-bottom:1px solid #e3e7ec}
+.archive-panel .section-heading p{margin:5px 0 0;color:#68768a;font-size:12px}
+.company-directory-layout{display:grid;grid-template-columns:minmax(360px,.85fr) minmax(440px,1.15fr);align-items:start}
+.company-directory-list{border-right:1px solid #e3e7ec}
+.company-directory-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;width:100%;padding:15px 18px;border:0;border-bottom:1px solid #e8ecf0;background:#fff;color:#253b55;text-align:left;cursor:pointer}
+.company-directory-row:last-child{border-bottom:0}
+.company-directory-row:hover{background:#f8fafc}
+.company-directory-row.is-selected{background:#eef4fb;box-shadow:inset 3px 0 #315eac}
+.company-directory-row>span:first-child,.company-opportunity-row>span:first-child{min-width:0}
+.company-directory-row strong,.company-opportunity-row strong{display:block;color:#253b55;font-size:13px;line-height:1.35}
+.company-directory-row small,.company-opportunity-row small{display:block;margin-top:4px;color:#68768a;font-size:11px;line-height:1.4}
+.company-directory-row-meta{text-align:right;color:#68768a;font-size:11px;white-space:nowrap}
+.company-directory-row-meta strong{font-size:15px}
+.company-directory-detail{padding:20px;position:sticky;top:16px}
+.company-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:16px;border-bottom:1px solid #e3e7ec}
+.company-detail-head h4{margin:4px 0 5px;color:#253b55;font-size:20px}
+.company-detail-head p,.company-directory-detail section p{margin:0;color:#657387;font-size:12px;line-height:1.55}
+.archive-kicker,.company-detail-label{color:#657387;font-size:9px;font-weight:900;letter-spacing:.09em}
+.company-directory-detail section{padding:15px 0;border-bottom:1px solid #e8ecf0}
+.company-directory-detail section p{margin-top:8px}
+.company-directory-detail section p strong{color:#253b55}
+.company-opportunity-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;width:100%;padding:11px 0;border:0;border-bottom:1px solid #edf0f4;background:transparent;color:#315eac;text-align:left;cursor:pointer}
+.company-opportunity-row:last-child{border-bottom:0}
+.company-opportunity-row>span:last-child{align-self:center;font-size:10px;font-weight:800}
+.company-view-all{width:100%;margin-top:16px}
+.archive-grid{display:grid;gap:0}
+.archive-card{display:grid;grid-template-columns:minmax(210px,.7fr) minmax(280px,1.3fr) auto;align-items:center;gap:16px;border-bottom:1px solid #e8ecf0;background:#fff;padding:15px 20px;color:#253b55}
+.archive-card:last-child{border-bottom:0}
 .archive-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.archive-card h4{margin:3px 0 0;font-size:16px}
-.archive-kicker{color:#657387;font-size:9px;font-weight:900;letter-spacing:.09em}
+.archive-card h4{margin:3px 0 0;font-size:14px}
 .archive-metrics,.search-run-metrics{display:flex;gap:8px;flex-wrap:wrap}
 .archive-metrics span,.search-run-metrics span{border-radius:999px;background:#f1f4f8;padding:6px 8px;color:#526178;font-size:10px}
 .directory-people,.directory-note{display:grid;gap:4px;border-top:1px solid #edf0f4;padding-top:10px}
 .directory-people strong,.directory-note strong{color:#526178;font-size:9px;letter-spacing:.08em}
-.directory-people span,.directory-note span,.search-run-card p{color:#657387;font-size:11px;line-height:1.45}
+.directory-people span,.directory-note span,.search-run-card p{margin:0;color:#657387;font-size:11px;line-height:1.45}
 .run-cost{border-radius:999px;background:#eef7f0;color:#27633b;padding:6px 9px;font-size:10px;font-weight:850;white-space:nowrap}
-.archive-empty{grid-column:1/-1;margin:0;color:#748291}
-.search-history-grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-@media(max-width:680px){.archive-grid{grid-template-columns:1fr}.archive-card-head{align-items:flex-start}.archive-panel{padding:14px}}
+.archive-empty{margin:0;padding:24px;color:#748291}
+.search-history-grid{grid-template-columns:1fr}
+@media(max-width:980px){.company-directory-layout{grid-template-columns:1fr}.company-directory-list{border-right:0;border-bottom:1px solid #e3e7ec}.company-directory-detail{position:static}.archive-card{grid-template-columns:1fr}}
+@media(max-width:680px){.archive-panel .section-heading{padding:16px}.company-directory-row{padding:13px 15px}.company-directory-detail{padding:16px}.company-detail-head{flex-direction:column}.archive-card{padding:14px 16px}}

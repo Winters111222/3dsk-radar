@@ -186,17 +186,19 @@
 
       </details>
       <section class="toolbar panel">
-        <div class="segmented" role="group" aria-label="Sales and intelligence view">
-          <button class="segment is-active" data-view="ALL" type="button">All opportunities</button>
+        <div class="segmented workspace-sections" role="group" aria-label="Primary workspace">
+          <button class="segment is-active" data-view="ALL" data-section="opportunities" type="button">Opportunities</button>
+          <button class="segment" data-view="COMPANY_DIRECTORY" data-section="directory" type="button">Companies &amp; people</button>
+          <button class="segment" data-view="SEARCH_HISTORY" data-section="history" type="button">Search history</button>
+          <button class="segment" data-view="REJECTED" data-section="rejected" type="button">Rejected</button>
+        </div>
+        <div id="opportunity-lanes" class="opportunity-lanes" role="group" aria-label="Opportunity filters">
           <button class="segment" data-view="B2B_STUDIO" type="button">B2B</button>
           <button class="segment" data-view="INDIVIDUAL_FREELANCE" type="button">Individual</button>
-          <button class="segment" data-view="BOOKMARKED" type="button">★ Saved companies</button>
-          <button class="segment" data-view="COMPANY_DIRECTORY" type="button">Companies &amp; people</button>
-          <button class="segment" data-view="SEARCH_HISTORY" type="button">Search history</button>
-          <button class="segment" data-view="OPEN_OPPORTUNITY" type="button">OPEN OPPORTUNITIES</button>
-          <button class="segment" data-view="POTENTIAL_LEAD" type="button">POTENTIAL LEADS</button>
-          <button class="segment" data-view="COMPETITORS" type="button">COMPETITORS</button>
-          <button class="segment" data-view="REJECTED" type="button">REJECTED</button>
+          <button class="segment" data-view="BOOKMARKED" type="button">★ Saved</button>
+          <button class="segment" data-view="OPEN_OPPORTUNITY" type="button">Open</button>
+          <button class="segment" data-view="POTENTIAL_LEAD" type="button">Potential leads</button>
+          <button class="segment" data-view="COMPETITORS" type="button">Competitors</button>
         </div>
         <div class="toolbar-controls">
           <label class="workspace-search" for="opportunity-search"><span id="workspace-search-label">Search saved results</span><input id="opportunity-search" type="search" placeholder="Title, company or skill…" autocomplete="off"></label>
@@ -205,7 +207,7 @@
         </div>
       </section>
 
-      <section class="panel result-filters" aria-label="Categories and sorting">
+      <section id="result-filters" class="panel result-filters" aria-label="Categories and sorting">
         <details class="category-filter">
           <summary>Categories <span id="category-count">All categories</span></summary>
           <p class="microcopy">Select one or more categories. Results can match any selected category.</p>
@@ -213,18 +215,18 @@
           <button id="clear-categories" class="action-button" type="button">CLEAR CATEGORIES</button>
         </details>
         <div class="sort-controls"><label for="sort-select">Sort by</label><select id="sort-select"></select><button id="sort-direction" class="action-button" type="button">↓ Descending</button></div>
-        <div class="view-controls" role="group" aria-label="Result layout"><button id="list-layout" class="action-button" type="button" aria-pressed="false">Cards</button><button id="table-layout" class="action-button" type="button" aria-pressed="true">Full table</button><button id="reset-filters" class="action-button" type="button">Reset filters</button></div>
+        <div class="view-controls" role="group" aria-label="Result layout"><button id="list-layout" class="action-button" type="button" aria-pressed="true">Focus view</button><button id="table-layout" class="action-button" type="button" aria-pressed="false">Full table</button><button id="reset-filters" class="action-button" type="button">Reset filters</button></div>
         <p class="microcopy">Budget sorts by provenance, not amount: currencies and hourly / project budgets are not directly comparable.</p>
       </section>
       <section id="company-directory" class="panel archive-panel" aria-labelledby="company-directory-title" hidden>
         <div class="section-heading"><div><p class="eyebrow">HISTORICAL DIRECTORY</p><h3 id="company-directory-title">Companies &amp; people</h3><p>Every sales company retained across searches, with its opportunities and outreach in one place.</p></div><span id="company-directory-count" class="result-count"></span></div>
-        <div id="company-directory-grid" class="archive-grid"></div>
+        <div class="company-directory-layout"><div id="company-directory-grid" class="company-directory-list"></div><aside id="company-directory-detail" class="company-directory-detail" aria-live="polite"></aside></div>
       </section>
       <section id="search-history-list" class="panel archive-panel" aria-labelledby="search-history-title" hidden>
         <div class="section-heading"><div><p class="eyebrow">SAVED RUNS · NEWEST FIRST</p><h3 id="search-history-title">Search history</h3><p>Compact summaries are retained for up to 100 searches. Historical results remain in Companies &amp; people.</p></div><span id="search-history-count" class="result-count"></span></div>
         <div id="search-history-grid" class="archive-grid search-history-grid"></div>
       </section>
-      <section class="results-layout">
+      <section class="results-layout cards-mode">
         <div class="panel table-panel">
           <div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3 id="results-title">Sales opportunities & competitor intelligence</h3></div><span id="result-count" class="result-count"></span></div>
           <div class="table-scroll"><table><thead><tr>

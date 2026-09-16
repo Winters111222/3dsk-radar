@@ -29,8 +29,8 @@ test('director interactions render real app code with isolated, read-only API mo
   for(let i=0;i<30;i++)await Promise.resolve();
   assert.equal(bootReady,true,'initialization signals readiness after the saved workspace loads');
   const click=selector=>document.querySelector(selector).click();
-  assert.equal(document.querySelector(".results-layout").classList.contains("cards-mode"),false);
-  assert.equal(document.querySelector("#table-layout").getAttribute("aria-pressed"),"true");
+  assert.equal(document.querySelector(".results-layout").classList.contains("cards-mode"),true);
+  assert.equal(document.querySelector("#list-layout").getAttribute("aria-pressed"),"true");
   assert.equal(document.querySelector("#search-tools").open,false);
   assert.ok(document.querySelectorAll('#opportunity-body tr[data-id]').length>0);
   assert.ok(document.querySelectorAll('#detail-panel .detail-disclosure').length>=3);
@@ -41,6 +41,14 @@ test('director interactions render real app code with isolated, read-only API mo
   click('#reset-filters');assert.ok(document.querySelectorAll('#opportunity-body tr[data-id]').length>0);
   click('#table-layout');assert.equal(document.querySelector('.results-layout').classList.contains('cards-mode'),false);
   click('#list-layout');assert.equal(document.querySelector('#list-layout').getAttribute('aria-pressed'),'true');
+  click('[data-view="COMPANY_DIRECTORY"]');
+  assert.equal(document.querySelector('#company-directory').hidden,false);
+  assert.equal(document.querySelector('#result-filters').hidden,true);
+  assert.equal(document.querySelector('#opportunity-lanes').hidden,true);
+  assert.equal(document.querySelector('#status-filter').closest('label').hidden,true);
+  assert.ok(document.querySelectorAll('[data-select-company]').length>0);
+  assert.ok(document.querySelector('#company-directory-detail').textContent.length>0);
+  click('[data-view="ALL"]');
   click('[data-view="REJECTED"]');
   assert.match(document.querySelector('#detail-panel').textContent,/OUTREACH & PROMOTION LOCKED/);
   assert.equal(document.querySelector('#detail-panel [data-generate-response]'),null);
