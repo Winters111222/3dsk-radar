@@ -117,24 +117,38 @@
     <main>
       <section class="workspace-intro" aria-label="Workspace overview">
         <div><h2>Opportunities</h2><p>Review the fit, check the source, and decide who to contact.</p></div>
-        <button id="open-search-tools" class="primary-button" type="button" aria-controls="search-tools" aria-expanded="false">Find new opportunities <span aria-hidden="true">↗</span></button>
+        <button id="open-search-tools" class="primary-button" type="button" aria-controls="search-tools" aria-expanded="false">Find maximum opportunities <span aria-hidden="true">↗</span></button>
         <button id="open-search-footprint" class="action-button" type="button" aria-controls="search-footprint" aria-expanded="false">What did Radar search?</button>
       </section>
       <section id="summary-grid" class="summary-grid" aria-label="Opportunity summary"></section>
       <details id="search-tools" class="workspace-drawer panel">
-        <summary>Search &amp; team access <span>Connect, review limits, then start a search</span></summary>
+        <summary>ULTRA MAX search &amp; team access <span>Connect, review the $15 cap, then start the maximum search</span></summary>
       <section class="hero panel">
         <div class="hero-copy">
           <p class="eyebrow">WORLDWIDE · B2B STUDIO · INDIVIDUAL FREELANCE · CONTRACT</p>
           <h2>Find the next character-production opportunity worth answering.</h2>
-          <p>Keep opportunities, company bookmarks and outreach history in one shared workspace. New searches add results; refreshing this page never starts a paid search or clears your history.</p>
+          <p>Keep opportunities, company bookmarks and outreach history in one shared workspace. ULTRA MAX adds only exact-URL detail-verified results; refreshing this page never starts a paid search or clears your history.</p>
         </div>
         <div class="hero-actions">
           <label class="access-control" for="access-code"><span>TEAM ACCESS CODE</span><input id="access-code" type="password" autocomplete="current-password" placeholder="Stored only for this browser session"></label>
-          <div class="hero-button-row"><button id="connect-button" class="secondary-button" type="button">LOAD TEAM STATE</button><button id="find-button" class="primary-button" type="button" disabled>FIND NEW OPPORTUNITIES · PAID LOCKED</button></div>
+          <div class="hero-button-row"><button id="connect-button" class="secondary-button" type="button">LOAD TEAM STATE</button></div>
           <p id="last-search" class="microcopy">Connect to view saved search history</p><div class="hero-button-row"><button id="demo-button" class="action-button" type="button">EXPLORE DEMO · $0</button><button id="signout-button" class="action-button" type="button">DISCONNECT</button></div>
-          <p id="scan-note" class="microcopy">Paid AI is server-locked until final acceptance.</p>
+          <p id="scan-note" class="microcopy">ULTRA MAX is the only paid search mode available in this workspace.</p>
         </div>
+      </section>
+
+      <section id="ultra-max-panel" class="panel source-run-panel ultra-max-panel" aria-label="Maximum opportunity search">
+        <div class="source-run-head">
+          <div><p class="eyebrow">ULTRA MAX · MULTI-CYCLE · PERSISTED</p><h3>Maximum opportunity search</h3><p>One click advances native sources, broad hosted discovery, procurement and funding, multilingual long-tail, signal expansion, adaptive follow-up and exact-URL detail verification under one root cap.</p></div>
+          <span id="ultra-max-status" class="source-run-status" data-state="LOCKED">LOCKED</span>
+        </div>
+        <div class="ultra-max-controls">
+          <button id="ultra-max-button" class="primary-button" type="button" disabled>FIND MAXIMUM OPPORTUNITIES · LOCKED</button>
+          <button id="ultra-max-cancel" class="action-button" type="button" disabled>CANCEL ULTRA RUN</button>
+        </div>
+        <div id="ultra-max-progress" class="source-run-progress" aria-label="Ultra maximum progress"></div>
+        <p id="ultra-max-note" class="microcopy" aria-live="polite">ULTRA MAX status is loading.</p>
+        <p class="microcopy">One click can advance all seven persisted phases when both native and paid server gates are ready. Paid work has a $15 root cap, runs in background, never retries automatically, and saves only exact-URL detail-verified records.</p>
       </section>
 
       <section id="source-run-panel" class="panel source-run-panel" aria-label="Zero-cost source collection">
@@ -152,19 +166,6 @@
         <details class="source-candidate-review"><summary>Candidate truth review <span>verified promotion only</span></summary><p class="microcopy">Every raw record is fetched through a fixed first-party detail adapter. Only records that pass Phase A buyer, status, studio eligibility, scope, freshness, provenance and dedupe gates become opportunities; all other records retain an explicit rejection reason.</p><ul id="source-run-candidates" class="source-run-candidates"></ul></details>
       </section>
 
-      <section id="ultra-max-panel" class="panel source-run-panel ultra-max-panel" aria-label="Ultra maximum radar">
-        <div class="source-run-head">
-          <div><p class="eyebrow">ULTRA MAX · MULTI-CYCLE · PERSISTED</p><h3>Ultra maximum radar</h3><p>One click advances native sources, broad hosted discovery, procurement and funding, multilingual long-tail, signal expansion, adaptive follow-up and exact-URL detail verification under one root cap.</p></div>
-          <span id="ultra-max-status" class="source-run-status" data-state="LOCKED">LOCKED</span>
-        </div>
-        <div class="ultra-max-controls">
-          <button id="ultra-max-button" class="primary-button" type="button" disabled>RUN ULTRA MAX · LOCKED</button>
-          <button id="ultra-max-cancel" class="action-button" type="button" disabled>CANCEL ULTRA RUN</button>
-        </div>
-        <div id="ultra-max-progress" class="source-run-progress" aria-label="Ultra maximum progress"></div>
-        <p id="ultra-max-note" class="microcopy" aria-live="polite">ULTRA MAX status is loading.</p>
-        <p class="microcopy">One click can advance all seven persisted phases when both native and paid server gates are ready. Paid work has a $15 root cap, runs in background, never retries automatically, and saves only exact-URL detail-verified records.</p>
-      </section>
       </details>
       <details id="diagnostics-tools" class="workspace-drawer panel">
         <summary>Technical diagnostics <span>Run history, source coverage &amp; rejection counts</span></summary>
@@ -216,7 +217,7 @@
         <div class="panel table-panel">
           <div class="section-heading"><div><p class="eyebrow">DISPLAY → SELECT</p><h3 id="results-title">Sales opportunities & competitor intelligence</h3></div><span id="result-count" class="result-count"></span></div>
           <div class="table-scroll"><table><thead><tr>
-            <th scope="col">Select</th><th scope="col"><button type="button" data-sort="company_bookmarked">★<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="fit_score">Fit<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="win_score">Win<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="title">Opportunity<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company">Company<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="opportunity_kind">Type<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="budget_type">Budget<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="published_date">Date<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="first_seen">Found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="last_seen">Last found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company_last_contacted_at">Outreach<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="contact_email">Contact<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="status">Status<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="source_url">Source<span aria-hidden="true"> ↕</span></button></th>
+            <th scope="col">Select</th><th scope="col"><button type="button" data-sort="company_bookmarked">★<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="fit_score">Fit<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="win_score">Win<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="title">Opportunity<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company">Company<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="opportunity_kind">Type<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="budget_type">Budget<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="published_date">Date<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="first_seen">Found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="last_seen">Last found<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="company_last_contacted_at">Outreach<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="contact_email">Contact<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="status">Status<span aria-hidden="true"> ↕</span></button></th><th scope="col"><button type="button" data-sort="source_url">Source<span aria-hidden="true"> ↕</span></button></th><th scope="col">Note</th>
           </tr></thead><tbody id="opportunity-body"></tbody></table></div>
         </div>
         <aside id="detail-panel" class="panel detail-panel" tabindex="-1" aria-label="Opportunity detail" aria-live="polite"></aside>

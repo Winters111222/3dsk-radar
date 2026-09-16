@@ -19,7 +19,7 @@ test("Phase C operator UI exposes bounded start, resume, progress and cancel con
     "RAW · NEEDS TRUTH REVIEW"
   ]) assert.match(`${html}\n${app}`, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(app, /maxChunks:25/);
-  assert.match(html, /FIND NEW OPPORTUNITIES · PAID LOCKED/);
+  assert.match(html, /FIND MAXIMUM OPPORTUNITIES · LOCKED/);
   assert.match(app, /action:"START"/);
   assert.match(app, /action:"CONTINUE"/);
   assert.match(app, /action:"CANCEL"/);
@@ -40,7 +40,7 @@ test("operator controls have responsive layouts and the collection lock is accep
 });
 
 test("ULTRA MAX operator UI advances native and independently gated paid phases from one click", () => {
-  for (const marker of ["ultra-max-panel","Ultra maximum radar","RUN ULTRA MAX · LOCKED","CANCEL ULTRA RUN","all seven persisted phases"]) {
+  for (const marker of ["ultra-max-panel","Maximum opportunity search","FIND MAXIMUM OPPORTUNITIES · LOCKED","CANCEL ULTRA RUN","all seven persisted phases"]) {
     assert.match(`${html}\n${app}`,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")));
   }
   assert.match(app,/continueUltraMaxLoop/);

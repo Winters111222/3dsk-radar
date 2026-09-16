@@ -37,14 +37,14 @@ try {
   await waitForServer();
   await check("/", "text/html", [
     "3D.SK Opportunity Radar",
-    "FIND NEW OPPORTUNITIES",
+    "FIND MAXIMUM OPPORTUNITIES",
     "BOOKMARKED",
     "/src/styles.css",
     "/src/stage3.css",
     "/src/stage4.css",
     "/src/search-cost-panel.js"
   ]);
-  await check("/src/app.js", "text/javascript", ["GENERATE RESPONSE", "MARK EMAIL SENT", "company_bookmarked"]);
+  await check("/src/app.js", "text/javascript", ["GENERATE RESPONSE", "SAVE &amp; MARK CONTACTED", "company_bookmarked"]);
   await check("/src/search-cost-panel.js", "text/javascript", ["LAST SEARCH COST", "estimated_cost_usd", "EST. COST"]);
   await check("/src/styles.css", "text/css", [".results-layout", ".detail-panel"]);
   await check("/src/stage3.css", "text/css", [".star-button", ".repeat-warning", ".outreach.recent"]);

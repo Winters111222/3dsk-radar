@@ -79,7 +79,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visib
   tr.is-selected { border-color:#7ba8ff; }
   td { display:block; padding:8px; border:0; min-width:0; overflow-wrap:anywhere; }
   td::before { content:attr(data-label); display:block; color:var(--muted); font-size:9px; font-weight:700; text-transform:uppercase; margin-bottom:6px; }
-  td[data-label="Opportunity"], td[data-label="Company"], td[data-label="Type"], td[data-label="Budget"], td[data-label="Contact"] { grid-column:1 / -1; }
+  td[data-label="Opportunity"], td[data-label="Company"], td[data-label="Type"], td[data-label="Budget"], td[data-label="Contact"], td[data-label="Note"] { grid-column:1 / -1; }
   td[data-label="Bookmark"] { text-align:right; }
   .company-name, .budget-cell { min-width:0; }
   .opportunity-title { max-width:none; font-size:15px; }

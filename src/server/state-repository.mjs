@@ -1,4 +1,4 @@
-import { companyKey, emptyCompanyState, setCompanyBookmark, markEmailSent, undoLastEmailSent } from "./company-memory.mjs";
+import { companyKey, emptyCompanyState, setCompanyBookmark, markContacted, markEmailSent, undoLastEmailSent } from "./company-memory.mjs";
 import { mergeOpportunityHistory, opportunityFingerprint } from "./history.mjs";
 import { normalizeBudget, normalizeUrl } from "./normalize.mjs";
 import { isSalesOpportunityRecord, recordKindOf } from "./record-classification.mjs";
@@ -234,6 +234,28 @@ export function createStateRepository(store) {
       return next;
     },
 
+    async markContacted(company, payload) {
+      let opportunity = null;
+      if (payload.opportunityId) {
+        opportunity = await readStoredOpportunity(store, payload.opportunityId);
+        if (!opportunity || !isSalesOpportunityRecord(opportunity)) throw nonSalesActionError();
+      }
+      const current = await this.getCompany(company);
+      const next = markContacted(current, payload);
+      await this.saveCompany(next);
+      if (opportunity) {
+        await this.saveOpportunity({
+          ...opportunity,
+          status:"CONTACTED",
+          contact_channel:payload.channel,
+          contact_note:payload.note || null,
+          contact_note_updated_at:payload.sentAt,
+          updated_at:payload.sentAt
+        });
+      }
+      return next;
+    },
+
     async undoLastEmailSent(company, nowIso) {
       const current = await this.getCompany(company);
       return this.saveCompany(undoLastEmailSent(current, nowIso));
@@ -290,6 +312,15 @@ export function createStateRepository(store) {
       const current = await readStoredOpportunity(store, id);
       if (!current) return null;
       const next = { ...current, status, updated_at: nowIso };
+      await this.saveOpportunity(next);
+      return safeSavedOpportunity(next);
+    },
+
+    async saveContactNote(id, channel, note, nowIso) {
+      const current = await readStoredOpportunity(store, id);
+      if (!current) return null;
+      if (!isSalesOpportunityRecord(current)) throw nonSalesActionError();
+      const next = { ...current, contact_channel:channel, contact_note:note || null, contact_note_updated_at:nowIso, updated_at:nowIso };
       await this.saveOpportunity(next);
       return safeSavedOpportunity(next);
     },

@@ -11,7 +11,7 @@ const requiredUi = [
   "Company",
   "BOOKMARKED",
   "Outreach",
-  "MARK EMAIL SENT",
+  "SAVE &amp; MARK CONTACTED",
   "GENERATE RESPONSE",
   "COPY SUBJECT",
   "COPY RESPONSE",
@@ -47,17 +47,12 @@ test("both paid API endpoints remain locked before key use", () => {
   }
 });
 
-test("browser enables paid controls only from their dedicated health states", () => {
-  assert.match(app, /h\.production_search==="READY"/);
+test("browser exposes only ULTRA MAX as its paid search control", () => {
+  assert.doesNotMatch(html, /id="find-button"/);
+  assert.doesNotMatch(app, /\/api\/search-background|\/api\/search-status/);
+  assert.match(html, /FIND MAXIMUM OPPORTUNITIES/);
+  assert.match(app, /h\.ultra_max_paid==="READY"/);
   assert.match(app, /h\.production_reply==="READY"/);
-  assert.match(app, /duplicate-charge protection active/);
-  assert.match(app, /Today's search loaded without a second charge/);
-});
-
-test("wide search uses a background function and polls durable coordinator state", () => {
-  assert.match(app, /\["WIDE_INDEX","WIDE_MAX","WIDE_V3"\]\.includes\(state\.searchProfile\)/);
-  assert.match(app, /"WIDE_MAX"/);
-  assert.match(app, /\/api\/search-background/);
-  assert.match(app, /\/api\/search-status/);
-  assert.match(app, /No automatic retry was attempted/);
+  assert.match(app, /\$15 hard cap/);
+  assert.match(app, /no automatic retry/i);
 });
