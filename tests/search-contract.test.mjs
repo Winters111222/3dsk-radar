@@ -42,7 +42,8 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.ok(body.instructions.includes("Search two distinct engagement tracks"));
   assert.ok(body.instructions.includes("INDIVIDUAL_FREELANCE requires an explicit buyer-posted freelance/project route"));
   assert.ok(body.instructions.includes("physical scanning of museum objects"));
-  assert.ok(body.instructions.includes("LOW confidence"));
+  assert.ok(body.instructions.includes("SOURCE-REPORTED activity date"));
+  assert.ok(body.instructions.includes("Do not infer activity from absence of a Closed label"));
   for (const category of ["HUMAN_DATA_CAPTURE", "CULTURAL_HERITAGE_3D", "HERITAGE_POSTPROCESSING", "HERITAGE_FUNDING_PARTNERSHIP"]) {
     assert.ok(OPPORTUNITY_CATEGORIES.includes(category));
   }

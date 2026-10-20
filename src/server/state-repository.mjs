@@ -5,6 +5,7 @@ import { isSalesOpportunityRecord, recordKindOf } from "./record-classification.
 import { applyRecordReclassification, PRODUCTION_RECORD_RECLASSIFICATION, verifyRecordReclassificationReadback } from "./record-reclassification.mjs";
 import { createHash } from "node:crypto";
 import { applyManualReview } from "../lib/manual-review.mjs";
+import { runSummary } from "../lib/run-summary.mjs";
 
 const OP_PREFIX = "opportunities/";
 const OP_SNAPSHOT_KEY = "metadata/opportunities-v1";
@@ -96,14 +97,15 @@ function searchHistoryEntry(run) {
     run_id:run?.run_id||paid.run_id||null,
     completed_at:completedAt,
     mode:run?.mode||run?.search_profile||"UNKNOWN",
-    search_status:run?.search_status||"COMPLETED",
+    search_status:runSummary(run).status,
+    status_evidence_version:Array.isArray(run?.coverage)&&run.coverage.length>0 || run?.status_evidence_version===1 ? 1 : null,
     estimated_cost_usd:rawCost!==null&&rawCost!==""&&Number.isFinite(Number(rawCost))?Number(rawCost):null,
     returned_count:Number(run?.returned_count??counters.candidates_verified??0),
     new_opportunities:Number(counters.new_opportunities??0),
     updated_opportunities:Number(counters.updated_opportunities??0),
     workspace_total:Number(counters.workspace_total??0),
     source_urls_verified:run?.verified_source_count==null&&counters.source_urls_verified==null ? null : Number(run?.verified_source_count??counters.source_urls_verified),
-    failed_shards:Number(run?.failed_shards??run?.coverage?.filter(item=>item.status==="FAILED").length??0),
+    failed_shards:run?.failed_shards==null&&!Array.isArray(run?.coverage)?null:runSummary(run).failedShards,
     web_search_call_count:Number(run?.web_search_call_count??run?.usage?.web_search_calls??0),
     openai_requests:Number(counters.openai_requests??paid.openai_requests??0)
   };
@@ -446,11 +448,14 @@ export function createStateRepository(store) {
     },
 
     async saveSearchRun(run) {
-      await store.setJSON("metadata/last-search", run);
       const entry=searchHistoryEntry(run);
       const current=await readSearchHistory(store);
-      const history=[entry,...current.filter((item)=>item?.id!==entry.id)].slice(0,SEARCH_HISTORY_LIMIT);
+      const previous=await this.lastSearchRun();
+      const previousEntry=previous?searchHistoryEntry(previous):null;
+      const retained=previousEntry&&previousEntry.id!==entry.id?[previousEntry,...current.filter(item=>item?.id!==previousEntry.id)]:current;
+      const history=[entry,...retained.filter((item)=>item?.id!==entry.id)].slice(0,SEARCH_HISTORY_LIMIT);
       await store.setJSON(SEARCH_HISTORY_KEY,history);
+      await store.setJSON("metadata/last-search", run);
       return run;
     },
     async lastSearchRun() {

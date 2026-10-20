@@ -138,3 +138,22 @@ test("a historical detail rejection can be materialized for manual review withou
  const saved=await repo.setRejectedCandidateReviewStatus("candidate-legacy-1","KEEP","2026-09-10T10:00:00Z");
  assert.equal(saved.review_status,"KEEP");assert.equal(saved.rejection_reason,"detail_verification_failed");assert.equal((await repo.listOpportunities()).length,0);assert.equal((await repo.listRejectedCandidates()).length,1);
 });
+test("unknown rediscovery dates cannot erase known publication or source activity dates",async()=>{
+ const repo=createStateRepository(memoryStore());
+ await repo.saveOpportunity(opportunity({published_date:"2026-08-31",source_updated_date:"2026-09-02",contact_note:"Keep",manual_review_history:[{outcome:"CLOSED"}]}));
+ for(const value of [null,"","not a date","2026-02-30","2099-01-01"]){
+  const [merged]=await repo.mergeSearchResults([opportunity({published_date:value,source_updated_date:value,contact_note:null})],"2026-10-20T20:00:00Z");
+  assert.equal(merged.published_date,"2026-08-31");assert.equal(merged.source_updated_date,"2026-09-02");assert.equal(merged.contact_note,"Keep");assert.equal(merged.manual_review_history.length,1);
+ }
+});
+
+test("partial history survives subsequent runs and legacy coverage is rescued before replacement",async()=>{
+ const store=memoryStore(),repo=createStateRepository(store);
+ const partial={run_id:"partial-1",completed_at:"2026-10-20T10:00:00Z",search_status:"COMPLETE",coverage:[{status:"FAILED"},{status:"COMPLETE"}]};
+ await store.setJSON("metadata/last-search",partial);
+ await store.setJSON("metadata/search-history-v1",[{id:"partial-1",search_status:"COMPLETE"}]);
+ await repo.saveSearchRun({run_id:"success-2",completed_at:"2026-10-20T11:00:00Z",search_status:"COMPLETE",coverage:[{status:"COMPLETE"}]});
+ const runs=await createStateRepository(store).listSearchRuns();
+ assert.equal(runs[0].search_status,"COMPLETE");assert.equal(runs[0].status_evidence_version,1);
+ assert.equal(runs[1].search_status,"PARTIAL");assert.equal(runs[1].failed_shards,1);assert.equal(runs.length,2);
+});

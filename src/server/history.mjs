@@ -1,5 +1,6 @@
 import { companyKey, emptyCompanyState, applyOpportunityState } from "./company-memory.mjs";
 import { recordKindOf } from "./record-classification.mjs";
+import { normalizeSourceDate } from "../lib/source-truth.mjs";
 
 export function opportunityFingerprint(item) {
   const canonical=String(item.canonical_url||"").trim().toLowerCase();
@@ -14,6 +15,10 @@ export function mergeOpportunityHistory(existingItems, incomingItems, companySta
     const key=companyKey(incoming.company);
     const companyState=companyStatesByKey[key]||emptyCompanyState(incoming.company);
     const normalized={...previous,...incoming,id:previous?.id||incoming.id,first_seen:previous?.first_seen||incoming.first_seen||nowIso,last_seen:nowIso,is_new:!previous,status:previous?.status||incoming.status||"NEW"};
+    // Keep source dates when rediscovery supplies null, empty or malformed data.
+    for(const field of ["published_date","source_updated_date"]){
+      normalized[field]=normalizeSourceDate(incoming[field],nowIso)||normalizeSourceDate(previous?.[field],nowIso)||null;
+    }
     if(previous && Array.isArray(previous.classification_history)) normalized.classification_history=[...previous.classification_history];
     if(previous && recordKindOf(previous)!==recordKindOf(incoming)){
       normalized.classification_history=[...(Array.isArray(previous.classification_history)?previous.classification_history:[]),{changed_at:nowIso,from_record_kind:recordKindOf(previous),to_record_kind:recordKindOf(incoming),previous_opportunity_kind:previous.opportunity_kind??null,reason:incoming.record_kind_reason||"SERVER_RECLASSIFICATION"}];

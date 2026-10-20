@@ -47,4 +47,6 @@ test("run summary prefers final zero to intermediate discoveries and reveals leg
   assert.deepEqual(runSummary(run),{status:"PARTIAL",failedShards:1,returned:0,newCount:0,updated:0,workspace:null});
   assert.equal(runSummary({}).returned,null);
   assert.equal(runSummary({search_status:"FAILED",failed_shards:3}).status,"FAILED");
+  assert.equal(runSummary({search_status:"COMPLETE",failed_shards:0}).status,"UNVERIFIED");
+  assert.equal(runSummary({search_status:"COMPLETE",status_evidence_version:1,failed_shards:0}).status,"COMPLETE");
 });

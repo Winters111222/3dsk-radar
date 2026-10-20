@@ -24,7 +24,10 @@ test("30-day freshness boundary is deterministic and future dates fail", () => {
 test("old or undated records require current acceptance evidence", () => {
   assert.equal(evaluateSourceTruth({...base,publishedDate:"2026-07-08"}).rejection, "stale_or_unverified");
   assert.equal(evaluateSourceTruth({...base,publishedDate:null}).rejection, "stale_or_unverified");
-  const active = evaluateSourceTruth({...base,publishedDate:"2026-07-08",acceptanceVerified:true});
+  assert.equal(evaluateSourceTruth({...base,publishedDate:"2026-07-08",acceptanceVerified:true}).rejection,"stale_or_unverified");
+  assert.equal(evaluateSourceTruth({...base,publishedDate:"2026-07-08",sourceUpdatedDate:"2026-08-21",acceptanceVerified:true}).rejection,"stale_or_unverified");
+  assert.equal(evaluateSourceTruth({...base,publishedDate:null,sourceUpdatedDate:"2026-09-04",acceptanceVerified:false}).rejection,"stale_or_unverified");
+  const active = evaluateSourceTruth({...base,publishedDate:"2026-07-08",sourceUpdatedDate:"2026-09-04",acceptanceVerified:true});
   assert.equal(active.ok, true);
   assert.equal(active.freshnessBasis, "ACTIVE_ACCEPTANCE_EVIDENCE");
 });

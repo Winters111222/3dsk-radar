@@ -170,7 +170,9 @@ test("hard truth gates reject stale listings and accept old listings only with c
   const verified = new Set([normalizeUrl(PRIMARY)]);
   const stale = normalizeCandidate(candidate({published_date:"2026-07-08"}), verified, NOW);
   assert.equal(stale.rejection, "stale_or_unverified");
-  const active = normalizeCandidate(candidate({published_date:"2026-07-08",acceptance_source_url:PRIMARY}), verified, NOW);
+  const unsupported=normalizeCandidate(candidate({published_date:"2026-07-08",acceptance_source_url:PRIMARY}),verified,NOW);
+  assert.equal(unsupported.rejection,"stale_or_unverified");
+  const active = normalizeCandidate(candidate({published_date:"2026-07-08",source_updated_date:"2026-09-04",acceptance_source_url:PRIMARY,source_evidence:[{type:"PRIMARY_SOURCE",url:PRIMARY,note:"Buyer update 2026-09-04: still accepting proposals."}]}), verified, NOW);
   assert.equal(active.opportunity.freshness_basis, "ACTIVE_ACCEPTANCE_EVIDENCE");
   assert.equal(active.opportunity.acceptance_verified_at, NOW);
   assert.equal(active.opportunity.freshness_confidence, "low");
@@ -180,8 +182,18 @@ test("hard truth gates reject stale listings and accept old listings only with c
 test("freshness confidence distinguishes published and source-updated evidence", () => {
   const verified = new Set([normalizeUrl(PRIMARY)]);
   assert.equal(normalizeCandidate(candidate(), verified, NOW).opportunity.freshness_confidence, "high");
-  const updated = normalizeCandidate(candidate({published_date:null,source_updated_date:"2026-09-04"}), verified, NOW).opportunity;
+  const updated = normalizeCandidate(candidate({opportunity_kind:"POTENTIAL_LEAD",published_date:null,source_updated_date:"2026-09-04"}), verified, NOW).opportunity;
   assert.equal(updated.freshness_confidence, "medium");
+});
+
+test("October regression: old paid Reddit request and crawl time are not current buyer acceptance",()=>{
+ const url="https://www.reddit.com/r/gameDevClassifieds/comments/1w36ekj/looking_for_someone_who_can_clean_up_and_close";
+ const old=candidate({title:"Paid photogrammetry mesh cleanup and gap closing",company:"Lofi_Joe",source_url:url,apply_url:url,acceptance_source_url:url,published_date:null,source_updated_date:null,source_evidence:[{type:"PRIMARY_SOURCE",url,note:"Public Reddit post states the task is paid, requests mesh cleanup and requires NDA acceptance."}]});
+ const sources=new Set([normalizeUrl(url)]),now="2026-10-20T21:08:00Z";
+ assert.equal(normalizeCandidate(old,sources,now).rejection,"stale_or_unverified");
+ assert.equal(normalizeCandidate({...old,published_date:"2026-08-31"},sources,now).rejection,"stale_or_unverified");
+ assert.equal(normalizeCandidate({...old,source_updated_date:"2026-10-20"},sources,now).rejection,"stale_or_unverified");
+ assert.equal(normalizeCandidate({...old,source_updated_date:"2026-09-02",source_evidence:[{type:"PRIMARY_SOURCE",url,note:"2026-09-02 buyer still accepting proposals"}]},sources,now).rejection,"stale_or_unverified");
 });
 
 test("excluded workflows and non-CZ/SK physical heritage capture fail closed", () => {
