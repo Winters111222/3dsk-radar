@@ -328,8 +328,9 @@ export function normalizeCandidate(candidate, verifiedSourceUrls, nowIso, { inde
   const sourceUpdatedDate = normalizeSourceDate(candidate.source_updated_date, nowIso);
   const acceptanceSourceUrl = normalizeUrl(candidate.acceptance_source_url);
   const acceptanceEvidenceRecorded = (Array.isArray(candidate.source_evidence) ? candidate.source_evidence : []).some((item) =>
-    normalizeUrl(item?.url) === acceptanceSourceUrl && Boolean(safeString(item?.note)));
-  const acceptanceVerified = noticeStatus === "OPEN" && Boolean(acceptanceSourceUrl && usableSourceUrls.has(acceptanceSourceUrl) && acceptanceEvidenceRecorded);
+    normalizeUrl(item?.url) === acceptanceSourceUrl && sourceUpdatedDate && String(item?.note||"").includes(sourceUpdatedDate)
+      && /\b(?:(?:still|currently|now)\s+(?:actively\s+)?(?:accepting|seeking|looking for)|(?:applications|proposals|bidding)\s+(?:are |is |remain |remains )?open)\b/i.test(item?.note||""));
+  const acceptanceVerified = noticeStatus === "OPEN" && acceptanceSourceUrl === sourceUrl && Boolean(acceptanceSourceUrl && usableSourceUrls.has(acceptanceSourceUrl) && acceptanceEvidenceRecorded);
   let opportunityKind = null;
   let freshnessBasis = null;
   if (recordKind === "SALES_OPPORTUNITY") {

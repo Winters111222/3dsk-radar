@@ -13,7 +13,7 @@ export function normalizeSourceDate(value, nowIso) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const timestamp = Date.parse(`${value}T00:00:00Z`);
   const now = Date.parse(nowIso);
-  if (!Number.isFinite(timestamp) || !Number.isFinite(now) || timestamp > now + 86400000) return null;
+  if (!Number.isFinite(timestamp) || !Number.isFinite(now) || timestamp > now || new Date(timestamp).toISOString().slice(0,10)!==value) return null;
   return value;
 }
 
@@ -61,7 +61,12 @@ export function evaluateSourceTruth({
 
   const recentPublished = isRecentSourceDate(publishedDate, nowIso, maxAgeDays);
   const recentUpdated = isRecentSourceDate(sourceUpdatedDate, nowIso, maxAgeDays);
-  if (!recentPublished && !recentUpdated && !acceptanceVerified) {
+  const datedAcceptance = acceptanceVerified && isRecentSourceDate(sourceUpdatedDate, nowIso, 14);
+  // A fresh crawl timestamp or an undated original request cannot revive an old job.
+  if (requestedKind === "OPEN_OPPORTUNITY" && !recentPublished && !datedAcceptance) {
+    return { ok:false, rejection:"stale_or_unverified" };
+  }
+  if (!recentPublished && !recentUpdated && !datedAcceptance) {
     return { ok:false, rejection:"stale_or_unverified" };
   }
 
@@ -74,6 +79,8 @@ export function evaluateSourceTruth({
 
   const freshnessBasis = recentPublished
     ? "PUBLISHED_DATE"
+    : datedAcceptance
+      ? "ACTIVE_ACCEPTANCE_EVIDENCE"
     : recentUpdated
       ? "SOURCE_UPDATED_DATE"
       : "ACTIVE_ACCEPTANCE_EVIDENCE";

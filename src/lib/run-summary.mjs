@@ -3,7 +3,10 @@ export function runSummary(run) {
   const failed = (run?.coverage || []).filter(item => item.status === "FAILED").length;
   const storedFailed = measured(run?.failed_shards) || 0;
   const failedShards = Math.max(failed, storedFailed);
-  const status = failedShards && !["FAILED", "CANCELLED"].includes(run?.search_status) ? "PARTIAL" : run?.search_status || "UNKNOWN";
+  const hasCoverage=Array.isArray(run?.coverage)&&run.coverage.length>0;
+  const hasEvidence=hasCoverage || run?.status_evidence_version===1;
+  let status = failedShards && !["FAILED", "CANCELLED"].includes(run?.search_status) ? "PARTIAL" : run?.search_status || "UNKNOWN";
+  if (["COMPLETE","COMPLETED"].includes(status) && !hasEvidence) status="UNVERIFIED";
   return {
     status, failedShards,
     returned:measured(run?.returned_count ?? run?.counters?.candidates_verified),
