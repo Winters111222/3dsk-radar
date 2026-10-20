@@ -45,6 +45,7 @@ test('director interactions render real app code with isolated, read-only API mo
   assert.match(document.querySelector('#search-footprint-content').textContent,/example.com/);
   const input=document.querySelector('#opportunity-search');input.value='no-such-buyer';input.dispatchEvent(new window.Event('input'));
   assert.equal(document.querySelectorAll('#opportunity-body tr[data-id]').length,0);
+  assert.match(document.querySelector('#opportunity-body').textContent,/Check freshness.*Reset filters/);
   click('#reset-filters');assert.ok(document.querySelectorAll('#opportunity-body tr[data-id]').length>0);
   click('#table-layout');assert.equal(document.querySelector('.results-layout').classList.contains('cards-mode'),false);
   click('#list-layout');assert.equal(document.querySelector('#list-layout').getAttribute('aria-pressed'),'true');
@@ -56,6 +57,8 @@ test('director interactions render real app code with isolated, read-only API mo
   assert.equal(document.querySelector('#status-filter').closest('label').hidden,true);
   assert.ok(document.querySelectorAll('[data-select-company]').length>0);
   assert.ok(document.querySelector('#company-directory-detail').textContent.length>0);
+  assert.match(document.querySelector('#company-directory-detail .company-opportunity-row small').textContent,/Project opportunity|Potential collaboration|Employment signal|Funding \/ partnership/);
+  assert.doesNotMatch(document.querySelector('#company-directory-detail .company-opportunity-row small').textContent,/Open opportunity|Potential lead/);
   const companySort=document.querySelector('#company-directory-sort'),chooseCompanySort=value=>{companySort.querySelectorAll('option').forEach(option=>option.toggleAttribute('selected',option.value===value));companySort.dispatchEvent(new window.Event('change'));};chooseCompanySort('A_Z');
   assert.match(document.querySelector('[data-select-company]').textContent,/Synthetic Atlas Interactive/);
   chooseCompanySort('Z_A');
