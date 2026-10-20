@@ -12,6 +12,8 @@ const EXCLUDED_WORKFLOW_NEGATION_PATTERNS = Object.freeze([
 ]);
 
 const INACTIVE_SOURCE_PATTERNS = Object.freeze([
+  /\b(?:project|job|listing|contract|opportunity)\s+(?:is\s+|has been\s+)?(?:closed|expired|cancelled|canceled|awarded|filled|no longer available)\b/i,
+  /\b(?:bidding|proposals?)\s+(?:is\s+|are\s+)?closed\b/i,
   /\b(?:job|role|position|listing|opportunity)\s+is\s+no\s+longer\s+(?:available|accepting\s+applications)\b/i,
   /\bno\s+longer\s+accepting\s+applications\b/i,
   /\bapplications?\s+(?:are\s+)?closed\b/i,
@@ -133,6 +135,7 @@ export function freshnessConfidence(freshnessBasis) {
 
 export function evaluateCandidateRelevance(candidate) {
   const text = candidateText(candidate);
+  if (/\[(?:for hire|looking for work)\]/i.test(candidate?.title||"")) return {ok:false,rejection:"seller_side_offer"};
   const commercialRole = String(candidate?.commercial_role || "").toUpperCase();
   const engagementTrack = String(candidate?.engagement_track || "B2B_STUDIO").toUpperCase();
   if (["BUYER", "PARTNER", "EMPLOYER"].includes(commercialRole) && matchesAny(INACTIVE_SOURCE_PATTERNS, text)) {

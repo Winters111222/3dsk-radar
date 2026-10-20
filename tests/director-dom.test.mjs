@@ -31,6 +31,10 @@ test('director interactions render real app code with isolated, read-only API mo
   const click=selector=>document.querySelector(selector).click();
   const totalRows=()=>document.querySelectorAll('#opportunity-body tr[data-id]').length;
   const originalCount=totalRows();
+  assert.equal(document.querySelector('#opportunity-lanes [data-view="ACTIONABLE"]').getAttribute('aria-pressed'),'true');
+  assert.ok(document.querySelector('[data-review-confirm]'));
+  assert.ok(document.querySelector('[data-save-review]'));
+  assert.match(document.querySelector('.manual-review-editor').textContent,/human assessment only/);
   assert.ok(document.querySelector('#last-run-overview').textContent.includes('Last search'));
   click('[data-freshness="REVIEW"]');
   assert.equal(document.querySelector('[data-freshness="REVIEW"]').getAttribute('aria-pressed'),'true');

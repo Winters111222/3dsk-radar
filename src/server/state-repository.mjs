@@ -4,6 +4,7 @@ import { normalizeBudget, normalizeUrl } from "./normalize.mjs";
 import { isSalesOpportunityRecord, recordKindOf } from "./record-classification.mjs";
 import { applyRecordReclassification, PRODUCTION_RECORD_RECLASSIFICATION, verifyRecordReclassificationReadback } from "./record-reclassification.mjs";
 import { createHash } from "node:crypto";
+import { applyManualReview } from "../lib/manual-review.mjs";
 
 const OP_PREFIX = "opportunities/";
 const OP_SNAPSHOT_KEY = "metadata/opportunities-v1";
@@ -351,6 +352,15 @@ export function createStateRepository(store) {
       if (!current) return null;
       if (!isSalesOpportunityRecord(current)) throw nonSalesActionError();
       const next = { ...current, contact_channel:channel, contact_note:note || null, contact_note_updated_at:nowIso, updated_at:nowIso };
+      await this.saveOpportunity(next);
+      return safeSavedOpportunity(next);
+    },
+
+    async reviewOpportunity(id, decision, nowIso) {
+      const current=await readStoredOpportunity(store,id);
+      if(!current)return null;
+      if(!isSalesOpportunityRecord(current))throw nonSalesActionError();
+      const next=applyManualReview(current,decision,nowIso);
       await this.saveOpportunity(next);
       return safeSavedOpportunity(next);
     },

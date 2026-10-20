@@ -19,6 +19,11 @@ export function mergeOpportunityHistory(existingItems, incomingItems, companySta
       normalized.classification_history=[...(Array.isArray(previous.classification_history)?previous.classification_history:[]),{changed_at:nowIso,from_record_kind:recordKindOf(previous),to_record_kind:recordKindOf(incoming),previous_opportunity_kind:previous.opportunity_kind??null,reason:incoming.record_kind_reason||"SERVER_RECLASSIFICATION"}];
     }
     if(previous){for(const field of ["reply_to","reply_subject","reply_body","reply_generated_at","reply_model","reply_response_id"]){if(Object.hasOwn(previous,field))normalized[field]=previous[field];}}
+    // Human decisions and notes cannot be overwritten by a model or rediscovery.
+    for(const field of ["manual_review","manual_review_history","contact_note","contact_channel","contact_note_updated_at"]){
+      delete normalized[field];
+      if(previous && Object.hasOwn(previous,field))normalized[field]=previous[field];
+    }
     if(previous?.manual_verification_status==="VERIFIED_BEFORE_CONTACT" && previous.source_url===incoming.source_url){
       normalized.manual_verification_status=previous.manual_verification_status;
       normalized.manual_verified_at=previous.manual_verified_at;
