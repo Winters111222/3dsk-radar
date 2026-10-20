@@ -136,7 +136,7 @@ test("DETAIL_VERIFICATION reopens each exact candidate and completes the full UL
       assert.equal(hints[0].url,shard.candidate_source_url);
     }
     const verified=[candidate("CORE_DISCOVERY"),candidate("PROCUREMENT_FUNDING")];
-    return searchResult(input.shards,{records:verified,webCalls:10});
+    return searchResult(input.shards,{records:verified,webCalls:10,overrides:{detail_rejections:[{source_url:URLS.SIGNAL_EXPANSION,rejection_reason:"inactive_notice"}]}});
   }});
   const operationId=ultraMaxNextOperationId(run,"DETAIL_VERIFICATION");
   const completed=await executeUltraMaxPhase({repository,runId:run.run_id,phaseId:"DETAIL_VERIFICATION",operationId,nowIso:NOW,execute:executor});
@@ -150,6 +150,8 @@ test("DETAIL_VERIFICATION reopens each exact candidate and completes the full UL
   assert.equal(completed.result.payload.records.length,2);
   assert.equal(completed.result.payload.verification.verified_candidates,2);
   assert.equal(completed.result.payload.verification.rejected_candidates,3);
+  assert.equal(completed.result.payload.verification.candidate_results.find(item=>item.source_url===URLS.SIGNAL_EXPANSION).rejection_reason,"inactive_notice");
+  assert.equal(completed.result.payload.verification.candidate_results.find(item=>item.source_url===URLS.ADAPTIVE_FOLLOWUP).rejection_reason,"detail_evidence_missing");
   const replay=await executeUltraMaxPhase({repository,runId:run.run_id,phaseId:"DETAIL_VERIFICATION",operationId,nowIso:NOW,execute:async()=>{calls+=1;}});
   assert.equal(replay.replayed,true);
   assert.equal(calls,1);

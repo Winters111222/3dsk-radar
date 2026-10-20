@@ -6,6 +6,14 @@ import { FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS } from "../src/server/index-dis
 
 const profile = JSON.parse(await readFile(new URL("../config/company-profile.public.json", import.meta.url), "utf8"));
 
+test("detail schema asks for a bounded reason only on exact-detail requests",()=>{
+  const normal=buildSearchOutputSchema(1),detail=buildSearchOutputSchema(1,true);
+  assert.deepEqual(normal.required,["opportunities"]);
+  assert.deepEqual(detail.required,["opportunities","detail_rejection"]);
+  assert.ok(detail.properties.detail_rejection.properties.reason.enum.includes("detail_evidence_missing"));
+  assert.equal(detail.properties.detail_rejection.additionalProperties,false);
+});
+
 test("search contract uses current Responses web search + strict schema and cost-sensitive default", () => {
   const body = buildOpenAIRequest({ profile, nowIso:"2026-09-05T10:00:00.000Z", maxResults:12 });
   assert.equal(body.model, "gpt-5.6-luna");
@@ -38,7 +46,7 @@ test("search contract uses current Responses web search + strict schema and cost
   assert.ok(body.instructions.includes("requires a person to open the original source"));
   assert.ok(body.instructions.includes("Do not sign in, use cookies or sessions"));
   assert.ok(body.instructions.includes("RealityCapture, ZBrush, Substance Painter and Faceform Wrap3D"));
-  assert.ok(body.instructions.includes("Hard exclusions: omit every Reallusion"));
+  assert.ok(body.instructions.includes("V2 scope: paid realistic or stylized character assets"));
   assert.ok(body.instructions.includes("Search two distinct engagement tracks"));
   assert.ok(body.instructions.includes("INDIVIDUAL_FREELANCE requires an explicit buyer-posted freelance/project route"));
   assert.ok(body.instructions.includes("physical scanning of museum objects"));

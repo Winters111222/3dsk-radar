@@ -9,6 +9,30 @@ const profile = JSON.parse(await readFile(new URL("../config/company-profile.pub
 const NOW = "2026-09-05T10:00:00.000Z";
 const SOURCE = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
 
+test("detail outcomes retain bounded exact-URL reasons without extra requests or promotion", async()=>{
+  for(const [detail,expected] of [
+    [{source_url:SOURCE,reason:"inactive_notice"},"inactive_notice"],
+    [{source_url:SOURCE,reason:"source_redirected_or_unavailable"},"source_redirected_or_unavailable"],
+    [{source_url:"https://evil.example/item",reason:"inactive_notice"},"detail_evidence_missing"],
+    [{source_url:SOURCE,reason:"invented_reason"},"detail_evidence_missing"],
+    [null,"detail_evidence_missing"]
+  ]){
+    let calls=0;
+    const result=await runWideOpportunitySearch({apiKey:"test",profile,nowIso:NOW,
+      shards:[{id:"detail_test",label:"Detail test",allowed_domains:["upwork.com"],candidate_source_url:SOURCE,focus:"DETAIL_VERIFICATION: test"}],
+      maxResults:1,includeVerificationEvidence:true,
+      fetchImpl:async(_url,init)=>{
+        calls++;
+        const body=JSON.parse(init.body);
+        assert.ok(body.text.format.schema.required.includes("detail_rejection"));
+        return new Response(JSON.stringify(apiResponse(JSON.stringify({opportunities:detail?[validCandidate()]:[],detail_rejection:detail}))),{status:200});
+      }});
+    assert.equal(calls,1);
+    assert.equal(result.opportunities.length,0);
+    assert.equal(result.detail_rejections[0].rejection_reason,expected);
+  }
+});
+
 function validCandidate() {
   return {
     title:"Human scan cleanup vendor",

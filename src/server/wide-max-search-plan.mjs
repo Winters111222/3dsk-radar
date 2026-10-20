@@ -17,12 +17,12 @@ const SLOVAK_HERITAGE = ["uvo.gov.sk", "josephine.proebiz.com"];
 const FRENCH_BUYER_MARKETPLACES = ["codeur.com"];
 const CZ_SK_HERITAGE_FUNDING = ["mk.gov.cz", "fpu.sk", "culture.gov.sk", "eeagrants.org"];
 
-const rejectNoise = "Require an active buyer purchasing a concrete production deliverable eligible either for a Czech/European studio/team (B2B_STUDIO) or for a remote/geographically eligible independent specialist (INDIVIDUAL_FREELANCE), and classify the track explicitly. Small and single-asset freelance projects are valid. Reject every employee vacancy even if it says contract, B2B or external development; also reject sellers, portfolios, training, hardware, unpaid/rev-share work, software/pipeline development, Reallusion Character Creator/CC3/CC4, iClone and Daz3D.";
+const rejectNoise = "Require an active buyer purchasing a concrete production deliverable eligible either for a Czech/European studio/team (B2B_STUDIO) or for a remote/geographically eligible independent specialist (INDIVIDUAL_FREELANCE), and classify the track explicitly. Small and single-asset freelance projects are valid. Reject every employee vacancy even if it says contract, B2B or external development; also reject sellers, portfolios, training, hardware, unpaid/rev-share work, software/pipeline development, iClone and Daz3D.";
 
 // Bump this whenever the deployed shard set or its acceptance semantics change.
 // Paid-operation identity includes this version so a newly released plan cannot
 // replay results produced by an older plan on the same UTC date.
-export const WIDE_MAX_PLAN_VERSION = "dual-engagement-track-v4";
+export const WIDE_MAX_PLAN_VERSION = "v2-yield-quality-v5";
 
 export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
   shard("human_face_body_marketplaces", "Human face/body capture · marketplaces", MARKETPLACES,
@@ -42,7 +42,7 @@ export const WIDE_MAX_SEARCH_SHARDS = Object.freeze([
   shard("batch_scan_postproduction", "Batch scan post-production", [...MARKETPLACES, ...COMMUNITIES],
     `Find recurring, ongoing, volume or production-overflow requests for processing batches of human or object scans through reconstruction, cleanup, wrapping and texturing. ${rejectNoise}`),
   shard("realistic_human_marketplace_projects", "Realistic humans · buyer projects", MARKETPLACES,
-    `Find current buyer project briefs commissioning realistic human characters, scan-derived humans, facial assets, FACS/expression processing or digital doubles from either a production team or an eligible individual specialist. Reject employee vacancies, stylized-only work and animation-only work. ${rejectNoise}`),
+    `Find current buyer project briefs commissioning realistic human characters, scan-derived humans, facial assets, FACS/expression processing or digital doubles from either a production team or an eligible individual specialist. Reject employee vacancies and animation-only work. ${rejectNoise}`),
   shard("digital_double_marketplace_projects", "Digital doubles · buyer projects", MARKETPLACES,
     `Find current client projects buying digital-double, photoreal human, likeness, facial scan or scan-derived human-character assets. Require asset deliverables rather than an employee, programmer or realtime technical artist. ${rejectNoise}`),
   shard("character_overflow_communities", "Character overflow · communities", ["reddit.com", "forums.unrealengine.com", "polycount.com"],

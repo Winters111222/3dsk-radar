@@ -1,5 +1,6 @@
 import { COMMERCIAL_ROLES, ENGAGEMENT_TRACKS, INDIVIDUAL_ELIGIBILITY_VALUES, NOTICE_STATUSES, SCOPE_FITS, STUDIO_ELIGIBILITY_VALUES } from "../lib/source-truth.mjs";
 import { FOCUSED_INDEX_DISCOVERY_ALLOWED_DOMAINS, INDEX_DISCOVERY_MODE, indexDiscoveryPolicySummary } from "./index-discovery.mjs";
+import { DETAIL_REJECTION_REASONS } from "../lib/rejection-reasons.mjs";
 
 export const SEARCH_INTENTS = [
   "AI human dataset photogrammetry capture vendor",
@@ -154,12 +155,17 @@ function candidateSchema() {
   };
 }
 
-export function buildSearchOutputSchema(maxResults = 12) {
+export function buildSearchOutputSchema(maxResults = 12, detailVerification = false) {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["opportunities"],
+    required: detailVerification ? ["opportunities", "detail_rejection"] : ["opportunities"],
     properties: {
+      ...(detailVerification ? { detail_rejection: {
+        type:["object", "null"], additionalProperties:false,
+        required:["reason", "source_url"],
+        properties:{reason:{enum:DETAIL_REJECTION_REASONS},source_url:{type:"string"}}
+      }} : {}),
       opportunities: {
         type: "array",
         maxItems: Math.max(1, Math.min(20, maxResults)),
@@ -209,8 +215,9 @@ export function buildSearchInstructions({
     "For B2B_STUDIO, studio_eligibility is YES only when the exact brief positively supports delivery by a Czech/European external studio or vendor; individual_eligibility may be UNKNOWN. For INDIVIDUAL_FREELANCE, individual_eligibility is YES only when the exact brief supports a remote or geographically eligible independent contractor; studio_eligibility may be UNKNOWN or NO. UNKNOWN for the selected track is never accepted. Country-only, incompatible onsite-only and employee restrictions are never assumed eligible.",
     "scope_fit is CORE or CHARACTER_ADJACENT only for relevant human/character production, worldwide human-data capture/casting, CZ/SK cultural-heritage object capture, or remote processing of buyer-supplied heritage scans/photos. Equipment purchases, document/film scanning, GIS/BIM/site scanning and unrelated visual production are OUT_OF_SCOPE or EQUIPMENT.",
     "3D.sk may answer either as a studio/vendor in B2B_STUDIO or through its qualified owner/specialist in INDIVIDUAL_FREELANCE. Match both tracks against the same approved capability profile; do not infer personal credentials beyond that profile.",
-    "The central 3D.SK production stack is RealityCapture, ZBrush, Substance Painter and Faceform Wrap3D/R3DS Wrap. A buyer does not need to name these tools when the requested deliverable clearly matches the pipeline. Blender may be supplementary but Blender-only generalist work is not a match.",
-    "Hard exclusions: omit every Reallusion Character Creator software (including CC3/CC4), iClone or Daz3D/Daz Studio workflow even when other character keywords overlap. Do not reject the generic profession phrase 'character creator' unless the excluded software/workflow is actually named.",
+    "The central 3D.SK production stack is RealityCapture, ZBrush, Substance Painter and Faceform Wrap3D/R3DS Wrap. A buyer does not need to name these tools when the requested deliverable clearly matches the pipeline. Blender character-art deliverables are eligible; unrelated generalist work is not.",
+    "Scope evidence must distinguish explicit requirements from negated statements and model risk commentary. Scan artifact removal is mesh repair, not heritage-object capture. Remote cleanup of buyer-supplied scans does not imply travel. Physical on-site work requires a Czech or Slovak place of performance.",
+    "V2 scope: paid realistic or stylized character assets, MetaHuman and Character Creator/CC3/CC4 production may qualify. Software names alone prove neither eligibility nor our delivery capability. Keep iClone and Daz workflows excluded. Do not promise unapproved capabilities in outreach.",
     "Worldwide lane: include explicit external-vendor demand for human photogrammetry, diverse or multi-ethnicity human datasets, face/body scanning, AI/computer-vision source capture, casting plus scanning, digital humans and batch capture/processing. Omit research-participant recruitment, model-only casting, biometric-surveillance systems and capture-hardware purchasing.",
     "Cultural-heritage lane: physical scanning of museum objects, costumes, textiles, artefacts or collections qualifies only when the place of performance is Czechia or Slovakia. A worldwide heritage project qualifies only for remote post-processing when the buyer explicitly supplies existing photos, scans, meshes or capture data.",
     "For museum and heritage results, require 3D capture, photogrammetry or scan post-production as an explicit deliverable. An active Czech or Slovak grant call may be returned as POTENTIAL_LEAD with commercial_role PARTNER and category HERITAGE_FUNDING_PARTNERSHIP when it explicitly funds that scope, the source proves the deadline is still open, and 3D.SK could participate directly or with an eligible museum/institution partner. A recently named funded recipient may also be POTENTIAL_LEAD with notice_status AWARDED when its awarded project explicitly includes relevant 3D production. Never call a grant OPEN_OPPORTUNITY; a separate procurement/buyer request is required for that. Omit expired calls, generic digitisation strategy, document/film scanning, scanner purchases, website-only work and immersive exhibition production without 3D capture.",
@@ -276,7 +283,7 @@ export function buildOpenAIRequest({
         type: "json_schema",
         name: "radar_search_results",
         strict: true,
-        schema: buildSearchOutputSchema(maxResults)
+        schema: buildSearchOutputSchema(maxResults, Boolean(searchFocus?.startsWith("DETAIL_VERIFICATION:")))
       }
     }
   };
