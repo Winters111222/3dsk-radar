@@ -1,4 +1,5 @@
 import { buildOpenAIRequest } from "./search-contract.mjs";
+import { DETAIL_REJECTION_REASONS } from "../lib/rejection-reasons.mjs";
 import {
   extractWebSourceUrls,
   normalizeUrl,
@@ -195,6 +196,8 @@ export async function runWideOpportunitySearch({
     try {
       raw = await callOpenAIResponses({ apiKey, body:requestBody, fetchImpl, timeoutMs });
       const parsed = parseStructuredSearchResponse(raw);
+      // A contradictory model response must never promote the rejected candidate.
+      if (shard.candidate_source_url && parsed.detail_rejection != null) parsed.opportunities=[];
       const webCalls = countWebSearchCalls(raw);
       const sourceUrls = extractWebSourceUrls(raw);
       if (webCalls < 1 || webCalls > maxToolCallsPerShard) {
@@ -298,6 +301,12 @@ export async function runWideOpportunitySearch({
 
   return {
     ...normalized,
+    detail_rejections:successful.filter((item)=>item.shard.candidate_source_url && !item.parsed.opportunities.length).map((item)=>({
+      source_url:item.shard.candidate_source_url,
+      rejection_reason:normalizeUrl(item.parsed.detail_rejection?.source_url)===normalizeUrl(item.shard.candidate_source_url)
+        && DETAIL_REJECTION_REASONS.includes(item.parsed.detail_rejection?.reason)
+        ? item.parsed.detail_rejection.reason : "detail_evidence_missing"
+    })),
     discovery_mode:INDEX_DISCOVERY_MODE,
     search_profile:searchProfile,
     search_status:successful.length === shards.length ? "COMPLETE" : "PARTIAL",

@@ -214,6 +214,11 @@ const DIAGNOSTIC_REJECTION_CODES = new Set([
   "individual_employment",
   "inactive_source_evidence",
   "studio_eligibility_unproven",
+  "engagement_track_unproven",
+  "individual_buyer_unproven",
+  "individual_contractor_ineligible",
+  "individual_eligibility_unproven",
+  "seller_side_offer",
   "software_pipeline_project",
   "heritage_capture_outside_cz_sk"
 ]);

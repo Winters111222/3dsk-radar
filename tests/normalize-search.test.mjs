@@ -198,7 +198,7 @@ test("October regression: old paid Reddit request and crawl time are not current
 
 test("excluded workflows and non-CZ/SK physical heritage capture fail closed", () => {
   const verified = new Set([normalizeUrl(PRIMARY)]);
-  assert.equal(normalizeCandidate(candidate({summary:"Character Creator 4 and Reallusion production."}), verified, NOW).rejection, "excluded_workflow");
+  assert.equal(normalizeCandidate(candidate({summary:"iClone and Daz Studio production."}), verified, NOW).rejection, "excluded_workflow");
   const outside = candidate({
     title:"Museum object 3D scanning",
     summary:"Onsite photogrammetry capture of museum artefacts.",

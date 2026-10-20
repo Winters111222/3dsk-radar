@@ -11,9 +11,9 @@ const base = {
   why_it_fits:[], risks:[], missing_requirements:[]
 };
 
-test("mandatory pipeline remains broad while Reallusion and Daz workflows fail closed", () => {
+test("V2 admits Character Creator while iClone and Daz workflows remain excluded", () => {
   assert.equal(evaluateCandidateRelevance(base).ok, true);
-  for (const term of ["Reallusion", "Character Creator 4", "iClone", "Daz3D", "Daz Studio"]) {
+  for (const term of ["iClone", "Daz3D", "Daz Studio"]) {
     assert.deepEqual(evaluateCandidateRelevance({...base, summary:`${term} character production needed.`}), {
       ok:false,
       rejection:"excluded_workflow"
@@ -31,10 +31,33 @@ test("a brief replacing an excluded workflow is not rejected merely for naming i
 test("an explicit replacement does not hide a separate excluded workflow requirement", () => {
   const result = evaluateCandidateRelevance({
     ...base,
-    title:"Replace the Daz export step but retain Character Creator production",
+    title:"Replace the Daz export step but retain iClone production",
     description:"We need an external studio to replace Daz while the required Character Creator character workflow remains in use."
   });
   assert.deepEqual(result, {ok:false,rejection:"excluded_workflow"});
+});
+
+test("V2 character assets are not excluded by tool or profession names", () => {
+  for (const summary of ["Paid Reallusion Character Creator 4 asset production.", "Seeking a character creator for paid mesh cleanup", "Blender stylized character production"]) {
+    assert.equal(evaluateCandidateRelevance({...base,summary}).ok,true,summary);
+  }
+});
+
+test("narrow denials and scan artifacts do not cause false rejection", () => {
+  const candidate={...base,title:"Paid remote human scan cleanup",summary:"Paid cleanup of human photogrammetry meshes",commercial_role:"BUYER",engagement_track:"INDIVIDUAL_FREELANCE",categories:["SCAN_CLEANUP"],location:"United States"};
+  for(const risks of [["Not a museum capture project"],["Not a full-time employee role"],["Scan artifact removal required"]]) {
+    assert.equal(evaluateCandidateRelevance({...candidate,risks}).ok,true,risks.join());
+  }
+  assert.equal(evaluateCandidateRelevance({...candidate,summary:"Not a full-time employee role, but permanent employment required"}).rejection,"individual_employment");
+  assert.equal(evaluateCandidateRelevance({...candidate,commercial_role:"EMPLOYER",risks:["Not a full-time employee role"]}).rejection,"individual_employment");
+  assert.equal(evaluateCandidateRelevance({...candidate,summary:"Not a museum capture project. Onsite photogrammetry of museum artefacts required."}).rejection,"heritage_capture_outside_cz_sk");
+});
+
+test("supplied scan files enable remote heritage cleanup but never override onsite work", () => {
+  const candidate={...base,title:"Remote museum scan cleanup",summary:"Remote cleanup of museum object meshes. Buyer will send the scan files.",categories:["SCAN_CLEANUP"],location:"UK",remote_scope:"GLOBAL_REMOTE"};
+  assert.equal(evaluateCandidateRelevance(candidate).ok,true);
+  assert.equal(evaluateCandidateRelevance({...candidate,remote_scope:"ONSITE"}).rejection,"heritage_capture_outside_cz_sk");
+  assert.equal(evaluateCandidateRelevance({...candidate,summary:candidate.summary+" Onsite scanning required."}).rejection,"heritage_capture_outside_cz_sk");
 });
 
 test("latent production deliverables preserve a mixed software brief for truth evaluation", () => {

@@ -1,7 +1,5 @@
 const EXCLUDED_WORKFLOW_PATTERNS = Object.freeze([
-  /\breallusion\b/i,
   /\biclone\b/i,
-  /\bcharacter\s+creator(?:\s*(?:3|4|cc3|cc4))?\b/i,
   /\bdaz(?:\s*3d|\s+studio)\b/i
 ]);
 
@@ -97,6 +95,7 @@ const PHYSICAL_CAPTURE_PATTERNS = Object.freeze([
 ]);
 
 const PROVIDED_DATA_PATTERNS = Object.freeze([
+  /\b(?:buyer|client|museum)\s+(?:will\s+)?(?:send|sends|provide|provides|supply|supplies)\s+(?:the\s+)?(?:scan\s+files|photos?|images?|scans?|meshes?|data)\b/i,
   /\b(?:provided|existing|supplied|pre-captured)\s+(?:photos?|images?|scans?|meshes?|data)\b/i,
   /\b(?:client|museum)\s+(?:provides?|supplies?)\s+(?:photos?|images?|scans?|meshes?|data)\b/i,
   /\b(?:dodan[éea]|existuj[ií]c[ií])\s+(?:fotografie|sn[ií]mky|skeny|data|modely)\b/i,
@@ -126,6 +125,15 @@ function matchesAny(patterns, value) {
   return patterns.some((pattern) => pattern.test(value));
 }
 
+// Remove only explicit, narrowly scoped denials. Keep the rest of the sentence:
+// a negated employment clause must not hide a later positive requirement.
+function positiveScopeText(text) {
+  return text
+    .replace(/\b(?:scan\s+)?artifact\s+(?:removal|repair|cleanup)\b/gi, "mesh repair")
+    .replace(/\b(?:not|no)\s+(?:a |an )?(?:museum|heritage)\s+(?:capture|scanning)\s+(?:project|work|job)\b/gi, " ")
+    .replace(/\b(?:not|no)\s+(?:a |an )?(?:full[- ]time|permanent|fixed[- ]term)\s+(?:employee\s+)?(?:role|job|position|employment)\b/gi, " ");
+}
+
 export function freshnessConfidence(freshnessBasis) {
   if (freshnessBasis === "PUBLISHED_DATE") return "high";
   if (freshnessBasis === "SOURCE_UPDATED_DATE") return "medium";
@@ -134,7 +142,7 @@ export function freshnessConfidence(freshnessBasis) {
 }
 
 export function evaluateCandidateRelevance(candidate) {
-  const text = candidateText(candidate);
+  const text = positiveScopeText(candidateText(candidate));
   if (/\[(?:for hire|looking for work)\]/i.test(candidate?.title||"")) return {ok:false,rejection:"seller_side_offer"};
   const commercialRole = String(candidate?.commercial_role || "").toUpperCase();
   const engagementTrack = String(candidate?.engagement_track || "B2B_STUDIO").toUpperCase();
@@ -167,9 +175,11 @@ export function evaluateCandidateRelevance(candidate) {
     || categories.has("HERITAGE_FUNDING_PARTNERSHIP")
     || matchesAny(HERITAGE_PATTERNS, text);
   const physicalCapture = categories.has("CAPTURE") || matchesAny(PHYSICAL_CAPTURE_PATTERNS, text);
-  const remotePostprocess = categories.has("HERITAGE_POSTPROCESSING")
+  const onsiteRequired = candidate.remote_scope === "ONSITE"
+    || /\b(?:onsite|on-site|on site)\s+(?:capture|scanning|photogrammetry|work|visit|required)\b/i.test(text);
+  const remotePostprocess = !onsiteRequired && (categories.has("HERITAGE_POSTPROCESSING")
     || ((categories.has("PHOTOGRAMMETRY_PROCESSING") || categories.has("SCAN_CLEANUP"))
-      && matchesAny(PROVIDED_DATA_PATTERNS, text));
+      && matchesAny(PROVIDED_DATA_PATTERNS, text)));
   const czSkLocation = matchesAny(CZ_SK_LOCATION_PATTERNS, text);
 
   if (heritage && physicalCapture && !remotePostprocess && !czSkLocation) {

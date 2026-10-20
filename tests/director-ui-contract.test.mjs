@@ -3,6 +3,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const html=read('../index.html'),css=read('../src/director.css'),app=read('../src/app.js');
+
+test('rejected publication is explicitly unverified and separate from discovery dates',()=>{
+  const table=app.slice(app.indexOf('function renderRejectedTable'),app.indexOf('function unresolvedCompanyName'));
+  assert.match(table,/UNVERIFIED DATE/);
+  assert.match(table,/Claimed:/);
+  assert.match(table,/item.first_seen/);
+  assert.match(table,/item.last_seen/);
+  assert.match(app,/Detail-stage reasons are model-reported/);
+  assert.match(app,/Candidate counts are structured model outputs/);
+});
 test('score numbers and labels override legacy light text and meet AA contrast',()=>{
   assert.match(css,/\.score strong, \.score.high small, \.score.medium small, \.score.low small\s*\{\s*color:inherit;/);
   const luminance=hex=>{

@@ -88,7 +88,7 @@ function detailPayloadDecorator(candidates) {
   return (payload,result)=>{
     const byUrl=new Map(candidates.map((record)=>[record.source_url,record]));
     const verifiedUrls=new Set(result.opportunities.map((record)=>record.source_url));
-    const rejectedByUrl=new Map((result.rejected_candidates||[]).map((record)=>[record.source_url,record.rejection_reason]));
+    const rejectedByUrl=new Map([...(result.detail_rejections||[]),...(result.rejected_candidates||[])].map((record)=>[record.source_url,record.rejection_reason]));
     return {
       ...payload,
       records:result.opportunities,
@@ -100,7 +100,7 @@ function detailPayloadDecorator(candidates) {
           candidate_id:record.id,
           source_url:record.source_url,
           status:verifiedUrls.has(record.source_url)?"VERIFIED":"REJECTED",
-          ...(verifiedUrls.has(record.source_url)?{}:{rejection_reason:rejectedByUrl.get(record.source_url)||"detail_verification_failed"})
+          ...(verifiedUrls.has(record.source_url)?{}:{rejection_reason:rejectedByUrl.get(record.source_url)||"detail_evidence_missing"})
         })),
         verified_original_ids:result.opportunities.map((record)=>byUrl.get(record.source_url)?.id).filter(Boolean)
       }

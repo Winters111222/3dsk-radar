@@ -48,7 +48,7 @@ test("audited WIDE_MAX results keep only the real full-body scan buyer brief", (
     {
       name:"Reallusion Character Creator role",
       candidate:buyer({title:"Character Artist",summary:"Mandatory Reallusion Character Creator 4 and Unity workflow."}),
-      rejection:"excluded_workflow"
+      rejection:null
     },
     {
       name:"Maruko realtime technical artist",

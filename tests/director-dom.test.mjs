@@ -69,6 +69,9 @@ test('director interactions render real app code with isolated, read-only API mo
   assert.match(document.querySelector('[data-select-company]').textContent,/Synthetic Northstar Games/);
   click('[data-view="ALL"]');
   click('[data-view="REJECTED"]');
+  assert.match(document.querySelector('#opportunity-body').textContent,/UNVERIFIED DATE/);
+  assert.match(document.querySelector('#detail-panel').textContent,/Claimed publication/);
+  assert.match(document.querySelector('#detail-panel').textContent,/model-reported/);
   assert.match(document.querySelector('#detail-panel').textContent,/OUTREACH & PROMOTION LOCKED/);
   assert.equal(document.querySelector('#detail-panel [data-generate-response]'),null);
   assert.equal(document.querySelectorAll('#opportunity-body tr[data-id]').length,1);
