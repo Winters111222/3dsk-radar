@@ -1,3 +1,4 @@
+import { opportunityReview, commercialKind } from "./opportunity-review.mjs";
 export const CATEGORIES = {
   FULL_PIPELINE: "Full Character Pipeline", CAPTURE: "Capture / Scanning",
   HUMAN_DATA_CAPTURE: "Human Data Capture / Casting",
@@ -40,8 +41,9 @@ export function visibleResults(items, filters) {
         && (view === "ALL"
           || (view === "BOOKMARKED" ? item.company_bookmarked
             : view === "B2B_STUDIO" || view === "INDIVIDUAL_FREELANCE" ? engagementTrack === view
-              : item.opportunity_kind === view));
-    return viewMatches && matchesSavedSearch(item, filters.query) &&
+              : view === "EMPLOYMENT_SIGNAL" ? commercialKind(item).key === view
+                : item.opportunity_kind === view && commercialKind(item).key !== "EMPLOYMENT_SIGNAL"));
+    return viewMatches && (!filters.freshness || filters.freshness === "ALL" || view === "COMPETITORS" || opportunityReview(item, filters.now).bucket === filters.freshness) && matchesSavedSearch(item, filters.query) &&
     (status === "ALL" || item.status === status) && item.fit_score >= minFit &&
     (!categories.length || categories.some(category => item.categories?.includes(category)));
   }).sort((a,b) => {

@@ -29,6 +29,13 @@ test('director interactions render real app code with isolated, read-only API mo
   for(let i=0;i<30;i++)await Promise.resolve();
   assert.equal(bootReady,true,'initialization signals readiness after the saved workspace loads');
   const click=selector=>document.querySelector(selector).click();
+  const totalRows=()=>document.querySelectorAll('#opportunity-body tr[data-id]').length;
+  const originalCount=totalRows();
+  assert.ok(document.querySelector('#last-run-overview').textContent.includes('Last search'));
+  click('[data-freshness="REVIEW"]');
+  assert.equal(document.querySelector('[data-freshness="REVIEW"]').getAttribute('aria-pressed'),'true');
+  assert.ok(totalRows()<=originalCount);
+  click('[data-freshness="ALL"]');assert.equal(totalRows(),originalCount);
   assert.equal(document.querySelector(".results-layout").classList.contains("cards-mode"),true);
   assert.equal(document.querySelector("#list-layout").getAttribute("aria-pressed"),"true");
   assert.equal(document.querySelector("#search-tools").open,false);
@@ -45,6 +52,7 @@ test('director interactions render real app code with isolated, read-only API mo
   assert.equal(document.querySelector('#company-directory').hidden,false);
   assert.equal(document.querySelector('#result-filters').hidden,true);
   assert.equal(document.querySelector('#opportunity-lanes').hidden,true);
+  assert.equal(document.querySelector('#freshness-filters').hidden,true);
   assert.equal(document.querySelector('#status-filter').closest('label').hidden,true);
   assert.ok(document.querySelectorAll('[data-select-company]').length>0);
   assert.ok(document.querySelector('#company-directory-detail').textContent.length>0);

@@ -4,6 +4,8 @@ import { bandForScore, contactDisplay, STATUS_VALUES } from "./lib/domain.mjs";
 import { continueSourceRunLoop, isTerminalSourceRun, sourceCandidateView, sourceRunProgress } from "./lib/source-run-view.mjs";
 import { continueUltraMaxLoop, isUltraMaxTerminal, ultraNativePhase, ultraNativeProgress } from "./lib/ultra-max-view.mjs";
 import { isSalesOpportunityRecord, recordKindOf } from "./server/record-classification.mjs";
+import { opportunityReview, commercialKind, budgetWarning } from "./lib/opportunity-review.mjs";
+import { runSummary } from "./lib/run-summary.mjs";
 
 const acceptanceWorkspace = new URLSearchParams(location.search).get("workspace") === "acceptance";
 const STATUS_STORAGE_KEY = "3dsk-radar-fixture-status-v2";
@@ -42,7 +44,26 @@ function budgetView(item){ if(item.budget_type==="PUBLISHED")return{value:item.b
 function isFundingLead(item){ return item.opportunity_kind==="POTENTIAL_LEAD"&&item.categories?.includes("HERITAGE_FUNDING_PARTNERSHIP"); }
 function engagementTrack(item){return item.engagement_track||"B2B_STUDIO";}
 function trackLabel(item){return engagementTrack(item)==="INDIVIDUAL_FREELANCE"?"INDIVIDUAL":"B2B";}
-function kindBadge(item){ if(recordKindOf(item)==="COMPETITOR")return'<span class="kind-badge competitor">COMPETITOR</span>'; const open=item.opportunity_kind==="OPEN_OPPORTUNITY"; const funding=isFundingLead(item); return`<span class="kind-badge ${open?"open":funding?"funding":"lead"}">${open?"OPEN OPPORTUNITY":funding?"FUNDING / PARTNERSHIP":"POTENTIAL LEAD"}</span><span class="kind-badge">${trackLabel(item)}</span>`; }
+function kindBadge(item){ if(recordKindOf(item)==="COMPETITOR")return'<span class="kind-badge competitor">COMPETITOR</span>'; const kind=commercialKind(item); return`<span class="kind-badge ${kind.key==="OPEN_OPPORTUNITY"?"open":"lead"}" title="${escapeHtml(kind.note)}">${escapeHtml(kind.label)}</span><span class="kind-badge">${trackLabel(item)}</span>`; }
+function reviewBadge(item){const review=opportunityReview(item);return `<span class="review-badge review-${review.bucket.toLowerCase()}" title="${escapeHtml(review.reason)}">${escapeHtml(review.label)}</span>`;}
+function commercialWarning(item){return budgetWarning(item)?'<span class="commercial-warning">LOW BUDGET · REVIEW</span>':"";}
+
+function renderReviewOverview(){
+  const panel=document.querySelector("#freshness-filters");
+  panel.hidden=["COMPANY_DIRECTORY","SEARCH_HISTORY","REJECTED","COMPETITORS"].includes(state.view);
+  const sales=state.opportunities.filter(isSalesOpportunityRecord);
+  for(const button of panel.querySelectorAll("[data-freshness]")){
+    const key=button.dataset.freshness;
+    button.querySelector("strong").textContent=key==="ALL"?sales.length:sales.filter(item=>opportunityReview(item).bucket===key).length;
+    button.setAttribute("aria-pressed",String((state.freshness||"ALL")===key));
+  }
+  const banner=document.querySelector("#last-run-overview"),run=state.lastRun;
+  banner.hidden=!run;
+  if(!run)return;
+  const summary=runSummary(run),count=value=>value===null?"—":value;
+  banner.dataset.status=summary.status;
+  banner.innerHTML=`<div><strong>Last search · ${escapeHtml(summary.status)}</strong><span>${escapeHtml(formatTimestamp(run.completed_at))} · ${count(summary.newCount)} new · ${count(summary.updated)} updated · ${count(summary.returned)} final results</span>${summary.failedShards?`<span class="run-warning">${summary.failedShards} search parts failed. Coverage is incomplete; saved results are preserved.</span>`:""}</div><button class="action-button" type="button" data-show-diagnostics>View diagnostics</button>`;
+}
 function manualVerificationRequired(item){ return isSalesOpportunityRecord(item)&&item.manual_verification_status==="REQUIRED_BEFORE_CONTACT"; }
 function manualVerificationComplete(item){ return isSalesOpportunityRecord(item)&&item.manual_verification_status==="VERIFIED_BEFORE_CONTACT"&&Boolean(item.manual_verified_at)&&item.manual_verified_source_url===item.source_url; }
 function scoreMarkup(label,score){ const band=bandForScore(score); return`<span class="score ${band.toLowerCase()}"><strong>${score}</strong><small>${escapeHtml(label)} · ${band}</small></span>`; }
@@ -60,12 +81,13 @@ function renderSearchDiagnostics(){
   if(!diagnostics||!Array.isArray(diagnostics.source_yield)){els.searchDiagnostics.hidden=true;els.searchCoverageGrid.innerHTML="";els.sourceYieldGrid.innerHTML="";return;}
   const totals=diagnostics.source_yield.reduce((sum,item)=>({consulted:sum.consulted+Number(item.consulted_urls||0),details:sum.details+Number(item.eligible_detail_urls||0),seen:sum.seen+Number(item.candidates_seen||0),rejected:sum.rejected+Number(item.candidates_rejected||0),competitors:sum.competitors+Number(item.competitors_detected||0),platforms:sum.platforms+Number(item.source_platforms_detected||0),returned:sum.returned+Number(item.returned||0)}),{consulted:0,details:0,seen:0,rejected:0,competitors:0,platforms:0,returned:0});
   const coverage=Array.isArray(state.lastRun?.coverage)?state.lastRun.coverage:[];
+  const final=runSummary(state.lastRun),ultra=state.lastRun?.mode==="ULTRA_MAX"||state.lastRun?.search_profile==="ULTRA_MAX";
   els.searchCoverageGrid.innerHTML=coverage.map((item)=>`<article class="run-counter coverage-${escapeHtml(String(item.status||"unknown").toLowerCase())}"><span>${escapeHtml(item.shard_label)}</span><strong>${escapeHtml(item.status)}</strong><small>${escapeHtml(item.consulted_urls)} consulted URLs · ${escapeHtml(item.web_search_calls)} web searches · ${escapeHtml(item.allowed_domain_count)} allowed domains${item.error_code?` · ${escapeHtml(item.error_code)}`:""}</small></article>`).join("");
   const activeSources=diagnostics.source_yield.filter((item)=>Number(item.consulted_urls||0)||Number(item.candidates_seen||0)||Number(item.returned||0));
-  els.sourceYieldGrid.innerHTML=activeSources.map((item)=>`<article class="run-counter"><span>${escapeHtml(item.source_label)}</span><strong>${escapeHtml(item.returned)} sales returned</strong><small>${escapeHtml(item.consulted_urls)} consulted · ${escapeHtml(item.candidates_seen)} candidates · ${escapeHtml(item.competitors_detected||0)} competitors · ${escapeHtml(item.source_platforms_detected||0)} platforms · ${escapeHtml(item.candidates_rejected)} rejected</small></article>`).join("");
+  els.sourceYieldGrid.innerHTML=activeSources.map((item)=>`<article class="run-counter"><span>${escapeHtml(item.source_label)}</span><strong>${escapeHtml(item.returned)} ${ultra?"intermediate candidates":"sales returned"}</strong><small>${escapeHtml(item.consulted_urls)} consulted · ${escapeHtml(item.candidates_seen)} candidates · ${escapeHtml(item.competitors_detected||0)} competitors · ${escapeHtml(item.source_platforms_detected||0)} platforms · ${escapeHtml(item.candidates_rejected)} rejected</small></article>`).join("");
   const zeroMessages={NO_STRUCTURED_CANDIDATES:`ZERO RESULT · Hosted search consulted ${totals.consulted} allowlisted URLs (${totals.details} valid detail URLs), but produced no structured candidates.`,ALL_CANDIDATES_REJECTED:`ZERO RESULT · ${totals.seen} structured candidates were evaluated and all ${totals.rejected} failed a truth or relevance gate.`,NO_SALES_RECORDS_AFTER_CLASSIFICATION:`ZERO SALES RESULT · ${totals.competitors} competitors and ${totals.platforms} source platforms were classified outside the sales list.`,ALL_ACCEPTED_CANDIDATES_DEDUPLICATED:"ZERO RESULT · every accepted sales candidate was already present after deduplication."};
-  els.searchDiagnosticState.textContent=totals.returned?`${totals.returned} RETURNED`:"ZERO RESULT";
-  els.searchDiagnosticSummary.textContent=zeroMessages[diagnostics.zero_result_reason]||`${totals.returned} sales opportunities returned from ${totals.consulted} consulted URLs · ${totals.competitors} competitors · ${totals.platforms} source platforms.`;
+  els.searchDiagnosticState.textContent=`${final.status} · ${final.returned??"—"} FINAL RESULTS`;
+  els.searchDiagnosticSummary.textContent=ultra?`${final.returned??"Unknown"} final verified results · ${final.newCount??"—"} new · ${final.updated??"—"} updated. Source cards show intermediate discovery counts, not saved results. ${final.failedShards?`${final.failedShards} search parts failed; coverage is incomplete.`:""}`:zeroMessages[diagnostics.zero_result_reason]||`${final.returned??totals.returned} sales opportunities returned from ${totals.consulted} consulted URLs · ${totals.competitors} competitors · ${totals.platforms} source platforms.`;
   const reasons=Object.entries(diagnostics.rejection_reasons||{}).sort((a,b)=>Number(b[1])-Number(a[1]));
   els.searchRejectionSummary.textContent=reasons.length?`Rejection reasons: ${reasons.map(([code,count])=>`${diagnosticReasonLabel(code)} · ${count}`).join(" | ")}`:"No candidate rejection reasons were recorded.";
   els.searchDiagnostics.hidden=false;
@@ -146,9 +168,17 @@ function renderSearchHistoryList(){
   const runs=state.searchHistory.filter((run)=>!query||[run.mode,run.search_status,run.completed_at].filter(Boolean).join(" ").toLowerCase().includes(query));
   els.searchHistoryCount.textContent=`${runs.length} saved run${runs.length===1?"":"s"}`;
   if(!runs.length){els.searchHistoryGrid.innerHTML=`<p class="archive-empty">${state.datasetMode==="DISCONNECTED"?"Enter your team access code to load search history.":"No saved searches match this filter. Earlier searches still remain represented in Companies & people."}</p>`;return;}
-  els.searchHistoryGrid.innerHTML=runs.map((run)=>{const rawCost=run.estimated_cost_usd,cost=rawCost!==null&&rawCost!==""&&Number.isFinite(Number(rawCost))?`$${Number(rawCost).toFixed(4)}`:"Cost unavailable";return`<article class="archive-card search-run-card"><div class="archive-card-head"><div><span class="archive-kicker">${escapeHtml(run.mode||"SEARCH")}</span><h4>${escapeHtml(formatTimestamp(run.completed_at))}</h4></div><span class="run-cost">${escapeHtml(cost)}</span></div><div class="search-run-metrics"><span><strong>${escapeHtml(run.new_opportunities||0)}</strong> new</span><span><strong>${escapeHtml(run.updated_opportunities||0)}</strong> updated</span><span><strong>${escapeHtml(run.returned_count||0)}</strong> returned</span><span><strong>${escapeHtml(run.workspace_total||0)}</strong> workspace</span></div><p>${escapeHtml(run.source_urls_verified||0)} verified source URLs · ${escapeHtml(run.web_search_call_count||0)} web searches · ${escapeHtml(run.openai_requests||0)} AI requests</p></article>`;}).join("");
+  els.searchHistoryGrid.innerHTML=runs.map((entry)=>{
+    // Old compact history omitted coverage. Recover it for the matching latest run only.
+    const run=entry.completed_at===state.lastRun?.completed_at?{...entry,...state.lastRun}:entry;
+    const summary=runSummary(run),rawCost=run.estimated_cost_usd;
+    const cost=rawCost!=null&&rawCost!==""&&Number.isFinite(Number(rawCost))?`$${Number(rawCost).toFixed(4)}`:"Cost unavailable";
+    const count=value=>escapeHtml(value??"—");
+    return `<article class="archive-card search-run-card"><div class="archive-card-head"><div><span class="archive-kicker">${escapeHtml(run.mode||"SEARCH")} · ${escapeHtml(summary.status)}</span><h4>${escapeHtml(formatTimestamp(run.completed_at))}</h4></div><span class="run-cost">${escapeHtml(cost)}</span></div><div class="search-run-metrics"><span><strong>${count(summary.newCount)}</strong> new</span><span><strong>${count(summary.updated)}</strong> updated</span><span><strong>${count(summary.returned)}</strong> final results</span><span><strong>${count(summary.workspace)}</strong> workspace</span></div>${summary.failedShards?`<p class="run-warning">${summary.failedShards} search parts failed · incomplete coverage</p>`:""}<p>${count(run.web_search_call_count)} web searches · ${count(run.openai_requests??run.counters?.openai_requests)} AI requests</p></article>`;
+  }).join("");
 }
 function renderArchiveView(){
+  renderReviewOverview();
   const directory=state.view==="COMPANY_DIRECTORY",history=state.view==="SEARCH_HISTORY";
   els.companyDirectory.hidden=!directory;els.searchHistoryPanel.hidden=!history;els.resultFilters.hidden=directory||history;els.resultsLayout.hidden=directory||history;
   els.opportunityLanes.hidden=directory||history||state.view==="REJECTED";
@@ -165,8 +195,8 @@ function renderTable(){ renderSort();if(renderArchiveView())return;const items=f
 <td data-label="Opportunity"><span class="opportunity-title">${escapeHtml(item.title)}</span></td>
 <td data-label="Company"><span class="company-name">${escapeHtml(item.company)}</span>${item.company_bookmarked?'<span class="bookmarked-label">BOOKMARKED</span>':""}</td>
 <td data-label="Type">${kindBadge(item)}${manualVerificationRequired(item)?'<span class="manual-verify-badge">VERIFY SOURCE</span>':manualVerificationComplete(item)?'<span class="manual-verify-badge verified">SOURCE VERIFIED</span>':""}<div class="minor-line">${item.categories.map(x=>escapeHtml(CATEGORIES[x]||x)).join(" · ")}</div><div class="minor-line">${escapeHtml(item.commercial_role||"LEGACY")} · ${escapeHtml(item.notice_status||"UNKNOWN")} · ${escapeHtml(trackLabel(item))} ${escapeHtml(engagementTrack(item)==="INDIVIDUAL_FREELANCE"?(item.individual_eligibility||"UNKNOWN"):(item.studio_eligibility||"UNKNOWN"))}</div></td>
-<td data-label="Budget" class="budget-cell">${sales?`<span class="budget-value">${escapeHtml(budget.value)}</span><span class="provenance ${budget.cls}">${escapeHtml(budget.meta)}</span>`:'<span class="budget-value">Not applicable</span><span class="provenance unknown">INTELLIGENCE</span>'}</td>
-<td data-label="Date">${escapeHtml(formatDate(item.published_date))}<span class="company">${escapeHtml(freshness(item.published_date))}</span></td>
+<td data-label="Budget" class="budget-cell">${sales?`<span class="budget-value">${escapeHtml(budget.value)}</span><span class="provenance ${budget.cls}">${escapeHtml(budget.meta)}</span>${commercialWarning(item)}`:'<span class="budget-value">Not applicable</span><span class="provenance unknown">INTELLIGENCE</span>'}</td>
+<td data-label="Date">${escapeHtml(formatDate(item.published_date))}<span class="company">${escapeHtml(freshness(item.published_date))}</span>${sales?reviewBadge(item):""}</td>
 <td data-label="Found">${escapeHtml(formatTimestamp(item.first_seen))}</td><td data-label="Last found">${escapeHtml(formatTimestamp(item.last_seen))}</td>
 <td data-label="Outreach">${sales?outreachMarkup(item):'<span class="outreach none">INTELLIGENCE ONLY</span>'}</td>
 <td data-label="Contact" class="${sales&&item.contact_email?"contact-yes":"contact-no"}">${sales?escapeHtml(contactDisplay(item)):"OUTREACH LOCKED"}</td>
@@ -195,6 +225,14 @@ function renderRejectedDetail(item){els.detail.innerHTML=`
 function renderDetail(){
   renderDetailContent();
   const body=els.detail.querySelector(".detail-body");if(!body)return;
+  const item=selectedRecord();
+  if(item&&state.view!=="REJECTED"&&isSalesOpportunityRecord(item)){
+    const review=opportunityReview(item),kind=commercialKind(item),warning=budgetWarning(item);
+    const overview=document.createElement("section");overview.className="detail-review-overview";
+    overview.innerHTML=`${reviewBadge(item)}<p>${escapeHtml(review.reason)}</p><p>${escapeHtml(kind.note)}</p>${warning?`<p class="commercial-warning">${escapeHtml(warning)}</p>`:""}`;
+    body.prepend(overview);
+    els.detail.querySelector(".detail-head .eyebrow").textContent=kind.label.toUpperCase();
+  }
   const sections=[...body.querySelectorAll(":scope > .detail-section")];
   const lookup=title=>sections.find(section=>section.querySelector("h4")?.textContent===title);
   const score=body.querySelector(".score-pair");
@@ -372,10 +410,12 @@ async function loadTeamState(){
 els.body.addEventListener("click",(event)=>{const star=event.target.closest("[data-bookmark-company]");if(star){event.stopPropagation();toggleBookmark(star.dataset.bookmarkCompany);return;}const note=event.target.closest("[data-open-note]");if(note){event.stopPropagation();selectOpportunity(note.dataset.openNote);requestAnimationFrame(()=>els.detail.querySelector("[data-contact-channel]")?.focus());return;}if(event.target.closest("select,a,button,input"))return;const row=event.target.closest("tr[data-id]");if(row)selectOpportunity(row.dataset.id);});
 els.body.addEventListener("change",(event)=>{if(event.target.matches(".status-select"))setStatus(event.target.dataset.statusId,event.target.value);if(event.target.matches(".rejected-status-select"))setRejectedDecision(event.target.dataset.rejectedStatusId,event.target.value);if(event.target.matches(".select-radio"))selectOpportunity(event.target.closest("tr").dataset.id);});
 els.detail.addEventListener("click",(event)=>{const star=event.target.closest("[data-bookmark-company]");if(star){toggleBookmark(star.dataset.bookmarkCompany);return;}const item=selectedRecord(),sales=item&&state.view!=="REJECTED"&&isSalesOpportunityRecord(item);if(event.target.dataset.rejectedDecision&&state.view==="REJECTED")setRejectedDecision(item.id,event.target.dataset.rejectedDecision);if(event.target.dataset.copy==="email"&&sales&&item.contact_email)copyText(item.contact_email,"Email");if(event.target.dataset.copySubject&&sales&&item.reply_subject)copyText(item.reply_subject,"Subject");if(event.target.dataset.copyResponse&&sales&&item.reply_body)copyText(item.reply_body,"Response");if(event.target.dataset.verifySource&&sales)verifySource();if(event.target.dataset.saveContactNote&&sales)saveContactNote(false);if(event.target.dataset.saveContacted&&sales)saveContactNote(true);if(event.target.dataset.generateResponse)generateResponse();});
-function openCompanyOpportunities(company,id=null){savedSearch.value=company;state.query=company;state.view="ALL";state.selectedId=id||null;renderTable();document.querySelector(".results-layout").scrollIntoView({behavior:"smooth",block:"start"});}
+function openCompanyOpportunities(company,id=null){savedSearch.value=company;state.query=company;state.view="ALL";state.freshness="ALL";state.status="ALL";state.minFit=0;state.categories=[];els.statusFilter.value="ALL";els.fitFilter.value="0";categoryOptions.querySelectorAll("input").forEach(input=>input.checked=false);document.querySelector("#category-count").textContent="All categories";state.selectedId=id||null;renderTable();document.querySelector(".results-layout").scrollIntoView({behavior:"smooth",block:"start"});}
 els.companyDirectory.addEventListener("click",(event)=>{const select=event.target.closest("[data-select-company]");if(select){state.selectedCompanyKey=select.dataset.selectCompany;renderCompanyDirectory();return;}const opportunity=event.target.closest("[data-open-opportunity]");if(opportunity){const item=state.opportunities.find((entry)=>entry.id===opportunity.dataset.openOpportunity);if(item)openCompanyOpportunities(item.company,item.id);return;}const company=event.target.closest("[data-open-company]");if(company)openCompanyOpportunities(company.dataset.openCompany);});
 els.companyDirectorySort.addEventListener("change",()=>{state.companySort=els.companyDirectorySort.value;renderCompanyDirectory();});
-document.querySelectorAll("[data-view]").forEach((button)=>button.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach((x)=>x.classList.remove("is-active"));button.classList.add("is-active");state.view=button.dataset.view;state.selectedId=null;renderTable();}));
+document.querySelectorAll("[data-view]").forEach((button)=>button.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach((x)=>x.classList.remove("is-active"));button.classList.add("is-active");state.view=button.dataset.view;if(state.view==="EMPLOYMENT_SIGNAL")state.freshness="ALL";state.selectedId=null;renderTable();}));
+document.querySelector("#freshness-filters").addEventListener("click",event=>{const button=event.target.closest("[data-freshness]");if(!button)return;state.freshness=button.dataset.freshness;state.selectedId=null;renderTable();});
+document.querySelector("#last-run-overview").addEventListener("click",event=>{if(!event.target.closest("[data-show-diagnostics]"))return;const drawer=document.querySelector("#diagnostics-tools");drawer.open=true;drawer.scrollIntoView({behavior:"smooth",block:"start"});});
 els.statusFilter.addEventListener("change",()=>{state.status=els.statusFilter.value;renderTable();}); els.fitFilter.addEventListener("change",()=>{state.minFit=Number(els.fitFilter.value);renderTable();}); els.connect.addEventListener("click",loadTeamState);els.sourceRunButton.addEventListener("click",runSourceCollection);els.sourceRunCancel.addEventListener("click",cancelSourceCollection);els.ultraMaxButton.addEventListener("click",runUltraMax);els.ultraMaxCancel.addEventListener("click",cancelUltraMax);
 
 
@@ -386,7 +426,7 @@ function renderSort(){
   const archiveView=state.view==="COMPANY_DIRECTORY"||state.view==="SEARCH_HISTORY";
   els.statusFilter.disabled=state.view==="REJECTED"||archiveView;
   els.fitFilter.disabled=state.view==="REJECTED"||archiveView;
-  const opportunityViews=new Set(["ALL","B2B_STUDIO","INDIVIDUAL_FREELANCE","BOOKMARKED","OPEN_OPPORTUNITY","POTENTIAL_LEAD","COMPETITORS"]);
+  const opportunityViews=new Set(["ALL","B2B_STUDIO","INDIVIDUAL_FREELANCE","BOOKMARKED","OPEN_OPPORTUNITY","POTENTIAL_LEAD","EMPLOYMENT_SIGNAL","COMPETITORS"]);
   document.querySelectorAll("[data-view]").forEach(button=>{const active=button.dataset.section==="opportunities"?opportunityViews.has(state.view):button.dataset.view===state.view;button.setAttribute("aria-pressed",String(active));button.classList.toggle("is-active",active);});
   sortSelect.value=state.sortKey;
   sortDirection.textContent=state.sortDirection==="desc"?"↓ Descending":"↑ Ascending";
@@ -422,6 +462,7 @@ for(const mode of ["list","table"])document.querySelector(`#${mode}-layout`).add
   for(const option of ["list","table"])document.querySelector(`#${option}-layout`).setAttribute("aria-pressed",String(option===mode));
 });
 document.querySelector("#reset-filters").addEventListener("click",()=>{
+  state.freshness="ALL";
   savedSearch.value="";state.query="";state.status="ALL";state.minFit=0;els.statusFilter.value="ALL";els.fitFilter.value="0";
   categoryOptions.querySelectorAll("input").forEach(input=>input.checked=false);updateCategories();
 });

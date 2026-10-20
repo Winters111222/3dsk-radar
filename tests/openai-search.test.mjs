@@ -267,3 +267,22 @@ test("wide search executes large plans with bounded concurrency and no retry", a
   assert.equal(result.search_profile, "WIDE_MAX");
   assert.equal(result.search_status, "COMPLETE");
 });
+
+test("an over-limit shard remains rejected, accounted and never retried", async()=>{
+  let requests=0;
+  const result=await runWideOpportunitySearch({apiKey:"fake",model:"gpt-5.6-luna",profile,nowIso:NOW,shards:[WIDE_SEARCH_SHARDS[0],WIDE_SEARCH_SHARDS[0]],fetchImpl:async(_url,options)=>{
+    requests+=1;
+    const body=JSON.parse(options.body);
+    assert.equal(body.max_tool_calls,3);
+    assert.match(body.instructions,/Tool budget: at most 3/);
+    const raw=apiResponse(JSON.stringify({opportunities:[validCandidate()]}));
+    if(requests===1)raw.output.unshift(...Array.from({length:3},()=>({type:"web_search_call",action:{sources:[{url:SOURCE}]}})));
+    return Response.json(raw);
+  }});
+  assert.equal(requests,2);
+  assert.equal(result.search_status,"PARTIAL");
+  assert.equal(result.coverage[0].error_code,"WIDE_SEARCH_TOOL_BOUNDARY_INVALID");
+  assert.equal(result.coverage[0].web_search_calls,4);
+  assert.equal(result.web_search_call_count,5);
+  assert.equal(result.opportunities.length,1);
+});
