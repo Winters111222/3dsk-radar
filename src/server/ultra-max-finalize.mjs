@@ -29,7 +29,8 @@ export async function persistUltraMaxVerifiedResults({repository,run,detailOutpu
   const searchRun={
     mode:"ULTRA_MAX",
     search_profile:"ULTRA_MAX",
-    search_status:"COMPLETE",
+    search_status:coverage.some(item=>item.status==="FAILED") || payloads.some(payload=>payload.search_status==="PARTIAL") ? "PARTIAL" : "COMPLETE",
+    failed_shards:coverage.filter(item=>item.status==="FAILED").length,
     run_id:run.run_id,
     completed_at:nowIso,
     model:"gpt-5.6-luna",
@@ -37,6 +38,7 @@ export async function persistUltraMaxVerifiedResults({repository,run,detailOutpu
     retry_allowed:false,
     coverage,
     diagnostics:{
+      source_yield_scope:"DISCOVERY_INTERMEDIATE",
       source_yield:sourceYield,
       rejection_reasons:Object.fromEntries(rejectedCandidates.reduce((map,item)=>map.set(item.rejection_reason,(map.get(item.rejection_reason)||0)+1),new Map())),
       zero_result_reason:records.length?null:"NO_VERIFIED_RESULTS_AFTER_DETAIL"
@@ -50,6 +52,7 @@ export async function persistUltraMaxVerifiedResults({repository,run,detailOutpu
       web_search_calls:usage.web_search_calls,
       candidates_seen:usage.candidates_seen,
       candidates_verified:records.length,
+      source_urls_verified:new Set(records.map(record=>record.source_url).filter(Boolean)).size,
       candidates_rejected:rejectedCandidates.length,
       new_opportunities:merge.new_count,
       updated_opportunities:merge.updated_count,

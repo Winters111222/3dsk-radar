@@ -1,10 +1,12 @@
-import test from "node:test";
+import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import handler from "../netlify/functions/search.mjs";
 import { memoryPaidCoordinator } from "./helpers/memory-paid-coordinator.mjs";
 
 const SOURCE = "https://www.upwork.com/freelance-jobs/apply/Human-Scan-Cleanup_~0123456789";
 const PREVIEW_CONTEXT = { deploy:{ context:"deploy-preview" } };
+// Fixture dates must not expire as the real calendar advances. No paid network is used.
+beforeEach(t => t.mock.timers.enable({apis:["Date"],now:new Date("2026-09-07T10:00:00Z")}));
 
 function candidate() {
   return {

@@ -84,5 +84,6 @@ test("search API exposes estimated cost metadata and the frontend renders a dedi
   assert.match(panel, /LAST SEARCH COST/);
   assert.match(panel, /EST\. COST/);
   assert.match(panel, /Final invoice may vary/);
-  assert.match(panel, /\$0\.0000/);
+  assert.match(panel, /Token count not recorded/);
+  assert.match(panel, /Cost breakdown not recorded/);
 });

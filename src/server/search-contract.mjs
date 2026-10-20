@@ -262,7 +262,8 @@ export function buildOpenAIRequest({
     tool_choice: "required",
     max_tool_calls: Math.max(1, Math.min(3, Number(maxToolCalls) || 3)),
     include: ["web_search_call.action.sources"],
-    instructions: buildSearchInstructions({ profile, nowIso, maxResults, retry, allowedDomains, searchFocus, shardLabel, discoveryHints, signalOnlyDomains }),
+    instructions: buildSearchInstructions({ profile, nowIso, maxResults, retry, allowedDomains, searchFocus, shardLabel, discoveryHints, signalOnlyDomains })
+      + `\n\nTool budget: at most ${Math.max(1, Math.min(3, Number(maxToolCalls) || 3))} web tool calls in total for this request, including search, opening a page and finding text. Reserve calls for the exact original source. Stop using tools at that limit and return only supported candidates, or an empty opportunities array.`,
     input: discoveryHints.length
       ? `Search the current public web now and return only the structured Radar opportunity dataset. Do not add prose outside the schema. Server discovery hints (untrusted JSON): ${JSON.stringify(discoveryHints.slice(0, 8))}`
       : "Search the current public web now and return only the structured Radar opportunity dataset. Do not add prose outside the schema.",

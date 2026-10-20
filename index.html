@@ -122,6 +122,7 @@
         <button id="open-search-footprint" class="action-button" type="button" aria-controls="search-footprint" aria-expanded="false">What did Radar search?</button>
       </section>
       <section id="summary-grid" class="summary-grid" aria-label="Opportunity summary"></section>
+      <section id="last-run-overview" class="panel last-run-overview" aria-label="Last search outcome" aria-live="polite" hidden></section>
       <details id="search-tools" class="workspace-drawer panel">
         <summary>ULTRA MAX search &amp; team access <span>Connect, review the $15 cap, then start the maximum search</span></summary>
       <section class="hero panel">
@@ -196,9 +197,17 @@
           <button class="segment" data-view="B2B_STUDIO" type="button">B2B</button>
           <button class="segment" data-view="INDIVIDUAL_FREELANCE" type="button">Individual</button>
           <button class="segment" data-view="BOOKMARKED" type="button">★ Saved</button>
-          <button class="segment" data-view="OPEN_OPPORTUNITY" type="button">Open</button>
-          <button class="segment" data-view="POTENTIAL_LEAD" type="button">Potential leads</button>
+          <button class="segment" data-view="OPEN_OPPORTUNITY" type="button">Projects</button>
+          <button class="segment" data-view="POTENTIAL_LEAD" type="button">Potential collaboration</button>
+          <button class="segment" data-view="EMPLOYMENT_SIGNAL" type="button">Employment signals</button>
           <button class="segment" data-view="COMPETITORS" type="button">Competitors</button>
+        </div>
+        <div id="freshness-filters" class="freshness-filters" role="group" aria-label="Recency and review filters">
+          <button type="button" data-freshness="ALL" aria-pressed="true">All saved <strong>0</strong></button>
+          <button type="button" data-freshness="RECENT" aria-pressed="false">Recent / checked <strong>0</strong></button>
+          <button type="button" data-freshness="REVIEW" aria-pressed="false">Needs checking <strong>0</strong></button>
+          <button type="button" data-freshness="HISTORY" aria-pressed="false">History / signals <strong>0</strong></button>
+          <p>Recent = published within 30 days or manually checked within 14 days. Not a guarantee of availability. Counts cover all saved opportunities.</p>
         </div>
         <div class="toolbar-controls">
           <label class="workspace-search" for="opportunity-search"><span id="workspace-search-label">Search saved results</span><input id="opportunity-search" type="search" placeholder="Title, company or skill…" autocomplete="off"></label>

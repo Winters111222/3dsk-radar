@@ -14,10 +14,10 @@
       estimated_cost_usd: run.estimated_cost_usd == null ? null : Number(run.estimated_cost_usd),
       model: run.model || "unknown model",
       web_search_call_count: Number(run.web_search_call_count || run.cost_breakdown?.web_search_call_count || 0),
-      total_tokens: Number(run.cost_breakdown?.total_tokens || run.usage?.total_tokens || 0),
-      token_usd: Number(run.cost_breakdown?.token_usd || 0),
-      web_search_usd: Number(run.cost_breakdown?.web_search_usd || 0),
-      pricing_basis: run.cost_breakdown?.pricing_basis || "OpenAI public pricing"
+      total_tokens: run.cost_breakdown?.total_tokens ?? run.usage?.total_tokens ?? null,
+      token_usd: run.cost_breakdown?.token_usd ?? null,
+      web_search_usd: run.cost_breakdown?.web_search_usd ?? null,
+      pricing_basis: run.cost_breakdown?.pricing_basis || "Recorded run estimate"
     };
   }
 
@@ -41,10 +41,12 @@
     const panel = ensurePanel();
     if (!panel) return;
     if (!snapshot) {
-      panel.innerHTML = `<div><span class="search-cost-label">LAST SEARCH COST</span><strong class="search-cost-value">$0.0000</strong></div><div class="search-cost-detail"><strong>Fixture / no paid search yet</strong><span>Live Search cost will appear here after a successful paid run.</span></div><span class="search-cost-estimate">EST. COST</span>`;
+      panel.innerHTML = `<div><span class="search-cost-label">LAST SEARCH COST</span><strong class="search-cost-value">—</strong></div><div class="search-cost-detail"><strong>No run cost loaded</strong><span>Connect to load saved search costs. Demo actions do not call paid AI.</span></div><span class="search-cost-estimate">EST. COST</span>`;
       return;
     }
-    panel.innerHTML = `<div><span class="search-cost-label">LAST SEARCH COST</span><strong class="search-cost-value">${formatUsd(snapshot.estimated_cost_usd)}</strong></div><div class="search-cost-detail"><strong>${snapshot.web_search_call_count} web search call${snapshot.web_search_call_count === 1 ? "" : "s"} · ${snapshot.total_tokens.toLocaleString("en-US")} tokens · ${escape(snapshot.model)}</strong><span>Search ${formatUsd(snapshot.web_search_usd)} + tokens ${formatUsd(snapshot.token_usd)} · ${escape(snapshot.pricing_basis)}. Final invoice may vary.</span></div><span class="search-cost-estimate">EST. COST</span>`;
+    const tokens=snapshot.total_tokens===null?"Token count not recorded":`${Number(snapshot.total_tokens).toLocaleString("en-US")} tokens`;
+    const breakdown=snapshot.web_search_usd===null||snapshot.token_usd===null?"Cost breakdown not recorded":`Search ${formatUsd(snapshot.web_search_usd)} + tokens ${formatUsd(snapshot.token_usd)}`;
+    panel.innerHTML = `<div><span class="search-cost-label">LAST SEARCH COST</span><strong class="search-cost-value">${formatUsd(snapshot.estimated_cost_usd)}</strong></div><div class="search-cost-detail"><strong>${snapshot.web_search_call_count} web search call${snapshot.web_search_call_count === 1 ? "" : "s"} · ${tokens} · ${escape(snapshot.model)}</strong><span>${breakdown} · ${escape(snapshot.pricing_basis)}. Final invoice may vary.</span></div><span class="search-cost-estimate">EST. COST</span>`;
   }
 
   render(null);

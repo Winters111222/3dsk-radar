@@ -101,7 +101,8 @@ function searchHistoryEntry(run) {
     new_opportunities:Number(counters.new_opportunities??0),
     updated_opportunities:Number(counters.updated_opportunities??0),
     workspace_total:Number(counters.workspace_total??0),
-    source_urls_verified:Number(run?.verified_source_count??counters.source_urls_verified??0),
+    source_urls_verified:run?.verified_source_count==null&&counters.source_urls_verified==null ? null : Number(run?.verified_source_count??counters.source_urls_verified),
+    failed_shards:Number(run?.failed_shards??run?.coverage?.filter(item=>item.status==="FAILED").length??0),
     web_search_call_count:Number(run?.web_search_call_count??run?.usage?.web_search_calls??0),
     openai_requests:Number(counters.openai_requests??paid.openai_requests??0)
   };
