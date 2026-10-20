@@ -1,4 +1,4 @@
-import { opportunityReview, commercialKind } from "./opportunity-review.mjs";
+import { opportunityReview, commercialKind, actionableOpportunity } from "./opportunity-review.mjs";
 export const CATEGORIES = {
   FULL_PIPELINE: "Full Character Pipeline", CAPTURE: "Capture / Scanning",
   HUMAN_DATA_CAPTURE: "Human Data Capture / Casting",
@@ -38,7 +38,7 @@ export function visibleResults(items, filters) {
     const viewMatches = view === "COMPETITORS"
       ? recordKind === "COMPETITOR"
       : isSalesOpportunityRecord(item)
-        && (view === "ALL"
+        && (view === "ALL" || view === "ACTIONABLE" && actionableOpportunity(item)
           || (view === "BOOKMARKED" ? item.company_bookmarked
             : view === "B2B_STUDIO" || view === "INDIVIDUAL_FREELANCE" ? engagementTrack === view
               : view === "EMPLOYMENT_SIGNAL" ? commercialKind(item).key === view

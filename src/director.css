@@ -309,3 +309,8 @@ button:focus-visible,a:focus-visible,select:focus-visible,summary:focus-visible,
   .last-run-overview { flex-wrap:wrap; padding:12px 14px; }
   .freshness-filters button { flex:1 1 42%; min-height:44px; }
 }
+/* Human review stays compact and usable without changing the note editor. */
+.manual-review-editor label { display:block; margin:10px 0; }
+.manual-review-editor select { display:block; width:100%; padding:9px; margin-top:5px; }
+.manual-review-editor input[type="checkbox"] { margin-right:7px; }
+.manual-review-editor p { overflow-wrap:anywhere; }
